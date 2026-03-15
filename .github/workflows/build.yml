@@ -1,0 +1,29 @@
+name: Build & Test
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0
+
+      - name: Restore workloads
+        run: dotnet workload restore ./RentalApp/RentalApp.csproj
+
+      - name: Restore dependencies
+        run: dotnet restore ./RentalApp.sln
+
+      - name: Build
+        run: dotnet build ./RentalApp.sln -C Release --no-restore
