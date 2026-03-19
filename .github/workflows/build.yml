@@ -1,4 +1,4 @@
-name: Build
+name: Build & Test
 
 on:
   pull_request:
@@ -12,7 +12,25 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
+    env:
+      CONNECTION_STRING: "Host=localhost;Database=testdb;Username=test_user;Password=test_password"
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -21,7 +39,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0
+          dotnet-version: 10.0.x
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -31,16 +49,20 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore workloads
-        run: dotnet workload restore ./RentalApp/RentalApp.csproj
+        run: dotnet workload restore ./RentalApp.sln
 
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
 
       - name: Build
-        run: dotnet build ./RentalApp.sln -c Release --no-restore
+        run: dotnet build ./RentalApp.sln --no-restore
 
-      - name: Upload APK
+      - name: Test
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results
+
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-release
-          path: RentalApp/bin/Release/**/*.apk
+          name: test-results
+          path: ./test-results/*.trx
