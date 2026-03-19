@@ -12,7 +12,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
+    env:
+      CONNECTION_STRING: "Host=localhost;Database=testdb;Username=test_user;Password=test_password"
 
     services:
       postgres:
@@ -66,7 +69,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0
+          dotnet-version: 10.0.x
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -76,7 +79,7 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore workloads
-        run: dotnet workload restore ./RentalApp/RentalApp.csproj
+        run: dotnet workload restore ./RentalApp.sln
 
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
@@ -88,17 +91,20 @@ jobs:
           ./.sonar/scanner/dotnet-sonarscanner begin /k:"crob03_RentalApp" /o:"crob03" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.scanner.scanAll=false /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
 
       - name: Build
-        env:
-          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
-        run: dotnet build ./RentalApp/RentalApp.csproj -c Release --no-restore
+        run: dotnet build ./RentalApp.sln --no-restore
 
       - name: Test
-        env:
-          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
-        run:  dotnet test ./RentalApp.sln --no-build
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results
       
       - name: End Sonar Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results/*.trx
 
