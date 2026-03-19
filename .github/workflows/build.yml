@@ -53,11 +53,11 @@ jobs:
 
       - name: Build
         env:
-          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
+          CONNECTION_STRING: ${{ secrets.TEST_CONNECTION_STRING }}
         run: dotnet build ./RentalApp/RentalApp.csproj -c Release --no-restore
 
       - name: Test
         env:
-          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
+          CONNECTION_STRING: ${{ secrets.TEST_CONNECTION_STRING }}
         run:  dotnet test ./RentalApp.sln --no-build
 
