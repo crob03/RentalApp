@@ -30,8 +30,38 @@ jobs:
           - 5432:5432
 
     steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
+
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+
+      - name: Install SonarCloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+          echo "$PWD/.sonar/scanner" >> $GITHUB_PATH
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -51,6 +81,12 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
 
+      - name: Start Sonar Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin /k:"crob03_RentalApp" /o:"crob03" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.scanner.scanAll=false /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
+
       - name: Build
         env:
           CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
@@ -60,4 +96,9 @@ jobs:
         env:
           CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
         run:  dotnet test ./RentalApp.sln --no-build
+      
+      - name: End Sonar Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
