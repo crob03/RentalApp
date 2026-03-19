@@ -1,4 +1,4 @@
-name: Build
+name: Build & Test
 
 on:
   pull_request:
@@ -13,6 +13,21 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -37,10 +52,12 @@ jobs:
         run: dotnet restore ./RentalApp.sln
 
       - name: Build
-        run: dotnet build ./RentalApp.sln -c Release --no-restore
+        env:
+          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
+        run: dotnet build ./RentalApp/RentalApp.csproj -c Release --no-restore
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-release
-          path: RentalApp/bin/Release/**/*.apk
+      - name: Test
+        env:
+          CONNECTION_STRING: {{ secrets.TEST_CONNECTION_STRING }}
+        run:  dotnet test ./RentalApp.sln --no-build
+
