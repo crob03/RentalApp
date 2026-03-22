@@ -88,13 +88,19 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./.sonar/scanner/dotnet-sonarscanner begin /k:"crob03_RentalApp" /o:"crob03" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.scanner.scanAll=false /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
+          ./.sonar/scanner/dotnet-sonarscanner begin \
+            /k:"crob03_RentalApp" \
+            /o:"crob03" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.scanner.scanAll=false \
+            /d:sonar.cs.cobertura.reportsPaths=**/coverage.cobertura.xml
 
       - name: Build
         run: dotnet build ./RentalApp.sln --no-restore
 
       - name: Test
-        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage"
       
       - name: End Sonar Analysis
         env:
