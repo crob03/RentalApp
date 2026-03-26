@@ -10,8 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SONAR_ORG: crob03
+  SONAR_PROJECT_KEY: crob03_RentalApp
+  SONAR_HOST_URL: https://sonarcloud.io
+
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-24.04
 
     env:
@@ -33,13 +38,44 @@ jobs:
           - 5432:5432
 
     steps:
+      # --- Setup ---
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'zulu'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # --- Dependencies ---
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: ./.sonar/scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+
+      - name: Install SonarCloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .sonar/scanner
+          dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -54,15 +90,42 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
 
+      # --- Analysis: Begin ---
+      - name: Start Sonar Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./.sonar/scanner/dotnet-sonarscanner begin \
+            /k:"${{ env.SONAR_PROJECT_KEY }}" \
+            /o:"${{ env.SONAR_ORG }}" \
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
+            /d:sonar.scanner.scanAll=false \
+            /d:sonar.cs.cobertura.reportsPaths=**/coverage.cobertura.xml
+
+      # --- Build & Test ---
       - name: Build
         run: dotnet build ./RentalApp.sln --no-restore
 
       - name: Test
-        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage"
 
+      # --- Analysis: End ---
+      - name: End Sonar Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
+      # --- Artifacts ---
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: ./test-results/*.trx
+
+      - name: Upload coverage reports to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
