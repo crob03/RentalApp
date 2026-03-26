@@ -15,16 +15,13 @@
       - name: Install Doxygen
         run: sudo apt-get install doxygen
 
-      - name: Generate Doxyfile
-        run: doxygen -g
-
       - name: Generate Doxygen Documentation
-        run: doxygen .
+        run: doxygen Doxyfile
 
       - name: Upload static files as artifact
         uses: actions/upload-pages-artifact@v3 
         with:
-          path: html
+          path: docs/html
         
     deploy:
       needs: generate
