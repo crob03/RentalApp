@@ -1,6 +1,8 @@
 {
     "name": "MAUI Dev Environment",
-    "dockerComposeFile": ["../docker-compose.yml"],
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
     "service": "app",
     "workspaceFolder": "/workspace",
     "customizations": {
@@ -9,15 +11,32 @@
                 "cweijan.vscode-postgresql-client2",
                 "ms-dotnettools.dotnet-maui",
                 "toroxx.vscode-avdmanager",
-                "anthropic.claude-code"
-            ]
+                "anthropic.claude-code",
+                "csharpier.csharpier-vscode"
+            ],
+            "settings": {
+                "editor.formatOnSave": false,
+                "[csharp]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "csharpier.csharpier-vscode"
+                },
+                "[xml]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "csharpier.csharpier-vscode"
+                }
+            }
         }
     },
     "remoteUser": "root",
     "portsAttributes": {
-        "5037": { "onAutoForward": "ignore" },
-        "5554": { "onAutoForward": "silent" },
-        "5555": { "onAutoForward": "silent" }
+        "5037": {
+            "onAutoForward": "ignore"
+        },
+        "5554": {
+            "onAutoForward": "silent"
+        },
+        "5555": {
+            "onAutoForward": "silent"
+        }
     }
 }
-
