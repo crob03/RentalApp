@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
-using RentalApp.ViewModels;
-using RentalApp.Database.Data;
-using RentalApp.Views;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+using RentalApp.Database.Data;
 using RentalApp.Services;
+using RentalApp.ViewModels;
+using RentalApp.Views;
 
 namespace RentalApp;
 
@@ -35,10 +35,6 @@ public static class MauiProgram
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddSingleton<RegisterViewModel>();
         builder.Services.AddTransient<RegisterPage>();
-        builder.Services.AddTransient<UserListViewModel>();
-        builder.Services.AddTransient<UserListPage>();
-        builder.Services.AddTransient<UserDetailPage>();
-        builder.Services.AddTransient<UserDetailViewModel>();
         builder.Services.AddSingleton<TempViewModel>();
         builder.Services.AddTransient<TempPage>();
 

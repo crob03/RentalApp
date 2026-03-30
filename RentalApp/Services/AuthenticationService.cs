@@ -1,7 +1,7 @@
+using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
-using BCrypt.Net;
 
 namespace RentalApp.Services;
 
@@ -9,7 +9,6 @@ public class AuthenticationService : IAuthenticationService
 {
     private readonly AppDbContext _context;
     private User? _currentUser;
-    private List<string> _currentUserRoles = new();
 
     public event EventHandler<bool>? AuthenticationStateChanged;
 
@@ -22,16 +21,13 @@ public class AuthenticationService : IAuthenticationService
 
     public User? CurrentUser => _currentUser;
 
-    public List<string> CurrentUserRoles => _currentUserRoles;
-
     public async Task<AuthenticationResult> LoginAsync(string email, string password)
     {
         try
         {
-            var user = await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Email == email && u.IsActive
+            );
 
             if (user == null)
             {
@@ -44,10 +40,6 @@ public class AuthenticationService : IAuthenticationService
             }
 
             _currentUser = user;
-            _currentUserRoles = user.UserRoles
-                .Where(ur => ur.IsActive)
-                .Select(ur => ur.Role.Name)
-                .ToList();
 
             AuthenticationStateChanged?.Invoke(this, true);
             return new AuthenticationResult(true, "Login successful");
@@ -58,7 +50,12 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
-    public async Task<AuthenticationResult> RegisterAsync(string firstName, string lastName, string email, string password)
+    public async Task<AuthenticationResult> RegisterAsync(
+        string firstName,
+        string lastName,
+        string email,
+        string password
+    )
     {
         try
         {
@@ -83,20 +80,11 @@ public class AuthenticationService : IAuthenticationService
                 PasswordSalt = salt,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-
-            // Assign default "User" role
-            var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.IsDefault == true);
-            if (userRole != null)
-            {
-                var userRoleAssignment = new UserRole(user.Id, userRole.Id);
-                _context.UserRoles.Add(userRoleAssignment);
-                await _context.SaveChangesAsync();
-            }
 
             return new AuthenticationResult(true, "Registration successful");
         }
@@ -109,24 +97,8 @@ public class AuthenticationService : IAuthenticationService
     public Task LogoutAsync()
     {
         _currentUser = null;
-        _currentUserRoles.Clear();
         AuthenticationStateChanged?.Invoke(this, false);
         return Task.CompletedTask;
-    }
-
-    public bool HasRole(string roleName)
-    {
-        return _currentUserRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
-    }
-
-    public bool HasAnyRole(params string[] roleNames)
-    {
-        return roleNames.Any(role => HasRole(role));
-    }
-
-    public bool HasAllRoles(params string[] roleNames)
-    {
-        return roleNames.All(role => HasRole(role));
     }
 
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)

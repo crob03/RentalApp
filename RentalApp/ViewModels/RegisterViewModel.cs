@@ -2,11 +2,10 @@
 /// @brief User registration view model
 /// @author RentalApp Development Team
 /// @date 2025
-
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Services;
-using System.Text.RegularExpressions;
 
 namespace RentalApp.ViewModels;
 
@@ -17,7 +16,7 @@ public partial class RegisterViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user registration
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
@@ -63,7 +62,10 @@ public partial class RegisterViewModel : BaseViewModel
     /// @param authService The authentication service instance
     /// @param navigationService The navigation service instance
     /// @details Sets up the required services and initializes the title
-    public RegisterViewModel(IAuthenticationService authService, INavigationService navigationService)
+    public RegisterViewModel(
+        IAuthenticationService authService,
+        INavigationService navigationService
+    )
     {
         _authService = authService;
         _navigationService = navigationService;
@@ -91,7 +93,11 @@ public partial class RegisterViewModel : BaseViewModel
 
             if (result.IsSuccess)
             {
-                await Application.Current.MainPage.DisplayAlert("Success", "Registration successful! Please login.", "OK");
+                await Application.Current.MainPage.DisplayAlert(
+                    "Success",
+                    "Registration successful! Please login.",
+                    "OK"
+                );
                 await _navigationService.NavigateBackAsync();
             }
             else
