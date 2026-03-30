@@ -26,8 +26,6 @@ public class User
     public string PasswordSalt { get; set; } = string.Empty;
     public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? DeletedAt { get; set; }
-    public bool IsActive { get; set; } = true;
 
     [NotMapped]
     public string FullName => $"{FirstName} {LastName}";

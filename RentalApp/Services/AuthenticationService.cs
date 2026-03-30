@@ -25,9 +25,7 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u =>
-                u.Email == email && u.IsActive
-            );
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {
@@ -80,7 +78,6 @@ public class AuthenticationService : IAuthenticationService
                 PasswordSalt = salt,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                IsActive = true,
             };
 
             _context.Users.Add(user);
@@ -99,36 +96,6 @@ public class AuthenticationService : IAuthenticationService
         _currentUser = null;
         AuthenticationStateChanged?.Invoke(this, false);
         return Task.CompletedTask;
-    }
-
-    public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
-    {
-        if (_currentUser == null)
-            return false;
-
-        try
-        {
-            if (!BCrypt.Net.BCrypt.Verify(currentPassword, _currentUser.PasswordHash))
-            {
-                return false;
-            }
-
-            var salt = BCrypt.Net.BCrypt.GenerateSalt();
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, salt);
-
-            _currentUser.PasswordHash = hashedPassword;
-            _currentUser.PasswordSalt = salt;
-            _currentUser.UpdatedAt = DateTime.UtcNow;
-
-            _context.Users.Update(_currentUser);
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
     }
 }
 
