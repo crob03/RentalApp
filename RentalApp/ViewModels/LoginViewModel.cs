@@ -2,7 +2,6 @@
 /// @brief Login page view model for user authentication
 /// @author RentalApp Development Team
 /// @date 2025
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Services;
@@ -16,7 +15,7 @@ public partial class LoginViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user login
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
@@ -118,6 +117,10 @@ public partial class LoginViewModel : BaseViewModel
     private async Task ForgotPasswordAsync()
     {
         // TODO: Implement forgot password functionality
-        await Application.Current.MainPage.DisplayAlert("Info", "Forgot password functionality not implemented yet", "OK");
+        await Application.Current.MainPage.DisplayAlert(
+            "Info",
+            "Forgot password functionality not implemented yet",
+            "OK"
+        );
     }
 }

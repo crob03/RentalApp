@@ -23,6 +23,9 @@
                 "[xml]": {
                     "editor.formatOnSave": true,
                     "editor.defaultFormatter": "csharpier.csharpier-vscode"
+                },
+                "files.associations": {
+                    "*.xaml": "xml"
                 }
             }
         }

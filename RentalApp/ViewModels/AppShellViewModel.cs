@@ -2,12 +2,11 @@
 /// @brief Application shell view model for managing navigation and authentication state
 /// @author RentalApp Development Team
 /// @date 2025
-
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Services;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace RentalApp.ViewModels
 {
@@ -18,7 +17,7 @@ namespace RentalApp.ViewModels
     {
         /// @brief Authentication service for managing user authentication
         private readonly IAuthenticationService _authService;
-        
+
         /// @brief Navigation service for managing page navigation
         private readonly INavigationService _navigationService;
 
@@ -37,7 +36,10 @@ namespace RentalApp.ViewModels
         /// @param authService The authentication service instance
         /// @param navigationService The navigation service instance
         /// @details Sets up authentication state change event handler and initializes the title
-        public AppShellViewModel(IAuthenticationService authService, INavigationService navigationService)
+        public AppShellViewModel(
+            IAuthenticationService authService,
+            INavigationService navigationService
+        )
         {
             _authService = authService;
             _navigationService = navigationService;
@@ -45,28 +47,13 @@ namespace RentalApp.ViewModels
             Title = "RentalApp";
         }
 
-        /// @brief Determines if guest actions can be executed
-        /// @return True if the current user has the "Guest" role
-        private bool CanExecuteGuestAction() => _authService.HasRole("Guest");
-        
-        /// @brief Determines if user actions can be executed
-        /// @return True if the current user has the "OrdinaryUser" role
-        private bool CanExecuteUserAction() => _authService.HasRole("OrdinaryUser");
-        
-        /// @brief Determines if admin actions can be executed
-        /// @return True if the current user has the "Admin" role
-        private bool CanExecuteAdminAction()
-        {
-            return _authService.HasRole("Admin");
-        }
-        
         /// @brief Determines if authenticated actions can be executed
         /// @return True if the user is authenticated
         private bool CanExecuteAuthenticatedAction()
         {
             return _authService.IsAuthenticated;
         }
-        
+
         /// @brief Handles authentication state changes
         /// @param sender The event sender
         /// @param isAuthenticated Whether the user is authenticated
@@ -76,8 +63,6 @@ namespace RentalApp.ViewModels
             LogoutCommand.NotifyCanExecuteChanged();
             NavigateToProfileCommand.NotifyCanExecuteChanged();
             NavigateToSettingsCommand.NotifyCanExecuteChanged();
-            Debug.WriteLine($"Authentication state changed: {isAuthenticated}");
-            Debug.WriteLine($"Current user is admin: {_authService.HasRole("Admin")}");
         }
 
         /// @brief Navigates to the current user's profile page

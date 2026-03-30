@@ -19,7 +19,12 @@ public class StringToBoolConverter : IValueConverter
         return false;
     }
 
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object ConvertBack(
+        object? value,
+        Type targetType,
+        object? parameter,
+        CultureInfo culture
+    )
     {
         // ConvertBack is typically not used for this converter
         // but we'll implement it for completeness
