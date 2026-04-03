@@ -27,24 +27,16 @@ public class LocalAuthenticationService : IAuthenticationService
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            if (user == null)
-            {
-                return new AuthenticationResult(false, "Invalid email or password");
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return new AuthenticationResult(false, "Invalid email or password");
-            }
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+                return AuthenticationResult.Failure("Invalid email or password");
 
             _currentUser = user;
-
             AuthenticationStateChanged?.Invoke(this, true);
-            return new AuthenticationResult(true, "Login successful");
+            return AuthenticationResult.Success(user);
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Login failed: {ex.Message}");
+            return AuthenticationResult.Failure($"Login failed: {ex.Message}");
         }
     }
 
@@ -57,18 +49,13 @@ public class LocalAuthenticationService : IAuthenticationService
     {
         try
         {
-            // Check if user already exists
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (existingUser != null)
-            {
-                return new AuthenticationResult(false, "User with this email already exists");
-            }
+                return AuthenticationResult.Failure("User with this email already exists");
 
-            // Create password hash
             var salt = BCrypt.Net.BCrypt.GenerateSalt();
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password, salt);
 
-            // Create new user
             var user = new User
             {
                 FirstName = firstName,
@@ -83,11 +70,13 @@ public class LocalAuthenticationService : IAuthenticationService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return new AuthenticationResult(true, "Registration successful");
+            _currentUser = user;
+            AuthenticationStateChanged?.Invoke(this, true);
+            return AuthenticationResult.Success(user);
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Registration failed: {ex.Message}");
+            return AuthenticationResult.Failure($"Registration failed: {ex.Message}");
         }
     }
 
@@ -96,17 +85,5 @@ public class LocalAuthenticationService : IAuthenticationService
         _currentUser = null;
         AuthenticationStateChanged?.Invoke(this, false);
         return Task.CompletedTask;
-    }
-}
-
-public class AuthenticationResult
-{
-    public bool IsSuccess { get; }
-    public string Message { get; }
-
-    public AuthenticationResult(bool isSuccess, string message)
-    {
-        IsSuccess = isSuccess;
-        Message = message;
     }
 }

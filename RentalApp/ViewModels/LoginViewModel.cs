@@ -87,7 +87,7 @@ public partial class LoginViewModel : BaseViewModel
             }
             else
             {
-                SetError(result.Message);
+                SetError(result.ErrorMessage);
             }
         }
         catch (Exception ex)
@@ -107,20 +107,5 @@ public partial class LoginViewModel : BaseViewModel
     private async Task NavigateToRegisterAsync()
     {
         await _navigationService.NavigateToAsync("RegisterPage");
-    }
-
-    /// @brief Handles forgot password functionality
-    /// @details Relay command that displays a placeholder message for forgot password
-    /// @return A task representing the asynchronous operation
-    /// @todo Implement actual forgot password functionality
-    [RelayCommand]
-    private async Task ForgotPasswordAsync()
-    {
-        // TODO: Implement forgot password functionality
-        await Application.Current.MainPage.DisplayAlert(
-            "Info",
-            "Forgot password functionality not implemented yet",
-            "OK"
-        );
     }
 }

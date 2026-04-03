@@ -13,6 +13,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 2 | 2026-03-13 | Process | Log all significant AI interactions in `INTERACTIONS.md`; log decisions in `DECISIONS.md` |
 | 3 | 2026-03-30 | Architecture | Store EF Core migrations in `RentalApp.Migrations` class library with `IDesignTimeDbContextFactory` |
 | 4 | 2026-03-30 | Tooling | Use CSharpier as the opinionated formatter for `.cs` and XAML files |
+| 5 | 2026-04-03 | UX / Auth | Auto-login the user immediately after successful registration |
 
 ---
 
@@ -72,3 +73,17 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **No enforced formatter** — rejected outright; inconsistent formatting increases diff noise and code review friction.
 
 **Rationale**: CSharpier is an opinionated, zero-configuration formatter (analogous to Prettier for JavaScript). By removing formatting choices from the developer, diffs reflect only meaningful code changes. It is provisioned in the dev container and can be run via `dotnet csharpier .`, ensuring a consistent baseline regardless of which IDE or OS a developer uses.
+
+---
+
+### Decision 5: Auto-Login After Successful Registration
+**Date**: 2026-04-03
+**Area**: UX / Auth
+
+**Decision**: After a successful registration, the user is logged in immediately — `_currentUser` is set, `AuthenticationStateChanged` is fired, and the app navigates directly to `MainPage`. The registration and login flows now share the same end-state.
+
+**Alternatives considered**:
+- **Redirect to login page after registration** — original behaviour. User must re-enter credentials immediately after creating an account.
+- **Auto-login with a confirmation message** — navigate to `MainPage` but show a brief success notification first. Rejected to avoid reintroducing a `DisplayAlert` call in the ViewModel.
+
+**Rationale**: The app currently has no email verification step, so there is no gate between account creation and a valid authenticated session. Requiring the user to log in manually immediately after registering adds friction with no security benefit in this context. Should email verification be introduced in future, this decision should be revisited — auto-login would need to be deferred until the address is confirmed.

@@ -28,7 +28,7 @@ public class ApiAuthenticationService : IAuthenticationService
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                return new AuthenticationResult(false, error?.Message ?? "Login failed");
+                return AuthenticationResult.Failure(error?.Message ?? "Login failed");
             }
 
             var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
@@ -38,6 +38,9 @@ public class ApiAuthenticationService : IAuthenticationService
             );
 
             var meResponse = await _httpClient.GetAsync("users/me");
+            if (!meResponse.IsSuccessStatusCode)
+                return AuthenticationResult.Failure("Failed to retrieve user profile");
+
             var profile = await meResponse.Content.ReadFromJsonAsync<UserProfileResponse>();
 
             _currentUser = new User
@@ -50,11 +53,11 @@ public class ApiAuthenticationService : IAuthenticationService
             };
 
             AuthenticationStateChanged?.Invoke(this, true);
-            return new AuthenticationResult(true, "Login successful");
+            return AuthenticationResult.Success(_currentUser);
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Login failed: {ex.Message}");
+            return AuthenticationResult.Failure($"Login failed: {ex.Message}");
         }
     }
 
@@ -81,14 +84,14 @@ public class ApiAuthenticationService : IAuthenticationService
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                return new AuthenticationResult(false, error?.Message ?? "Registration failed");
+                return AuthenticationResult.Failure(error?.Message ?? "Registration failed");
             }
 
-            return new AuthenticationResult(true, "Registration successful. Please log in.");
+            return await LoginAsync(email, password);
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Registration failed: {ex.Message}");
+            return AuthenticationResult.Failure($"Registration failed: {ex.Message}");
         }
     }
 
