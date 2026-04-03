@@ -100,8 +100,6 @@ public class ApiAuthenticationService : IAuthenticationService
         return Task.CompletedTask;
     }
 
-    // --- API response DTOs ---
-
     private record TokenResponse(string Token, DateTime ExpiresAt, int UserId);
 
     private record UserProfileResponse(
