@@ -5,21 +5,21 @@ using RentalApp.Database.Models;
 
 namespace RentalApp.Services;
 
-public class AuthenticationService : IAuthenticationService
+public class LocalAuthenticationService : IAuthenticationService
 {
     private readonly AppDbContext _context;
     private User? _currentUser;
 
     public event EventHandler<bool>? AuthenticationStateChanged;
 
-    public AuthenticationService(AppDbContext context)
-    {
-        _context = context;
-    }
-
     public bool IsAuthenticated => _currentUser != null;
 
     public User? CurrentUser => _currentUser;
+
+    public LocalAuthenticationService(AppDbContext context)
+    {
+        _context = context;
+    }
 
     public async Task<AuthenticationResult> LoginAsync(string email, string password)
     {

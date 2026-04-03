@@ -22,7 +22,7 @@ public static class MauiProgram
 
         builder.Services.AddDbContext<AppDbContext>();
 
-        builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
         builder.Services.AddSingleton<AppShellViewModel>();
