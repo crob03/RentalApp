@@ -130,9 +130,21 @@ public partial class RegisterViewModel : BaseViewModel
             return false;
         }
 
+        if (FirstName.Length > 50)
+        {
+            SetError("First name must be 50 characters or fewer");
+            return false;
+        }
+
         if (string.IsNullOrWhiteSpace(LastName))
         {
             SetError("Last name is required");
+            return false;
+        }
+
+        if (LastName.Length > 50)
+        {
+            SetError("Last name must be 50 characters or fewer");
             return false;
         }
 
@@ -154,9 +166,17 @@ public partial class RegisterViewModel : BaseViewModel
             return false;
         }
 
-        if (Password.Length < 6)
+        if (Password.Length < 8)
         {
-            SetError("Password must be at least 6 characters long");
+            SetError("Password must be at least 8 characters long");
+            return false;
+        }
+
+        if (!IsValidPassword(Password))
+        {
+            SetError(
+                "Password must contain an uppercase letter, lowercase letter, number, and special character"
+            );
             return false;
         }
 
@@ -175,13 +195,19 @@ public partial class RegisterViewModel : BaseViewModel
         return true;
     }
 
-    /// @brief Validates an email address format
-    /// @param email The email address to validate
-    /// @return True if the email format is valid, false otherwise
-    /// @details Uses regex pattern matching to validate email format
-    private static bool IsValidEmail(string email)
-    {
-        const string emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-        return Regex.IsMatch(email, emailPattern, RegexOptions.IgnoreCase);
-    }
+    private static readonly Regex EmailRegex = new(
+        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled
+    );
+
+    // Ensures password contains atleast one uppercase letter,
+    // one lowercase letter, one number, and one special character
+    private static readonly Regex PasswordRegex = new(
+        @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$",
+        RegexOptions.Compiled
+    );
+
+    private static bool IsValidEmail(string email) => EmailRegex.IsMatch(email);
+
+    private static bool IsValidPassword(string password) => PasswordRegex.IsMatch(password);
 }
