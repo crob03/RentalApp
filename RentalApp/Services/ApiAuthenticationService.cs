@@ -7,6 +7,8 @@ namespace RentalApp.Services;
 public class ApiAuthenticationService : IAuthenticationService
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthTokenState _tokenState;
+    private readonly ICredentialStore _credentialStore;
     private User? _currentUser;
 
     public event EventHandler<bool>? AuthenticationStateChanged;
@@ -14,12 +16,22 @@ public class ApiAuthenticationService : IAuthenticationService
     public bool IsAuthenticated => _currentUser != null;
     public User? CurrentUser => _currentUser;
 
-    public ApiAuthenticationService(HttpClient httpClient)
+    public ApiAuthenticationService(
+        HttpClient httpClient,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
+    )
     {
         _httpClient = httpClient;
+        _tokenState = tokenState;
+        _credentialStore = credentialStore;
     }
 
-    public async Task<AuthenticationResult> LoginAsync(string email, string password)
+    public async Task<AuthenticationResult> LoginAsync(
+        string email,
+        string password,
+        bool rememberMe = false
+    )
     {
         try
         {
@@ -32,10 +44,10 @@ public class ApiAuthenticationService : IAuthenticationService
             }
 
             var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Bearer",
-                token!.Token
-            );
+            _tokenState.CurrentToken = token!.Token;
+
+            if (rememberMe)
+                await _credentialStore.SaveAsync(email, password);
 
             var meResponse = await _httpClient.GetAsync("users/me");
             if (!meResponse.IsSuccessStatusCode)
@@ -87,7 +99,7 @@ public class ApiAuthenticationService : IAuthenticationService
                 return AuthenticationResult.Failure(error?.Message ?? "Registration failed");
             }
 
-            return await LoginAsync(email, password);
+            return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
@@ -95,12 +107,12 @@ public class ApiAuthenticationService : IAuthenticationService
         }
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
         _currentUser = null;
-        _httpClient.DefaultRequestHeaders.Authorization = null;
+        _tokenState.CurrentToken = null;
+        await _credentialStore.ClearAsync();
         AuthenticationStateChanged?.Invoke(this, false);
-        return Task.CompletedTask;
     }
 
     private record TokenResponse(string Token, DateTime ExpiresAt, int UserId);

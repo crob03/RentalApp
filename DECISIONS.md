@@ -13,7 +13,8 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 2 | 2026-03-13 | Process | Log all significant AI interactions in `INTERACTIONS.md`; log decisions in `DECISIONS.md` |
 | 3 | 2026-03-30 | Architecture | Store EF Core migrations in `RentalApp.Migrations` class library with `IDesignTimeDbContextFactory` |
 | 4 | 2026-03-30 | Tooling | Use CSharpier as the opinionated formatter for `.cs` and XAML files |
-| 5 | 2026-04-03 | UX / Auth | Auto-login the user immediately after successful registration |
+| 5 | 2026-04-03 | UX / Auth | Auto-login the user immediately after successful registration *(superseded by Decision 6)* |
+| 6 | 2026-04-05 | Auth | Token refresh via `DelegatingHandler` using credentials stored in `SecureStorage`; Remember Me controls persistence; auto-login on startup |
 
 ---
 
@@ -76,14 +77,27 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 
 ---
 
-### Decision 5: Auto-Login After Successful Registration
+### Decision 5: Auto-Login After Registration *(Superseded by Decision 6)*
 **Date**: 2026-04-03
 **Area**: UX / Auth
 
-**Decision**: After a successful registration, the user is logged in immediately — `_currentUser` is set, `AuthenticationStateChanged` is fired, and the app navigates directly to `MainPage`. The registration and login flows now share the same end-state.
+**Decision**: After successful registration, automatically log the user in and navigate to `MainPage` without requiring them to return to the login screen.
+
+**Rationale at the time**: Reduced friction for new users — registration and login were a single flow.
+
+**Superseded because**: The introduction of Remember Me (Decision 6) requires the user to pass through the login screen so they can opt into credential persistence. Silent auto-login after registration bypasses this choice entirely.
+
+---
+
+### Decision 6: Token Refresh via DelegatingHandler with SecureStorage
+**Date**: 2026-04-05
+**Area**: Auth
+
+**Decision**: Implement token refresh using a `DelegatingHandler` (`AuthRefreshHandler`) wrapping the `HttpClient`. If a request returns 401, the handler checks `ICredentialStore` for saved credentials — if present, it re-authenticates via `/auth/token`, updates `AuthTokenState`, and retries the original request once; if absent, it redirects to the login root. Credentials are saved to `SecureStorage` only when the user checks "Remember Me" at login, and are cleared on logout. On app startup, `App.OnStart` checks `ICredentialStore` and silently auto-logs in if credentials are present. Auto-login after registration (Decision 5) is removed so the user passes through the login screen and can make the Remember Me choice.
 
 **Alternatives considered**:
-- **Redirect to login page after registration** — original behaviour. User must re-enter credentials immediately after creating an account.
-- **Auto-login with a confirmation message** — navigate to `MainPage` but show a brief success notification first. Rejected to avoid reintroducing a `DisplayAlert` call in the ViewModel.
+- **Proper refresh token endpoint** — the preferred solution; a short-lived access token paired with a long-lived, rotatable refresh token avoids storing user credentials entirely. Rejected because the backend is not under our control and no `/auth/refresh` endpoint exists.
+- **In-memory credential cache only** — credentials held in a private field for the lifetime of the process. Supports token refresh during a session but does not survive app restarts, making Remember Me impossible. Rejected in favour of `SecureStorage`.
+- **Manual HttpClient wrapper** — intercepting responses in a custom wrapper class rather than a `DelegatingHandler`. Rejected because `DelegatingHandler` is the .NET-idiomatic middleware pattern for `HttpClient` pipelines and keeps retry logic transparent to all callers.
 
-**Rationale**: The app currently has no email verification step, so there is no gate between account creation and a valid authenticated session. Requiring the user to log in manually immediately after registering adds friction with no security benefit in this context. Should email verification be introduced in future, this decision should be revisited — auto-login would need to be deferred until the address is confirmed.
+**Rationale**: The backend exposes only a credential-exchange endpoint (`/auth/token`), so re-authentication requires the original email and password. `SecureStorage` (Android Keystore / iOS Keychain) is the platform-endorsed store for sensitive credentials — encrypted at rest, scoped to the app, and clearable on logout. The `DelegatingHandler` pattern keeps all retry logic in one place and is transparent to callers. Storing credentials only when the user explicitly opts in (Remember Me) limits the exposure window and respects user intent.

@@ -8,6 +8,7 @@ namespace RentalApp.Services;
 public class LocalAuthenticationService : IAuthenticationService
 {
     private readonly AppDbContext _context;
+    private readonly ICredentialStore _credentialStore;
     private User? _currentUser;
 
     public event EventHandler<bool>? AuthenticationStateChanged;
@@ -16,12 +17,17 @@ public class LocalAuthenticationService : IAuthenticationService
 
     public User? CurrentUser => _currentUser;
 
-    public LocalAuthenticationService(AppDbContext context)
+    public LocalAuthenticationService(AppDbContext context, ICredentialStore credentialStore)
     {
         _context = context;
+        _credentialStore = credentialStore;
     }
 
-    public async Task<AuthenticationResult> LoginAsync(string email, string password)
+    public async Task<AuthenticationResult> LoginAsync(
+        string email,
+        string password,
+        bool rememberMe = false
+    )
     {
         try
         {
@@ -29,6 +35,9 @@ public class LocalAuthenticationService : IAuthenticationService
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                 return AuthenticationResult.Failure("Invalid email or password");
+
+            if (rememberMe)
+                await _credentialStore.SaveAsync(email, password);
 
             _currentUser = user;
             AuthenticationStateChanged?.Invoke(this, true);
@@ -70,9 +79,7 @@ public class LocalAuthenticationService : IAuthenticationService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            _currentUser = user;
-            AuthenticationStateChanged?.Invoke(this, true);
-            return AuthenticationResult.Success(user);
+            return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
@@ -80,10 +87,10 @@ public class LocalAuthenticationService : IAuthenticationService
         }
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
         _currentUser = null;
+        await _credentialStore.ClearAsync();
         AuthenticationStateChanged?.Invoke(this, false);
-        return Task.CompletedTask;
     }
 }

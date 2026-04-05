@@ -9,7 +9,7 @@ public interface IAuthenticationService
     bool IsAuthenticated { get; }
     User? CurrentUser { get; }
 
-    Task<AuthenticationResult> LoginAsync(string email, string password);
+    Task<AuthenticationResult> LoginAsync(string email, string password, bool rememberMe = false);
     Task<AuthenticationResult> RegisterAsync(
         string firstName,
         string lastName,

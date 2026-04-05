@@ -93,7 +93,7 @@ public partial class RegisterViewModel : BaseViewModel
 
             if (result.IsSuccess)
             {
-                await _navigationService.NavigateToAsync("MainPage");
+                await _navigationService.NavigateBackAsync();
             }
             else
             {

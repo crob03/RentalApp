@@ -19,15 +19,30 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
+        builder.Services.AddSingleton<ICredentialStore, SecureCredentialStore>();
+
+        bool useSharedApi = false;
 
         if (useSharedApi)
         {
-            var httpClient = new HttpClient
+            var baseAddress = new Uri("https://set09102-api.b-davison.workers.dev/");
+
+            builder.Services.AddSingleton<AuthTokenState>();
+            builder.Services.AddSingleton(sp => new AuthRefreshHandler(
+                sp.GetRequiredService<AuthTokenState>(),
+                sp.GetRequiredService<ICredentialStore>(),
+                sp.GetRequiredService<INavigationService>(),
+                baseAddress
+            )
             {
-                BaseAddress = new Uri("https://set09102-api.b-davison.workers.dev/"),
-            };
-            builder.Services.AddSingleton(httpClient);
+                InnerHandler = new HttpClientHandler(),
+            });
+            builder.Services.AddSingleton(sp => new HttpClient(
+                sp.GetRequiredService<AuthRefreshHandler>()
+            )
+            {
+                BaseAddress = baseAddress,
+            });
             builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
         }
         else

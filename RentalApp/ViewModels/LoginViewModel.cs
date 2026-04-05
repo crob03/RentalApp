@@ -2,6 +2,7 @@
 /// @brief Login page view model for user authentication
 /// @author RentalApp Development Team
 /// @date 2025
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Services;
@@ -34,12 +35,6 @@ public partial class LoginViewModel : BaseViewModel
     [ObservableProperty]
     private bool rememberMe;
 
-    /// @brief Indicates whether a login operation is in progress
-    /// @details Observable property that notifies the LoginCommand when changed
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
-    private bool _isBusy;
-
     /// @brief Default constructor for design-time support
     /// @details Sets the title to "Login"
     public LoginViewModel()
@@ -59,10 +54,19 @@ public partial class LoginViewModel : BaseViewModel
         Title = "Login";
     }
 
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsBusy))
+            LoginCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanLogin() => !IsBusy;
+
     /// @brief Performs user login authentication
     /// @details Relay command that validates input and attempts to authenticate the user
     /// @return A task representing the asynchronous login operation
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
         if (IsBusy)
@@ -79,7 +83,7 @@ public partial class LoginViewModel : BaseViewModel
             IsBusy = true;
             ClearError();
 
-            var result = await _authService.LoginAsync(Email, Password);
+            var result = await _authService.LoginAsync(Email, Password, RememberMe);
 
             if (result.IsSuccess)
             {
