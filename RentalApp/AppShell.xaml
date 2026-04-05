@@ -6,5 +6,6 @@
   xmlns:views="clr-namespace:RentalApp.Views"
   Shell.FlyoutBehavior="Disabled"
 >
-  <ShellContent ContentTemplate="{DataTemplate views:LoginPage}" />
+  <ShellContent Route="loading" ContentTemplate="{DataTemplate views:LoadingPage}" />
+  <ShellContent Route="login" ContentTemplate="{DataTemplate views:LoginPage}" />
 </Shell>

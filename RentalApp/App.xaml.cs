@@ -1,6 +1,3 @@
-using RentalApp.Services;
-using RentalApp.ViewModels;
-
 namespace RentalApp;
 
 public partial class App : Application
@@ -20,33 +17,12 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var shell = _serviceProvider.GetService<AppShell>();
-        if (shell == null)
-            throw new InvalidOperationException(
+        var shell =
+            _serviceProvider.GetService<AppShell>()
+            ?? throw new InvalidOperationException(
                 "AppShell could not be resolved from the service provider."
             );
 
         return new Window(shell);
-    }
-
-    protected override async void OnStart()
-    {
-        base.OnStart();
-
-        var credentialStore = _serviceProvider.GetRequiredService<ICredentialStore>();
-        var authService = _serviceProvider.GetRequiredService<IAuthenticationService>();
-        var navigationService = _serviceProvider.GetRequiredService<INavigationService>();
-
-        var credentials = await credentialStore.GetAsync();
-        if (credentials is null)
-            return;
-
-        var result = await authService.LoginAsync(
-            credentials.Value.Email,
-            credentials.Value.Password
-        );
-
-        if (result.IsSuccess)
-            await navigationService.NavigateToAsync("MainPage");
     }
 }

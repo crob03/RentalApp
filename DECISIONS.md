@@ -15,6 +15,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 4 | 2026-03-30 | Tooling | Use CSharpier as the opinionated formatter for `.cs` and XAML files |
 | 5 | 2026-04-03 | UX / Auth | Auto-login the user immediately after successful registration *(superseded by Decision 6)* |
 | 6 | 2026-04-05 | Auth | Token refresh via `DelegatingHandler` using credentials stored in `SecureStorage`; Remember Me controls persistence; auto-login on startup |
+| 7 | 2026-04-05 | Architecture / MVVM | Use `OnAppearing` in code-behind to trigger ViewModel initialisation for startup routing |
 
 ---
 
@@ -101,3 +102,18 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Manual HttpClient wrapper** — intercepting responses in a custom wrapper class rather than a `DelegatingHandler`. Rejected because `DelegatingHandler` is the .NET-idiomatic middleware pattern for `HttpClient` pipelines and keeps retry logic transparent to all callers.
 
 **Rationale**: The backend exposes only a credential-exchange endpoint (`/auth/token`), so re-authentication requires the original email and password. `SecureStorage` (Android Keystore / iOS Keychain) is the platform-endorsed store for sensitive credentials — encrypted at rest, scoped to the app, and clearable on logout. The `DelegatingHandler` pattern keeps all retry logic in one place and is transparent to callers. Storing credentials only when the user explicitly opts in (Remember Me) limits the exposure window and respects user intent.
+
+---
+
+### Decision 7: Use OnAppearing to Trigger ViewModel Initialisation
+**Date**: 2026-04-05
+**Area**: Architecture / MVVM
+
+**Decision**: Use `OnAppearing` in the page code-behind to call a ViewModel initialisation method (e.g. `InitializeAsync()`), rather than wiring up initialisation through Shell navigation events or constructors. The code-behind only delegates — it contains no logic itself.
+
+**Alternatives considered**:
+- **Constructor initialisation** — cannot be async, so unsuitable for operations like SecureStorage reads or network calls that must complete before navigating.
+- **`IQueryAttributable.ApplyQueryAttributes`** — Shell's mechanism for passing parameters to pages on navigation. Appropriate when data is passed *into* a page; not a natural fit for self-driven startup logic with no inbound parameters.
+- **`Shell.Current.Navigating` / `Navigated` events** — places navigation lifecycle handling in the ViewModel directly, but requires the ViewModel to subscribe to and unsubscribe from Shell events, coupling it to the Shell infrastructure.
+
+**Rationale**: `OnAppearing` calling a ViewModel method is a widely accepted MVVM compromise in MAUI — used in Microsoft's own MAUI samples — because there is no framework-provided async lifecycle hook that feeds into the ViewModel cleanly. Provided the code-behind only delegates and contains no logic, the separation of concerns is preserved. All service calls, navigation decisions, and state mutations remain in the ViewModel and are independently testable.
