@@ -1,7 +1,3 @@
-/// @file LoginViewModel.cs
-/// @brief Login page view model for user authentication
-/// @author RentalApp Development Team
-/// @date 2025
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,44 +5,46 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the login page that handles user authentication
-/// @details Manages login form data, validation, and authentication process
-/// @extends BaseViewModel
+/// <summary>
+/// View model for the login page. Manages the login form fields, input validation,
+/// and delegates authentication to <see cref="IAuthenticationService"/>.
+/// </summary>
 public partial class LoginViewModel : BaseViewModel
 {
-    /// @brief Authentication service for managing user login
     private readonly IAuthenticationService _authService;
-
-    /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
-    /// @brief The user's email address
-    /// @details Observable property bound to the email input field
+    /// <summary>
+    /// The email address entered by the user.
+    /// </summary>
     [ObservableProperty]
     private string email = string.Empty;
 
-    /// @brief The user's password
-    /// @details Observable property bound to the password input field
+    /// <summary>
+    /// The password entered by the user.
+    /// </summary>
     [ObservableProperty]
     private string password = string.Empty;
 
-    /// @brief Whether to remember the user's login credentials
-    /// @details Observable property bound to the remember me checkbox
+    /// <summary>
+    /// Whether the user has opted to persist their credentials for automatic login on next launch.
+    /// </summary>
     [ObservableProperty]
     private bool rememberMe;
 
-    /// @brief Default constructor for design-time support
-    /// @details Sets the title to "Login"
+    /// <summary>
+    /// Initialises a new instance of <see cref="LoginViewModel"/> for design-time support.
+    /// </summary>
     public LoginViewModel()
     {
-        // Default constructor for design time support
         Title = "Login";
     }
 
-    /// @brief Initializes a new instance of the LoginViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services and initializes the title
+    /// <summary>
+    /// Initialises a new instance of <see cref="LoginViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="authService">The authentication service used to perform login.</param>
+    /// <param name="navigationService">The navigation service used to transition between pages.</param>
     public LoginViewModel(IAuthenticationService authService, INavigationService navigationService)
     {
         _authService = authService;
@@ -54,6 +52,7 @@ public partial class LoginViewModel : BaseViewModel
         Title = "Login";
     }
 
+    /// <inheritdoc/>
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -63,9 +62,10 @@ public partial class LoginViewModel : BaseViewModel
 
     private bool CanLogin() => !IsBusy;
 
-    /// @brief Performs user login authentication
-    /// @details Relay command that validates input and attempts to authenticate the user
-    /// @return A task representing the asynchronous login operation
+    /// <summary>
+    /// Validates the login form and attempts to authenticate the user.
+    /// Navigates to the main page on success, or surfaces an error message on failure.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
@@ -104,9 +104,9 @@ public partial class LoginViewModel : BaseViewModel
         }
     }
 
-    /// @brief Navigates to the registration page
-    /// @details Relay command that navigates to the user registration page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates to the registration page.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToRegisterAsync()
     {

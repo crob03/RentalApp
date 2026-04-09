@@ -1,7 +1,3 @@
-/// @file MainViewModel.cs
-/// @brief Main dashboard view model for authenticated users
-/// @author RentalApp Development Team
-/// @date 2025
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Database.Models;
@@ -9,44 +5,48 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the main dashboard page
-/// @details Manages the main dashboard display, user information, and navigation to other sections
-/// @extends BaseViewModel
+/// <summary>
+/// View model for the main dashboard page. Loads the authenticated user's profile data
+/// and provides navigation commands to other sections of the application.
+/// </summary>
 public partial class MainViewModel : BaseViewModel
 {
-    /// @brief Authentication service for managing user authentication
     private readonly IAuthenticationService _authService;
-
-    /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
-    /// @brief The currently authenticated user
-    /// @details Observable property containing the current user's information
+    /// <summary>
+    /// The currently authenticated user.
+    /// </summary>
     [ObservableProperty]
     private User? currentUser;
 
-    /// @brief Welcome message displayed to the user
-    /// @details Observable property showing a personalized welcome message
+    /// <summary>
+    /// Personalised welcome message derived from the current user's name.
+    /// </summary>
     [ObservableProperty]
     private string welcomeMessage = string.Empty;
 
-    /// @brief Indicates whether the current user has admin privileges
-    /// @details Observable property used to control visibility of admin features
+    /// <summary>
+    /// Indicates whether the current user has administrator privileges.
+    /// Used to control the visibility of admin-only UI elements.
+    /// </summary>
     [ObservableProperty]
     private bool isAdmin;
 
-    /// @brief Default constructor for design-time support
-    /// @details Sets the title to "Dashboard"
+    /// <summary>
+    /// Initialises a new instance of <see cref="MainViewModel"/> for design-time support.
+    /// </summary>
     public MainViewModel()
     {
-        // Default constructor for design time support
         Title = "Dashboard";
     }
 
-    /// @brief Initializes a new instance of the MainViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services, initializes the title, and loads user data
+    /// <summary>
+    /// Initialises a new instance of <see cref="MainViewModel"/> with the required services
+    /// and immediately loads the current user's data.
+    /// </summary>
+    /// <param name="authService">The authentication service used to retrieve the current user.</param>
+    /// <param name="navigationService">The navigation service used to transition between pages.</param>
     public MainViewModel(IAuthenticationService authService, INavigationService navigationService)
     {
         _authService = authService;
@@ -56,8 +56,10 @@ public partial class MainViewModel : BaseViewModel
         LoadUserData();
     }
 
-    /// @brief Loads the current user's data and sets up the dashboard
-    /// @details Retrieves current user information and determines admin status
+    /// <summary>
+    /// Populates <see cref="CurrentUser"/> and <see cref="WelcomeMessage"/> from the
+    /// authenticated user held by <see cref="IAuthenticationService"/>.
+    /// </summary>
     private void LoadUserData()
     {
         CurrentUser = _authService.CurrentUser;
@@ -68,9 +70,10 @@ public partial class MainViewModel : BaseViewModel
         }
     }
 
-    /// @brief Logs out the current user
-    /// @details Relay command that confirms logout and performs the logout operation
-    /// @return A task representing the asynchronous logout operation
+    /// <summary>
+    /// Prompts the user for confirmation and, if confirmed, logs out and navigates to the
+    /// login page.
+    /// </summary>
     [RelayCommand]
     private async Task LogoutAsync()
     {
@@ -88,27 +91,28 @@ public partial class MainViewModel : BaseViewModel
         }
     }
 
-    /// @brief Navigates to the user profile page
-    /// @details Relay command that navigates to the profile management page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates to the user profile page.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToProfileAsync()
     {
         await _navigationService.NavigateToAsync("TempPage");
     }
 
-    /// @brief Navigates to the settings page
-    /// @details Relay command that navigates to the application settings page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates to the application settings page.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToSettingsAsync()
     {
         await _navigationService.NavigateToAsync("TempPage");
     }
 
-    /// @brief Navigates to the user list page
-    /// @details Relay command that navigates to the user management page, admin only
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates to the user management page. Restricted to administrators; shows an access
+    /// denied alert if the current user does not have the admin role.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToUserListAsync()
     {
@@ -125,9 +129,9 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync("UserListPage");
     }
 
-    /// @brief Refreshes the dashboard data
-    /// @details Relay command that reloads user data and simulates a refresh operation
-    /// @return A task representing the asynchronous refresh operation
+    /// <summary>
+    /// Reloads the current user's data from the authentication service.
+    /// </summary>
     [RelayCommand]
     private async Task RefreshDataAsync()
     {

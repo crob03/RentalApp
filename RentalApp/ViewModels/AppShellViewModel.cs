@@ -1,41 +1,40 @@
-/// @file AppShellViewModel.cs
-/// @brief Application shell view model for managing navigation and authentication state
-/// @author RentalApp Development Team
-/// @date 2025
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels
 {
-    /// @brief View model for the application shell that manages navigation and authentication
-    /// @details Handles menu items, navigation commands, and authentication state changes
-    /// @extends BaseViewModel
+    /// <summary>
+    /// View model for the application shell, responsible for managing top-level navigation
+    /// commands and reacting to authentication state changes.
+    /// </summary>
     public partial class AppShellViewModel : BaseViewModel
     {
-        /// @brief Authentication service for managing user authentication
         private readonly IAuthenticationService _authService;
-
-        /// @brief Navigation service for managing page navigation
         private readonly INavigationService _navigationService;
 
-        /// @brief Collection of dynamic menu bar items
-        /// @details Observable collection that can be modified at runtime based on user permissions
+        /// <summary>
+        /// Gets the collection of dynamic menu bar items that can be modified at runtime
+        /// based on user permissions or application state.
+        /// </summary>
         public ObservableCollection<MenuBarItem> DynamicMenuBarItems { get; } = new();
 
-        /// @brief Default constructor for design-time support
-        /// @details Sets the title to "RentalApp"
+        /// <summary>
+        /// Initialises a new instance of <see cref="AppShellViewModel"/> for design-time support.
+        /// </summary>
         public AppShellViewModel()
         {
             Title = "RentalApp";
         }
 
-        /// @brief Initializes a new instance of the AppShellViewModel class
-        /// @param authService The authentication service instance
-        /// @param navigationService The navigation service instance
-        /// @details Sets up authentication state change event handler and initializes the title
+        /// <summary>
+        /// Initialises a new instance of <see cref="AppShellViewModel"/> with the required services.
+        /// Subscribes to <see cref="IAuthenticationService.AuthenticationStateChanged"/> so that
+        /// command availability is refreshed whenever the user's authentication status changes.
+        /// </summary>
+        /// <param name="authService">The authentication service used to check and update auth state.</param>
+        /// <param name="navigationService">The navigation service used to perform page transitions.</param>
         public AppShellViewModel(
             IAuthenticationService authService,
             INavigationService navigationService
@@ -47,17 +46,24 @@ namespace RentalApp.ViewModels
             Title = "RentalApp";
         }
 
-        /// @brief Determines if authenticated actions can be executed
-        /// @return True if the user is authenticated
+        /// <summary>
+        /// Guard used by commands that require an authenticated user.
+        /// </summary>
+        /// <returns><see langword="true"/> if a user is currently authenticated; otherwise <see langword="false"/>.</returns>
         private bool CanExecuteAuthenticatedAction()
         {
             return _authService.IsAuthenticated;
         }
 
-        /// @brief Handles authentication state changes
-        /// @param sender The event sender
-        /// @param isAuthenticated Whether the user is authenticated
-        /// @details Updates command can-execute states and logs authentication information
+        /// <summary>
+        /// Handles the <see cref="IAuthenticationService.AuthenticationStateChanged"/> event by
+        /// notifying all guarded commands to re-evaluate their can-execute state.
+        /// </summary>
+        /// <param name="sender">The object that raised the event.</param>
+        /// <param name="isAuthenticated">
+        /// <see langword="true"/> if the user has just authenticated; <see langword="false"/> if they
+        /// have logged out.
+        /// </param>
         private void OnAuthenticationStateChanged(object? sender, bool isAuthenticated)
         {
             LogoutCommand.NotifyCanExecuteChanged();
@@ -65,25 +71,28 @@ namespace RentalApp.ViewModels
             NavigateToSettingsCommand.NotifyCanExecuteChanged();
         }
 
-        /// @brief Navigates to the current user's profile page
-        /// @return A task representing the asynchronous navigation operation
+        /// <summary>
+        /// Navigates to the current user's profile page.
+        /// </summary>
         [RelayCommand]
         private async Task NavigateToProfileAsync()
         {
             await _navigationService.NavigateToAsync("TempPage");
         }
 
-        /// @brief Navigates to the current user's settings page
-        /// @return A task representing the asynchronous navigation operation
+        /// <summary>
+        /// Navigates to the application settings page.
+        /// </summary>
         [RelayCommand]
         private async Task NavigateToSettingsAsync()
         {
             await _navigationService.NavigateToAsync("TempPage");
         }
 
-        /// @brief Logs out the current user and navigates to login page
-        /// @details Relay command that can only be executed by authenticated users
-        /// @return A task representing the asynchronous logout operation
+        /// <summary>
+        /// Logs out the current user and navigates back to the login page.
+        /// This command can only execute when a user is authenticated.
+        /// </summary>
         [RelayCommand(CanExecute = nameof(CanExecuteAuthenticatedAction))]
         private async Task LogoutAsync()
         {

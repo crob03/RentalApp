@@ -1,7 +1,3 @@
-/// @file RegisterViewModel.cs
-/// @brief User registration view model
-/// @author RentalApp Development Team
-/// @date 2025
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,59 +5,64 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the user registration page
-/// @details Manages user registration form data, validation, and registration process
-/// @extends BaseViewModel
+/// <summary>
+/// View model for the registration page. Manages the registration form fields, validates all
+/// inputs, and delegates account creation to <see cref="IAuthenticationService"/>.
+/// </summary>
 public partial class RegisterViewModel : BaseViewModel
 {
-    /// @brief Authentication service for managing user registration
     private readonly IAuthenticationService _authService;
-
-    /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
-    /// @brief The user's first name
-    /// @details Observable property bound to the first name input field
+    /// <summary>
+    /// The user's first name.
+    /// </summary>
     [ObservableProperty]
     private string firstName = string.Empty;
 
-    /// @brief The user's last name
-    /// @details Observable property bound to the last name input field
+    /// <summary>
+    /// The user's last name.
+    /// </summary>
     [ObservableProperty]
     private string lastName = string.Empty;
 
-    /// @brief The user's email address
-    /// @details Observable property bound to the email input field
+    /// <summary>
+    /// The user's email address.
+    /// </summary>
     [ObservableProperty]
     private string email = string.Empty;
 
-    /// @brief The user's password
-    /// @details Observable property bound to the password input field
+    /// <summary>
+    /// The password chosen by the user.
+    /// </summary>
     [ObservableProperty]
     private string password = string.Empty;
 
-    /// @brief Confirmation of the user's password
-    /// @details Observable property bound to the confirm password input field
+    /// <summary>
+    /// Confirmation of the password; must match <see cref="Password"/> for validation to pass.
+    /// </summary>
     [ObservableProperty]
     private string confirmPassword = string.Empty;
 
-    /// @brief Whether the user accepts the terms and conditions
-    /// @details Observable property bound to the terms acceptance checkbox
+    /// <summary>
+    /// Whether the user has accepted the terms and conditions.
+    /// </summary>
     [ObservableProperty]
     private bool acceptTerms;
 
-    /// @brief Default constructor for design-time support
-    /// @details Sets the title to "Register"
+    /// <summary>
+    /// Initialises a new instance of <see cref="RegisterViewModel"/> for design-time support.
+    /// </summary>
     public RegisterViewModel()
     {
-        // Default constructor for design time support
         Title = "Register";
     }
 
-    /// @brief Initializes a new instance of the RegisterViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services and initializes the title
+    /// <summary>
+    /// Initialises a new instance of <see cref="RegisterViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="authService">The authentication service used to create the new account.</param>
+    /// <param name="navigationService">The navigation service used to transition between pages.</param>
     public RegisterViewModel(
         IAuthenticationService authService,
         INavigationService navigationService
@@ -72,9 +73,10 @@ public partial class RegisterViewModel : BaseViewModel
         Title = "Register";
     }
 
-    /// @brief Registers a new user account
-    /// @details Relay command that validates form data and attempts to register the user
-    /// @return A task representing the asynchronous registration operation
+    /// <summary>
+    /// Validates the registration form and creates a new user account.
+    /// Navigates back to the login page on success, or surfaces an error message on failure.
+    /// </summary>
     [RelayCommand]
     private async Task RegisterAsync()
     {
@@ -110,18 +112,23 @@ public partial class RegisterViewModel : BaseViewModel
         }
     }
 
-    /// @brief Navigates back to the login page
-    /// @details Relay command that returns to the login page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates back to the login page without registering.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateBackToLoginAsync()
     {
         await _navigationService.NavigateBackAsync();
     }
 
-    /// @brief Validates the registration form data
-    /// @return True if validation passes, false otherwise
-    /// @details Checks all registration requirements and sets appropriate error messages
+    /// <summary>
+    /// Validates all registration form fields and sets an appropriate error message if any
+    /// check fails.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> if all fields are valid and registration may proceed;
+    /// otherwise <see langword="false"/>.
+    /// </returns>
     private bool ValidateForm()
     {
         if (string.IsNullOrWhiteSpace(FirstName))
@@ -200,14 +207,24 @@ public partial class RegisterViewModel : BaseViewModel
         RegexOptions.IgnoreCase | RegexOptions.Compiled
     );
 
-    // Ensures password contains atleast one uppercase letter,
+    // Ensures password contains at least one uppercase letter,
     // one lowercase letter, one number, and one special character
     private static readonly Regex PasswordRegex = new(
         @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$",
         RegexOptions.Compiled
     );
 
+    /// <summary>
+    /// Returns <see langword="true"/> if <paramref name="email"/> matches a basic
+    /// <c>local@domain.tld</c> format.
+    /// </summary>
+    /// <param name="email">The email address to validate.</param>
     private static bool IsValidEmail(string email) => EmailRegex.IsMatch(email);
 
+    /// <summary>
+    /// Returns <see langword="true"/> if <paramref name="password"/> contains at least one
+    /// uppercase letter, one lowercase letter, one digit, and one special character.
+    /// </summary>
+    /// <param name="password">The password to validate.</param>
     private static bool IsValidPassword(string password) => PasswordRegex.IsMatch(password);
 }

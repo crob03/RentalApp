@@ -4,6 +4,11 @@ using System.Net.Http.Json;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// A <see cref="DelegatingHandler"/> that attaches the current bearer token to outgoing requests
+/// and transparently retries a request once after refreshing the token when a 401 Unauthorized
+/// response is received.
+/// </summary>
 public class AuthRefreshHandler : DelegatingHandler
 {
     private static readonly HttpRequestOptionsKey<bool> IsRetryKey = new("IsRetry");
@@ -13,6 +18,13 @@ public class AuthRefreshHandler : DelegatingHandler
     private readonly INavigationService _navigationService;
     private readonly Uri _baseAddress;
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="AuthRefreshHandler"/>.
+    /// </summary>
+    /// <param name="tokenState">The shared token state providing the current bearer token.</param>
+    /// <param name="credentialStore">The credential store used to retrieve saved credentials for token refresh.</param>
+    /// <param name="navigationService">The navigation service used to redirect to login when a refresh fails.</param>
+    /// <param name="baseAddress">The base URI of the API, used when constructing the token refresh request.</param>
     public AuthRefreshHandler(
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
@@ -26,6 +38,11 @@ public class AuthRefreshHandler : DelegatingHandler
         _baseAddress = baseAddress;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Attaches the current bearer token if present, sends the request, then attempts a single
+    /// token refresh and retry if a 401 is returned.
+    /// </remarks>
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken
@@ -53,6 +70,17 @@ public class AuthRefreshHandler : DelegatingHandler
         return response;
     }
 
+    /// <summary>
+    /// Attempts to refresh the bearer token using stored credentials and retries the original
+    /// request. Navigates to the root login route if no credentials are stored or if the
+    /// refresh request fails.
+    /// </summary>
+    /// <param name="originalRequest">The request that received a 401 response.</param>
+    /// <param name="unauthorizedResponse">The original 401 response, returned as a fallback.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// The response from the retried request, or the original 401 response if the refresh failed.
+    /// </returns>
     private async Task<HttpResponseMessage> HandleUnauthorizedAsync(
         HttpRequestMessage originalRequest,
         HttpResponseMessage unauthorizedResponse,
@@ -61,7 +89,6 @@ public class AuthRefreshHandler : DelegatingHandler
     {
         var credentials = await _credentialStore.GetAsync();
 
-        // If no stored credentials, return to login
         if (credentials == null)
         {
             await _navigationService.NavigateToRootAsync();
@@ -80,7 +107,6 @@ public class AuthRefreshHandler : DelegatingHandler
 
         var tokenResponse = await base.SendAsync(tokenRequest, cancellationToken);
 
-        // If token refresh fails, return to login
         if (!tokenResponse.IsSuccessStatusCode)
         {
             await _navigationService.NavigateToRootAsync();
@@ -97,6 +123,12 @@ public class AuthRefreshHandler : DelegatingHandler
         return await base.SendAsync(retryRequest, cancellationToken);
     }
 
+    /// <summary>
+    /// Creates a deep copy of <paramref name="original"/>, preserving all headers
+    /// and the request body so the request can be retried.
+    /// </summary>
+    /// <param name="original">The request to clone.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     private async Task<HttpRequestMessage> CloneRequestAsync(
         HttpRequestMessage original,
         CancellationToken cancellationToken
@@ -104,7 +136,7 @@ public class AuthRefreshHandler : DelegatingHandler
     {
         var clone = new HttpRequestMessage(original.Method, original.RequestUri);
 
-        foreach (var header in original.Headers.Where(h => h.Key != "Authorization"))
+        foreach (var header in original.Headers)
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
         if (original.Content != null)

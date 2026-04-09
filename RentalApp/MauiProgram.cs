@@ -6,8 +6,18 @@ using RentalApp.Views;
 
 namespace RentalApp;
 
+/// <summary>
+/// Entry point for the MAUI application. Configures the dependency injection container,
+/// registers all services, view models, and pages, and builds the <see cref="MauiApp"/>.
+/// </summary>
 public static class MauiProgram
 {
+    /// <summary>
+    /// Creates and configures the <see cref="MauiApp"/> instance.
+    /// Toggles between <see cref="ApiAuthenticationService"/> and
+    /// <see cref="LocalAuthenticationService"/> via the <c>useSharedApi</c> flag.
+    /// </summary>
+    /// <returns>The configured <see cref="MauiApp"/>.</returns>
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();

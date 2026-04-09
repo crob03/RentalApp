@@ -1,9 +1,13 @@
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Implements <see cref="IAuthenticationService"/> by communicating with a remote REST API.
+/// Tokens are stored in <see cref="AuthTokenState"/> and attached to outgoing requests by
+/// <see cref="AuthRefreshHandler"/>.
+/// </summary>
 public class ApiAuthenticationService : IAuthenticationService
 {
     private readonly HttpClient _httpClient;
@@ -11,11 +15,21 @@ public class ApiAuthenticationService : IAuthenticationService
     private readonly ICredentialStore _credentialStore;
     private User? _currentUser;
 
+    /// <inheritdoc/>
     public event EventHandler<bool>? AuthenticationStateChanged;
 
+    /// <inheritdoc/>
     public bool IsAuthenticated => _currentUser != null;
+
+    /// <inheritdoc/>
     public User? CurrentUser => _currentUser;
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="ApiAuthenticationService"/>.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client used to communicate with the API.</param>
+    /// <param name="tokenState">The shared token state updated on login and cleared on logout.</param>
+    /// <param name="credentialStore">The credential store used to persist credentials when remember-me is enabled.</param>
     public ApiAuthenticationService(
         HttpClient httpClient,
         AuthTokenState tokenState,
@@ -27,6 +41,11 @@ public class ApiAuthenticationService : IAuthenticationService
         _credentialStore = credentialStore;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Posts credentials to <c>auth/token</c>, stores the returned bearer token, then fetches
+    /// the user profile from <c>users/me</c> to populate <see cref="CurrentUser"/>.
+    /// </remarks>
     public async Task<AuthenticationResult> LoginAsync(
         string email,
         string password,
@@ -73,6 +92,11 @@ public class ApiAuthenticationService : IAuthenticationService
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Posts the registration payload to <c>auth/register</c>. The user must log in separately
+    /// after a successful registration.
+    /// </remarks>
     public async Task<AuthenticationResult> RegisterAsync(
         string firstName,
         string lastName,
@@ -107,6 +131,7 @@ public class ApiAuthenticationService : IAuthenticationService
         }
     }
 
+    /// <inheritdoc/>
     public async Task LogoutAsync()
     {
         _currentUser = null;

@@ -1,16 +1,22 @@
 namespace RentalApp.Services;
 
+/// <summary>
+/// Implements <see cref="ICredentialStore"/> using MAUI's <see cref="SecureStorage"/> to
+/// encrypt credentials on the device keychain/keystore.
+/// </summary>
 public class SecureCredentialStore : ICredentialStore
 {
     private const string EmailKey = "auth_email";
     private const string PasswordKey = "auth_password";
 
+    /// <inheritdoc/>
     public async Task SaveAsync(string email, string password)
     {
         await SecureStorage.Default.SetAsync(EmailKey, email);
         await SecureStorage.Default.SetAsync(PasswordKey, password);
     }
 
+    /// <inheritdoc/>
     public async Task<(string Email, string Password)?> GetAsync()
     {
         var email = await SecureStorage.Default.GetAsync(EmailKey);
@@ -22,6 +28,7 @@ public class SecureCredentialStore : ICredentialStore
         return (email, password);
     }
 
+    /// <inheritdoc/>
     public Task ClearAsync()
     {
         SecureStorage.Default.Remove(EmailKey);

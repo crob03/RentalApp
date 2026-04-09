@@ -1,17 +1,38 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Database.Data;
 
+/// <summary>
+/// The Entity Framework Core database context for the application.
+/// Manages the <see cref="Users"/> set and configures the PostgreSQL connection string,
+/// falling back from the <c>CONNECTION_STRING</c> environment variable to the embedded
+/// <c>appsettings.json</c> when the variable is not set.
+/// </summary>
 public class AppDbContext : DbContext
 {
+    /// <summary>
+    /// Initialises a new instance of <see cref="AppDbContext"/> using convention-based configuration.
+    /// Used by the design-time factory and <c>dotnet ef</c> tooling.
+    /// </summary>
     public AppDbContext() { }
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="AppDbContext"/> with explicitly provided options.
+    /// Used when the context is resolved from the dependency injection container at runtime.
+    /// </summary>
+    /// <param name="options">The options to configure the context.</param>
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Skipped when the context has already been configured (e.g. via DI). Otherwise reads the
+    /// connection string from the <c>CONNECTION_STRING</c> environment variable, falling back to
+    /// the <c>DevelopmentConnection</c> entry in the embedded <c>appsettings.json</c>.
+    /// </remarks>
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (optionsBuilder.IsConfigured)
@@ -35,8 +56,12 @@ public class AppDbContext : DbContext
         );
     }
 
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="User"/> entity.
+    /// </summary>
     public DbSet<User> Users { get; set; }
 
+    /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
