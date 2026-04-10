@@ -18,11 +18,12 @@ public partial class LoginPage : ContentPage
     }
 
     /// <summary>
-    /// Focuses the email entry field when the page becomes visible.
+    /// Restores saved credentials into the form and focuses the email entry field.
     /// </summary>
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await ((LoginViewModel)BindingContext).InitializeAsync();
         EmailEntry.Focus();
     }
 }

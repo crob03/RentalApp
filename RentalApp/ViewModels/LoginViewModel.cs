@@ -13,6 +13,7 @@ public partial class LoginViewModel : BaseViewModel
 {
     private readonly IAuthenticationService _authService;
     private readonly INavigationService _navigationService;
+    private readonly ICredentialStore _credentialStore;
 
     /// <summary>
     /// The email address entered by the user.
@@ -45,11 +46,32 @@ public partial class LoginViewModel : BaseViewModel
     /// </summary>
     /// <param name="authService">The authentication service used to perform login.</param>
     /// <param name="navigationService">The navigation service used to transition between pages.</param>
-    public LoginViewModel(IAuthenticationService authService, INavigationService navigationService)
+    /// <param name="credentialStore">The credential store used to restore saved credentials on page load.</param>
+    public LoginViewModel(
+        IAuthenticationService authService,
+        INavigationService navigationService,
+        ICredentialStore credentialStore
+    )
     {
         _authService = authService;
         _navigationService = navigationService;
+        _credentialStore = credentialStore;
         Title = "Login";
+    }
+
+    /// <summary>
+    /// Populates the email, password, and remember-me fields from the credential store, if saved
+    /// credentials exist. Called each time the login page appears.
+    /// </summary>
+    public async Task InitializeAsync()
+    {
+        var credentials = await _credentialStore.GetAsync();
+        if (credentials is null)
+            return;
+
+        Email = credentials.Value.Email;
+        Password = credentials.Value.Password;
+        RememberMe = true;
     }
 
     /// <inheritdoc/>
