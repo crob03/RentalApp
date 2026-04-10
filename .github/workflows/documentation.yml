@@ -1,4 +1,4 @@
- name: Documentation 
+ name: Documentation
 
  on:
    push:
@@ -6,22 +6,22 @@
 
  jobs:
     generate:
-      runs-on: ubuntu-latest 
+      runs-on: ubuntu-latest
 
       steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Doxygen
-        run: sudo apt-get install doxygen
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
 
-      - name: Generate Doxygen Documentation
-        run: doxygen Doxyfile
+      - name: Generate DocFX Documentation
+        run: docfx docfx.json
 
       - name: Upload static files as artifact
-        uses: actions/upload-pages-artifact@v3 
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/html
+          path: _site
         
     deploy:
       needs: generate

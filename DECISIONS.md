@@ -16,6 +16,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 5 | 2026-04-03 | UX / Auth | Auto-login the user immediately after successful registration *(superseded by Decision 6)* |
 | 6 | 2026-04-05 | Auth | Token refresh via `DelegatingHandler` using credentials stored in `SecureStorage`; Remember Me controls persistence; auto-login on startup |
 | 7 | 2026-04-05 | Architecture / MVVM | Use `OnAppearing` in code-behind to trigger ViewModel initialisation for startup routing |
+| 8 | 2026-04-10 | Tooling | Use DocFX for API documentation generation |
 
 ---
 
@@ -117,3 +118,16 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **`Shell.Current.Navigating` / `Navigated` events** — places navigation lifecycle handling in the ViewModel directly, but requires the ViewModel to subscribe to and unsubscribe from Shell events, coupling it to the Shell infrastructure.
 
 **Rationale**: `OnAppearing` calling a ViewModel method is a widely accepted MVVM compromise in MAUI — used in Microsoft's own MAUI samples — because there is no framework-provided async lifecycle hook that feeds into the ViewModel cleanly. Provided the code-behind only delegates and contains no logic, the separation of concerns is preserved. All service calls, navigation decisions, and state mutations remain in the ViewModel and are independently testable.
+
+---
+
+### Decision 8: Use DocFX for API Documentation
+**Date**: 2026-04-10
+**Area**: Tooling
+
+**Decision**: Use [DocFX](https://dotnet.github.io/docfx/) for API documentation generation, configured via `docfx.json` and published to GitHub Pages via the documentation workflow.
+
+**Alternatives considered**:
+- **Doxygen** — broad multi-language support but no native understanding of C# XML doc comments; `<summary>`, `<param>`, `<returns>`, and `<see cref="..."/>` are not parsed as structured content.
+
+**Rationale**: DocFX is purpose-built for .NET. It uses Roslyn to analyse C# source, meaning XML doc comments are rendered as structured API documentation — cross-references, parameter tables, return types, and inheritance hierarchies are all resolved correctly. As a .NET global tool it requires no additional CI dependencies beyond the .NET SDK already present on the runner.
