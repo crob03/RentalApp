@@ -27,13 +27,6 @@ public partial class MainViewModel : BaseViewModel
     private string welcomeMessage = string.Empty;
 
     /// <summary>
-    /// Indicates whether the current user has administrator privileges.
-    /// Used to control the visibility of admin-only UI elements.
-    /// </summary>
-    [ObservableProperty]
-    private bool isAdmin;
-
-    /// <summary>
     /// Initialises a new instance of <see cref="MainViewModel"/> for design-time support.
     /// </summary>
     public MainViewModel()
@@ -107,26 +100,6 @@ public partial class MainViewModel : BaseViewModel
     private async Task NavigateToSettingsAsync()
     {
         await _navigationService.NavigateToAsync("TempPage");
-    }
-
-    /// <summary>
-    /// Navigates to the user management page. Restricted to administrators; shows an access
-    /// denied alert if the current user does not have the admin role.
-    /// </summary>
-    [RelayCommand]
-    private async Task NavigateToUserListAsync()
-    {
-        if (!IsAdmin)
-        {
-            await Application.Current.MainPage.DisplayAlert(
-                "Access Denied",
-                "You don't have permission to access admin features.",
-                "OK"
-            );
-            return;
-        }
-
-        await _navigationService.NavigateToAsync("UserListPage");
     }
 
     /// <summary>
