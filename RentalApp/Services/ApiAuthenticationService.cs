@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Services;
@@ -10,9 +11,10 @@ namespace RentalApp.Services;
 /// </summary>
 public class ApiAuthenticationService : IAuthenticationService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IApiClient _apiClient;
     private readonly AuthTokenState _tokenState;
     private readonly ICredentialStore _credentialStore;
+    private readonly ILogger<ApiAuthenticationService> _logger;
     private User? _currentUser;
 
     /// <inheritdoc/>
@@ -27,18 +29,21 @@ public class ApiAuthenticationService : IAuthenticationService
     /// <summary>
     /// Initialises a new instance of <see cref="ApiAuthenticationService"/>.
     /// </summary>
-    /// <param name="httpClient">The HTTP client used to communicate with the API.</param>
+    /// <param name="apiClient">The API client used to communicate with the API.</param>
     /// <param name="tokenState">The shared token state updated on login and cleared on logout.</param>
     /// <param name="credentialStore">The credential store used to persist credentials when remember-me is enabled.</param>
+    /// <param name="logger">The logger for this service.</param>
     public ApiAuthenticationService(
-        HttpClient httpClient,
+        IApiClient apiClient,
         AuthTokenState tokenState,
-        ICredentialStore credentialStore
+        ICredentialStore credentialStore,
+        ILogger<ApiAuthenticationService> logger
     )
     {
-        _httpClient = httpClient;
+        _apiClient = apiClient;
         _tokenState = tokenState;
         _credentialStore = credentialStore;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -54,12 +59,14 @@ public class ApiAuthenticationService : IAuthenticationService
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("auth/token", new { email, password });
+            var response = await _apiClient.PostAsJsonAsync("auth/token", new { email, password });
 
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                return AuthenticationResult.Failure(error?.Message ?? "Login failed");
+                var message = error?.Message ?? "Login failed";
+                _logger.LogWarning("Login failed for {Email}: {Message}", email, message);
+                return AuthenticationResult.Failure(message);
             }
 
             var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
@@ -68,9 +75,16 @@ public class ApiAuthenticationService : IAuthenticationService
             if (rememberMe)
                 await _credentialStore.SaveAsync(email, password);
 
-            var meResponse = await _httpClient.GetAsync("users/me");
+            var meResponse = await _apiClient.GetAsync("users/me");
             if (!meResponse.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Failed to retrieve user profile after login for {Email} (status {StatusCode})",
+                    email,
+                    meResponse.StatusCode
+                );
                 return AuthenticationResult.Failure("Failed to retrieve user profile");
+            }
 
             var profile = await meResponse.Content.ReadFromJsonAsync<UserProfileResponse>();
 
@@ -84,10 +98,11 @@ public class ApiAuthenticationService : IAuthenticationService
             };
 
             AuthenticationStateChanged?.Invoke(this, true);
-            return AuthenticationResult.Success(_currentUser);
+            return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Unexpected error during login for {Email}", email);
             return AuthenticationResult.Failure($"Login failed: {ex.Message}");
         }
     }
@@ -106,7 +121,7 @@ public class ApiAuthenticationService : IAuthenticationService
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await _apiClient.PostAsJsonAsync(
                 "auth/register",
                 new
                 {
@@ -120,13 +135,16 @@ public class ApiAuthenticationService : IAuthenticationService
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
-                return AuthenticationResult.Failure(error?.Message ?? "Registration failed");
+                var message = error?.Message ?? "Registration failed";
+                _logger.LogWarning("Registration failed for {Email}: {Message}", email, message);
+                return AuthenticationResult.Failure(message);
             }
 
             return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Unexpected error during registration for {Email}", email);
             return AuthenticationResult.Failure($"Registration failed: {ex.Message}");
         }
     }

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace RentalApp.Services;
 
@@ -15,27 +16,27 @@ public class AuthRefreshHandler : DelegatingHandler
 
     private readonly AuthTokenState _tokenState;
     private readonly ICredentialStore _credentialStore;
-    private readonly INavigationService _navigationService;
     private readonly Uri _baseAddress;
+    private readonly ILogger<AuthRefreshHandler> _logger;
 
     /// <summary>
     /// Initialises a new instance of <see cref="AuthRefreshHandler"/>.
     /// </summary>
     /// <param name="tokenState">The shared token state providing the current bearer token.</param>
     /// <param name="credentialStore">The credential store used to retrieve saved credentials for token refresh.</param>
-    /// <param name="navigationService">The navigation service used to redirect to login when a refresh fails.</param>
     /// <param name="baseAddress">The base URI of the API, used when constructing the token refresh request.</param>
+    /// <param name="logger">The logger for this handler.</param>
     public AuthRefreshHandler(
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
-        INavigationService navigationService,
-        Uri baseAddress
+        Uri baseAddress,
+        ILogger<AuthRefreshHandler> logger
     )
     {
         _tokenState = tokenState;
         _credentialStore = credentialStore;
-        _navigationService = navigationService;
         _baseAddress = baseAddress;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -64,7 +65,7 @@ public class AuthRefreshHandler : DelegatingHandler
         {
             request.Options.TryGetValue(IsRetryKey, out var isRetry);
             if (!isRetry)
-                response = await HandleUnauthorizedAsync(request, response, cancellationToken);
+                response = await HandleUnauthorizedAsync(request, cancellationToken);
         }
 
         return response;
@@ -72,18 +73,17 @@ public class AuthRefreshHandler : DelegatingHandler
 
     /// <summary>
     /// Attempts to refresh the bearer token using stored credentials and retries the original
-    /// request. Navigates to the root login route if no credentials are stored or if the
-    /// refresh request fails.
+    /// request. Throws <see cref="AuthenticationExpiredException"/> if no credentials are stored
+    /// or if the refresh request fails.
     /// </summary>
     /// <param name="originalRequest">The request that received a 401 response.</param>
-    /// <param name="unauthorizedResponse">The original 401 response, returned as a fallback.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>
-    /// The response from the retried request, or the original 401 response if the refresh failed.
-    /// </returns>
+    /// <returns>The response from the retried request.</returns>
+    /// <exception cref="AuthenticationExpiredException">
+    /// Thrown when the session cannot be recovered. Caught by <see cref="ApiClient"/>.
+    /// </exception>
     private async Task<HttpResponseMessage> HandleUnauthorizedAsync(
         HttpRequestMessage originalRequest,
-        HttpResponseMessage unauthorizedResponse,
         CancellationToken cancellationToken
     )
     {
@@ -91,8 +91,10 @@ public class AuthRefreshHandler : DelegatingHandler
 
         if (credentials == null)
         {
-            await _navigationService.NavigateToRootAsync();
-            return unauthorizedResponse;
+            _logger.LogWarning(
+                "Token refresh failed: no stored credentials available, session expired"
+            );
+            throw new AuthenticationExpiredException();
         }
 
         var tokenRequest = new HttpRequestMessage(
@@ -109,8 +111,11 @@ public class AuthRefreshHandler : DelegatingHandler
 
         if (!tokenResponse.IsSuccessStatusCode)
         {
-            await _navigationService.NavigateToRootAsync();
-            return unauthorizedResponse;
+            _logger.LogWarning(
+                "Token refresh failed with status {StatusCode}, session expired",
+                tokenResponse.StatusCode
+            );
+            throw new AuthenticationExpiredException();
         }
 
         var token = await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken);

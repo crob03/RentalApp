@@ -41,8 +41,8 @@ public static class MauiProgram
             builder.Services.AddSingleton(sp => new AuthRefreshHandler(
                 sp.GetRequiredService<AuthTokenState>(),
                 sp.GetRequiredService<ICredentialStore>(),
-                sp.GetRequiredService<INavigationService>(),
-                baseAddress
+                baseAddress,
+                sp.GetRequiredService<ILogger<AuthRefreshHandler>>()
             )
             {
                 InnerHandler = new HttpClientHandler(),
@@ -53,6 +53,10 @@ public static class MauiProgram
             {
                 BaseAddress = baseAddress,
             });
+            builder.Services.AddSingleton<IApiClient>(sp => new ApiClient(
+                sp.GetRequiredService<HttpClient>(),
+                sp.GetRequiredService<INavigationService>()
+            ));
             builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
         }
         else
