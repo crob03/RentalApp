@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels
@@ -13,12 +14,6 @@ namespace RentalApp.ViewModels
     {
         private readonly IAuthenticationService _authService;
         private readonly INavigationService _navigationService;
-
-        /// <summary>
-        /// Gets the collection of dynamic menu bar items that can be modified at runtime
-        /// based on user permissions or application state.
-        /// </summary>
-        public ObservableCollection<MenuBarItem> DynamicMenuBarItems { get; } = new();
 
         /// <summary>
         /// Initialises a new instance of <see cref="AppShellViewModel"/> for design-time support.
@@ -77,7 +72,7 @@ namespace RentalApp.ViewModels
         [RelayCommand]
         private async Task NavigateToProfileAsync()
         {
-            await _navigationService.NavigateToAsync("TempPage");
+            await _navigationService.NavigateToAsync(Routes.Temp);
         }
 
         /// <summary>
@@ -86,7 +81,7 @@ namespace RentalApp.ViewModels
         [RelayCommand]
         private async Task NavigateToSettingsAsync()
         {
-            await _navigationService.NavigateToAsync("TempPage");
+            await _navigationService.NavigateToAsync(Routes.Temp);
         }
 
         /// <summary>
@@ -97,7 +92,7 @@ namespace RentalApp.ViewModels
         private async Task LogoutAsync()
         {
             await _authService.LogoutAsync();
-            await _navigationService.NavigateToAsync("LoginPage");
+            await _navigationService.NavigateToAsync(Routes.LoginPage);
 
             LogoutCommand.NotifyCanExecuteChanged();
             NavigateToProfileCommand.NotifyCanExecuteChanged();

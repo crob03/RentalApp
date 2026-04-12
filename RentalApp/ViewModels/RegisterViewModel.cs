@@ -86,30 +86,21 @@ public partial class RegisterViewModel : BaseViewModel
         if (!ValidateForm())
             return;
 
-        try
-        {
-            IsBusy = true;
-            ClearError();
+        IsBusy = true;
+        ClearError();
 
-            var result = await _authService.RegisterAsync(FirstName, LastName, Email, Password);
+        var result = await _authService.RegisterAsync(FirstName, LastName, Email, Password);
 
-            if (result.IsSuccess)
-            {
-                await _navigationService.NavigateBackAsync();
-            }
-            else
-            {
-                SetError(result.ErrorMessage);
-            }
-        }
-        catch (Exception ex)
+        if (result.IsSuccess)
         {
-            SetError($"Registration failed: {ex.Message}");
+            await _navigationService.NavigateBackAsync();
         }
-        finally
+        else
         {
-            IsBusy = false;
+            SetError(result.ErrorMessage);
         }
+
+        IsBusy = false;
     }
 
     /// <summary>

@@ -24,11 +24,6 @@ public interface INavigationService
     Task NavigateBackAsync();
 
     /// <summary>
-    /// Navigates to the application root route (<c>//login</c>), clearing the navigation stack.
-    /// </summary>
-    Task NavigateToRootAsync();
-
-    /// <summary>
     /// Pops all pages above the root from the navigation stack.
     /// </summary>
     Task PopToRootAsync();

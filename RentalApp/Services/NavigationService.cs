@@ -25,12 +25,6 @@ public class NavigationService : INavigationService
     }
 
     /// <inheritdoc/>
-    public async Task NavigateToRootAsync()
-    {
-        await Shell.Current.GoToAsync("//login");
-    }
-
-    /// <inheritdoc/>
     public async Task PopToRootAsync()
     {
         await Shell.Current.Navigation.PopToRootAsync();

@@ -1,3 +1,4 @@
+using RentalApp.Constants;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -41,7 +42,7 @@ public class LoadingViewModel : BaseViewModel
 
         if (credentials is null)
         {
-            await _navigationService.NavigateToRootAsync();
+            await _navigationService.NavigateToAsync(Routes.Login);
             return;
         }
 
@@ -53,6 +54,6 @@ public class LoadingViewModel : BaseViewModel
         if (result.IsSuccess)
             await _navigationService.NavigateToAsync("MainPage");
         else
-            await _navigationService.NavigateToRootAsync();
+            await _navigationService.NavigateToAsync(Routes.Login);
     }
 }

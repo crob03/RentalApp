@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -9,7 +10,7 @@ namespace RentalApp.ViewModels;
 /// View model for the login page. Manages the login form fields, input validation,
 /// and delegates authentication to <see cref="IAuthenticationService"/>.
 /// </summary>
-public partial class LoginViewModel : BaseViewModel
+public partial class LoginViewModel : BaseViewModel, IQueryAttributable
 {
     private readonly IAuthenticationService _authService;
     private readonly INavigationService _navigationService;
@@ -74,6 +75,19 @@ public partial class LoginViewModel : BaseViewModel
         RememberMe = true;
     }
 
+    /// <summary>
+    /// Receives navigation query parameters. Sets a session-expired error when redirected here
+    /// by <see cref="ApiClient"/> after a token refresh failure; clears any stale error otherwise.
+    /// </summary>
+    /// <param name="query">The query parameters passed by the navigation system.</param>
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("sessionExpired", out var value) && value is true)
+            SetError("Your session has expired. Please log in again.");
+        else
+            ClearError();
+    }
+
     /// <inheritdoc/>
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -100,30 +114,21 @@ public partial class LoginViewModel : BaseViewModel
             return;
         }
 
-        try
-        {
-            IsBusy = true;
-            ClearError();
+        IsBusy = true;
+        ClearError();
 
-            var result = await _authService.LoginAsync(Email, Password, RememberMe);
+        var result = await _authService.LoginAsync(Email, Password, RememberMe);
 
-            if (result.IsSuccess)
-            {
-                await _navigationService.NavigateToAsync("MainPage");
-            }
-            else
-            {
-                SetError(result.ErrorMessage);
-            }
-        }
-        catch (Exception ex)
+        if (result.IsSuccess)
         {
-            SetError($"Login failed: {ex.Message}");
+            await _navigationService.NavigateToAsync(Routes.Main);
         }
-        finally
+        else
         {
-            IsBusy = false;
+            SetError(result.ErrorMessage);
         }
+
+        IsBusy = false;
     }
 
     /// <summary>
@@ -132,6 +137,6 @@ public partial class LoginViewModel : BaseViewModel
     [RelayCommand]
     private async Task NavigateToRegisterAsync()
     {
-        await _navigationService.NavigateToAsync("RegisterPage");
+        await _navigationService.NavigateToAsync(Routes.Register);
     }
 }
