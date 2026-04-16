@@ -113,9 +113,6 @@ public partial class MainViewModel : BaseViewModel
         {
             IsBusy = true;
             LoadUserData();
-
-            // Simulate refresh delay
-            await Task.Delay(1000);
         }
         catch (Exception ex)
         {

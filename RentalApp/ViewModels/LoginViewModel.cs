@@ -105,9 +105,6 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
-        if (IsBusy)
-            return;
-
         if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
         {
             SetError("Please enter both email and password");

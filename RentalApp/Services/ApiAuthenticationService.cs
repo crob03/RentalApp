@@ -78,6 +78,8 @@ public class ApiAuthenticationService : IAuthenticationService
             var meResponse = await _apiClient.GetAsync("users/me");
             if (!meResponse.IsSuccessStatusCode)
             {
+                // Unset token if unable to retrieve user profile
+                _tokenState.CurrentToken = null;
                 _logger.LogWarning(
                     "Failed to retrieve user profile after login for {Email} (status {StatusCode})",
                     email,

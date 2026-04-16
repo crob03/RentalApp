@@ -40,11 +40,7 @@ public class ApiClient : IApiClient
         }
         catch (AuthenticationExpiredException)
         {
-            await _navigationService.NavigateToAsync(
-                Routes.Login,
-                new Dictionary<string, object> { ["sessionExpired"] = true }
-            );
-            return SessionExpiredResponse();
+            return await HandleSessionExpiredAsync();
         }
     }
 
@@ -61,12 +57,17 @@ public class ApiClient : IApiClient
         }
         catch (AuthenticationExpiredException)
         {
-            await _navigationService.NavigateToAsync(
-                Routes.Login,
-                new Dictionary<string, object> { ["sessionExpired"] = true }
-            );
-            return SessionExpiredResponse();
+            return await HandleSessionExpiredAsync();
         }
+    }
+
+    private async Task<HttpResponseMessage> HandleSessionExpiredAsync()
+    {
+        await _navigationService.NavigateToAsync(
+            Routes.Login,
+            new Dictionary<string, object> { ["sessionExpired"] = true }
+        );
+        return SessionExpiredResponse();
     }
 
     /// <summary>
