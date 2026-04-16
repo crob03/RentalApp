@@ -39,16 +39,23 @@ dotnet ef database update --project RentalApp.Migrations
 dotnet ef migrations add <MigrationName> --project RentalApp.Migrations
 ```
 
+### Switch API target (Android device/emulator)
+```bash
+make use-remote-api   # Point app at remote API (default)
+make use-local-api    # Point app at LocalAuthenticationService
+```
+Writes Android SharedPreferences via `adb` and restarts the app — no rebuild required.
+
 ## Architecture
 
 Three projects in the solution:
 
 ### RentalApp (MAUI UI)
-MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bound to ViewModels in `ViewModels/`. `BaseViewModel` provides `IsBusy`, `Title`, and `SetError(msg)`/`ClearError()` helpers — always use these for error state in ViewModels. Services in `Services/` handle authentication (`IAuthenticationService`) and navigation (`INavigationService`). Dependency injection is configured in `MauiProgram.cs`.
+MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bound to ViewModels in `ViewModels/`. `BaseViewModel` provides `IsBusy`, `Title`, and `SetError(msg)`/`ClearError()` helpers — always use these for error state in ViewModels. Services in `Services/` handle authentication (`IAuthenticationService`) and navigation (`INavigationService`). Dependency injection is configured in `MauiProgram.cs`. Static helpers (e.g. `RegistrationValidator`) live in `Helpers/` — pure, stateless utilities with no DI dependency.
 
 **DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). All other ViewModels and Pages are Transient.
 
-**Shell navigation**: Root route is `//login` (used by `NavigationService.NavigateToRootAsync()`). AppShell flyout is disabled — routing is entirely programmatic via `Shell.Current.GoToAsync(route)`.
+**Shell navigation**: Root route is `//login` (`Routes.Login`). AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`.
 
 ### RentalApp.Database (Data Access Layer)
 EntityFrameworkCore with Npgsql (PostgreSQL). `AppDbContext` manages the `User` entity. Connection string is read from the `CONNECTION_STRING` environment variable, falling back to embedded `appsettings.json` in the assembly. Passwords are hashed with BCrypt.
