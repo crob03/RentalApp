@@ -31,7 +31,7 @@ public static class MauiProgram
 
         builder.Services.AddSingleton<ICredentialStore, SecureCredentialStore>();
 
-        bool useSharedApi = false;
+        bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
 
         if (useSharedApi)
         {

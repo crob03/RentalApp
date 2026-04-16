@@ -17,6 +17,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 6 | 2026-04-05 | Auth | Token refresh via `DelegatingHandler` using credentials stored in `SecureStorage`; Remember Me controls persistence; auto-login on startup |
 | 7 | 2026-04-05 | Architecture / MVVM | Use `OnAppearing` in code-behind to trigger ViewModel initialisation for startup routing |
 | 8 | 2026-04-10 | Tooling | Use DocFX for API documentation generation |
+| 9 | 2026-04-16 | Tooling / Dev Workflow | Runtime API switching via Android SharedPreferences written through `adb shell run-as` |
 
 ---
 
@@ -131,3 +132,20 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Doxygen** — broad multi-language support but no native understanding of C# XML doc comments; `<summary>`, `<param>`, `<returns>`, and `<see cref="..."/>` are not parsed as structured content.
 
 **Rationale**: DocFX is purpose-built for .NET. It uses Roslyn to analyse C# source, meaning XML doc comments are rendered as structured API documentation — cross-references, parameter tables, return types, and inheritance hierarchies are all resolved correctly. As a .NET global tool it requires no additional CI dependencies beyond the .NET SDK already present on the runner.
+
+---
+
+### Decision 9: Runtime API Switching via adb SharedPreferences
+**Date**: 2026-04-16
+**Area**: Tooling / Dev Workflow
+
+**Decision**: Control the `useSharedApi` flag at runtime (without a rebuild) by reading it from Android SharedPreferences via `Preferences.Default.Get("UseSharedApi", true)` in `MauiProgram.cs`. Two Makefile targets — `use-remote-api` and `use-local-api` — write the preference directly to the app's SharedPreferences file via `adb shell run-as`, then force-stop and restart the app.
+
+**Alternatives considered**:
+- **Hardcoded `bool` in source** — requires a code edit and rebuild to switch. Simple and transparent but slow for iterating between the two API paths during development.
+- **`appsettings.json` (embedded resource)** — considered and rejected (Interaction 24): an embedded JSON file is compiled into the APK at build time, making it functionally identical to a hardcoded `bool`. Both require a rebuild to change.
+- **Intent extras via `adb shell am start -e`** — passes a flag at launch without persisting it. Requires platform-specific MAUI code in `MainActivity.OnCreate` to read the extra and make it available at the composition root. Not persisted across restarts. More complex for less benefit.
+
+**Rationale**: SharedPreferences is the only mechanism that is both writable without a rebuild (via `adb shell run-as` on debug builds) and persistent across app restarts. The `Preferences.Default` API is already part of MAUI and requires no additional dependencies. The Makefile targets encapsulate the `adb` command so the correct quoting and file path are not left to memory. Defaults to remote API (`true`) on a fresh install — no target needs to be run to use the primary path.
+
+**Note**: Requires a debug build and an installed APK. The `run-as` command is restricted to debug/debuggable packages on Android.
