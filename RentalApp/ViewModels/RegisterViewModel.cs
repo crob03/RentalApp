@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Helpers;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -112,110 +112,23 @@ public partial class RegisterViewModel : BaseViewModel
         await _navigationService.NavigateBackAsync();
     }
 
-    /// <summary>
-    /// Validates all registration form fields and sets an appropriate error message if any
-    /// check fails.
-    /// </summary>
-    /// <returns>
-    /// <see langword="true"/> if all fields are valid and registration may proceed;
-    /// otherwise <see langword="false"/>.
-    /// </returns>
     private bool ValidateForm()
     {
-        if (string.IsNullOrWhiteSpace(FirstName))
-        {
-            SetError("First name is required");
-            return false;
-        }
+        var error = RegistrationValidator.Validate(
+            FirstName,
+            LastName,
+            Email,
+            Password,
+            ConfirmPassword,
+            AcceptTerms
+        );
 
-        if (FirstName.Length > 50)
+        if (error is not null)
         {
-            SetError("First name must be 50 characters or fewer");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(LastName))
-        {
-            SetError("Last name is required");
-            return false;
-        }
-
-        if (LastName.Length > 50)
-        {
-            SetError("Last name must be 50 characters or fewer");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(Email))
-        {
-            SetError("Email is required");
-            return false;
-        }
-
-        if (!IsValidEmail(Email))
-        {
-            SetError("Please enter a valid email address");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(Password))
-        {
-            SetError("Password is required");
-            return false;
-        }
-
-        if (Password.Length < 8)
-        {
-            SetError("Password must be at least 8 characters long");
-            return false;
-        }
-
-        if (!IsValidPassword(Password))
-        {
-            SetError(
-                "Password must contain an uppercase letter, lowercase letter, number, and special character"
-            );
-            return false;
-        }
-
-        if (Password != ConfirmPassword)
-        {
-            SetError("Passwords do not match");
-            return false;
-        }
-
-        if (!AcceptTerms)
-        {
-            SetError("Please accept the terms and conditions");
+            SetError(error);
             return false;
         }
 
         return true;
     }
-
-    private static readonly Regex EmailRegex = new(
-        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled
-    );
-
-    // Ensures password contains at least one uppercase letter,
-    // one lowercase letter, one number, and one special character
-    private static readonly Regex PasswordRegex = new(
-        @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$",
-        RegexOptions.Compiled
-    );
-
-    /// <summary>
-    /// Returns <see langword="true"/> if <paramref name="email"/> matches a basic
-    /// <c>local@domain.tld</c> format.
-    /// </summary>
-    /// <param name="email">The email address to validate.</param>
-    private static bool IsValidEmail(string email) => EmailRegex.IsMatch(email);
-
-    /// <summary>
-    /// Returns <see langword="true"/> if <paramref name="password"/> contains at least one
-    /// uppercase letter, one lowercase letter, one digit, and one special character.
-    /// </summary>
-    /// <param name="password">The password to validate.</param>
-    private static bool IsValidPassword(string password) => PasswordRegex.IsMatch(password);
 }
