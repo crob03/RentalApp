@@ -1,4 +1,4 @@
-using RentalApp.Database.Models;
+using RentalApp.Models;
 
 namespace RentalApp.Services;
 
@@ -22,7 +22,7 @@ public interface IAuthenticationService
     /// <summary>
     /// Gets the currently authenticated user, or <see langword="null"/> if no user is logged in.
     /// </summary>
-    User? CurrentUser { get; }
+    UserProfile? CurrentUser { get; }
 
     /// <summary>
     /// Authenticates the user with the supplied credentials.
