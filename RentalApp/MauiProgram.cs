@@ -53,17 +53,21 @@ public static class MauiProgram
             {
                 BaseAddress = baseAddress,
             });
-            builder.Services.AddSingleton<IApiClient>(sp => new ApiClient(
-                sp.GetRequiredService<HttpClient>(),
-                sp.GetRequiredService<INavigationService>()
+            builder.Services.AddSingleton<IApiClient, ApiClient>();
+            builder.Services.AddSingleton<IApiService>(sp => new RemoteApiService(
+                sp.GetRequiredService<IApiClient>(),
+                sp.GetRequiredService<AuthTokenState>()
             ));
-            builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
         }
         else
         {
             builder.Services.AddDbContext<AppDbContext>();
-            builder.Services.AddSingleton<IAuthenticationService, LocalAuthenticationService>();
+            builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
+                sp.GetRequiredService<AppDbContext>()
+            ));
         }
+
+        builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
