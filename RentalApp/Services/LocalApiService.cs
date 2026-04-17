@@ -6,6 +6,9 @@ using DbUser = RentalApp.Database.Models.User;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// <see cref="IApiService"/> implementation backed by a local PostgreSQL database via EF Core.
+/// </summary>
 public class LocalApiService : IApiService
 {
     private readonly AppDbContext _context;

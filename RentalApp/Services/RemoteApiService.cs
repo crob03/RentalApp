@@ -3,6 +3,10 @@ using RentalApp.Models;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// <see cref="IApiService"/> implementation that communicates with the remote HTTP API.
+/// Bearer token authentication is handled internally via <see cref="AuthTokenState"/>.
+/// </summary>
 public class RemoteApiService : IApiService
 {
     private readonly IApiClient _apiClient;
