@@ -95,11 +95,22 @@ public class LocalApiService : IApiService
 
     public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();
 
-    public Task<Item> CreateItemAsync(CreateItemRequest request) =>
-        throw new NotImplementedException();
+    public Task<Item> CreateItemAsync(
+        string title,
+        string? description,
+        double dailyRate,
+        int categoryId,
+        double latitude,
+        double longitude
+    ) => throw new NotImplementedException();
 
-    public Task<Item> UpdateItemAsync(int id, UpdateItemRequest request) =>
-        throw new NotImplementedException();
+    public Task<Item> UpdateItemAsync(
+        int id,
+        string? title,
+        string? description,
+        double? dailyRate,
+        bool? isAvailable
+    ) => throw new NotImplementedException();
 
     public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
 

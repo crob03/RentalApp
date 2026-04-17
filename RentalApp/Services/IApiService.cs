@@ -20,8 +20,21 @@ public interface IApiService
         string? category = null
     );
     Task<Item> GetItemAsync(int id);
-    Task<Item> CreateItemAsync(CreateItemRequest request);
-    Task<Item> UpdateItemAsync(int id, UpdateItemRequest request);
+    Task<Item> CreateItemAsync(
+        string title,
+        string? description,
+        double dailyRate,
+        int categoryId,
+        double latitude,
+        double longitude
+    );
+    Task<Item> UpdateItemAsync(
+        int id,
+        string? title,
+        string? description,
+        double? dailyRate,
+        bool? isAvailable
+    );
 
     // Categories
     Task<List<Category>> GetCategoriesAsync();
