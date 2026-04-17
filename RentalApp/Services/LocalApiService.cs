@@ -1,15 +1,15 @@
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
-using RentalApp.Database.Models;
 using RentalApp.Models;
+using DbUser = RentalApp.Database.Models.User;
 
 namespace RentalApp.Services;
 
 public class LocalApiService : IApiService
 {
     private readonly AppDbContext _context;
-    private UserProfile? _currentUser;
+    private User? _currentUser;
 
     public LocalApiService(AppDbContext context)
     {
@@ -23,7 +23,7 @@ public class LocalApiService : IApiService
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password");
 
-        _currentUser = ToProfile(user);
+        _currentUser = ToUser(user);
     }
 
     public async Task RegisterAsync(
@@ -39,7 +39,7 @@ public class LocalApiService : IApiService
 
         var salt = BCrypt.Net.BCrypt.GenerateSalt();
         _context.Users.Add(
-            new User
+            new DbUser
             {
                 FirstName = firstName,
                 LastName = lastName,
@@ -53,7 +53,7 @@ public class LocalApiService : IApiService
         await _context.SaveChangesAsync();
     }
 
-    public Task<UserProfile> GetCurrentUserAsync()
+    public Task<User> GetCurrentUserAsync()
     {
         if (_currentUser == null)
             throw new InvalidOperationException("No user is currently authenticated");
@@ -61,13 +61,13 @@ public class LocalApiService : IApiService
         return Task.FromResult(_currentUser);
     }
 
-    public async Task<UserProfile> GetUserProfileAsync(int userId)
+    public async Task<User> GetUserAsync(int userId)
     {
         var user =
             await _context.Users.FindAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        return ToProfile(user);
+        return ToUser(user);
     }
 
     public Task LogoutAsync()
@@ -76,7 +76,7 @@ public class LocalApiService : IApiService
         return Task.CompletedTask;
     }
 
-    private static UserProfile ToProfile(User user) =>
+    private static User ToUser(DbUser user) =>
         new(user.Id, user.FirstName, user.LastName, 0.0, 0, 0, user.Email, user.CreatedAt, null);
 
     // ── Future domain methods ──────────────────────────────────────

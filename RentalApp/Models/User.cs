@@ -1,6 +1,6 @@
 namespace RentalApp.Models;
 
-public sealed record UserProfile(
+public sealed record User(
     int Id,
     string FirstName,
     string LastName,
@@ -9,5 +9,5 @@ public sealed record UserProfile(
     int RentalsCompleted,
     string? Email,
     DateTime? CreatedAt,
-    List<UserReview>? Reviews
+    List<Review>? Reviews
 );

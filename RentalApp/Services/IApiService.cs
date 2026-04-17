@@ -7,8 +7,8 @@ public interface IApiService
     // Authentication
     Task LoginAsync(string email, string password);
     Task RegisterAsync(string firstName, string lastName, string email, string password);
-    Task<UserProfile> GetCurrentUserAsync();
-    Task<UserProfile> GetUserProfileAsync(int userId);
+    Task<User> GetCurrentUserAsync();
+    Task<User> GetUserAsync(int userId);
     Task LogoutAsync();
 
     // Items

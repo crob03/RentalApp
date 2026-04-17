@@ -15,7 +15,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
     {
-        var profile = new UserProfile(
+        var profile = new User(
             1,
             "Jane",
             "Doe",
@@ -54,17 +54,7 @@ public class AuthenticationServiceTests
     {
         _api.GetCurrentUserAsync()
             .Returns(
-                new UserProfile(
-                    1,
-                    "Jane",
-                    "Doe",
-                    0.0,
-                    0,
-                    0,
-                    "jane@example.com",
-                    DateTime.UtcNow,
-                    null
-                )
+                new User(1, "Jane", "Doe", 0.0, 0, 0, "jane@example.com", DateTime.UtcNow, null)
             );
 
         var sut = CreateSut();
@@ -78,17 +68,7 @@ public class AuthenticationServiceTests
     {
         _api.GetCurrentUserAsync()
             .Returns(
-                new UserProfile(
-                    1,
-                    "Jane",
-                    "Doe",
-                    0.0,
-                    0,
-                    0,
-                    "jane@example.com",
-                    DateTime.UtcNow,
-                    null
-                )
+                new User(1, "Jane", "Doe", 0.0, 0, 0, "jane@example.com", DateTime.UtcNow, null)
             );
 
         var sut = CreateSut();
@@ -102,17 +82,7 @@ public class AuthenticationServiceTests
     {
         _api.GetCurrentUserAsync()
             .Returns(
-                new UserProfile(
-                    1,
-                    "Jane",
-                    "Doe",
-                    0.0,
-                    0,
-                    0,
-                    "jane@example.com",
-                    DateTime.UtcNow,
-                    null
-                )
+                new User(1, "Jane", "Doe", 0.0, 0, 0, "jane@example.com", DateTime.UtcNow, null)
             );
 
         var sut = CreateSut();
@@ -155,17 +125,7 @@ public class AuthenticationServiceTests
     {
         _api.GetCurrentUserAsync()
             .Returns(
-                new UserProfile(
-                    1,
-                    "Jane",
-                    "Doe",
-                    0.0,
-                    0,
-                    0,
-                    "jane@example.com",
-                    DateTime.UtcNow,
-                    null
-                )
+                new User(1, "Jane", "Doe", 0.0, 0, 0, "jane@example.com", DateTime.UtcNow, null)
             );
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass");

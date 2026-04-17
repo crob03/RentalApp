@@ -19,7 +19,7 @@ public partial class MainViewModel : BaseViewModel
     /// The currently authenticated user.
     /// </summary>
     [ObservableProperty]
-    private UserProfile? currentUser;
+    private User? currentUser;
 
     /// <summary>
     /// Personalised welcome message derived from the current user's name.

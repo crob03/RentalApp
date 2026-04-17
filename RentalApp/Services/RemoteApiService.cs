@@ -56,7 +56,7 @@ public class RemoteApiService : IApiService
         }
     }
 
-    public async Task<UserProfile> GetCurrentUserAsync()
+    public async Task<User> GetCurrentUserAsync()
     {
         var response = await _apiClient.GetAsync("users/me");
         response.EnsureSuccessStatusCode();
@@ -65,7 +65,7 @@ public class RemoteApiService : IApiService
             await response.Content.ReadFromJsonAsync<MeResponse>()
             ?? throw new InvalidOperationException("Empty profile response from API");
 
-        return new UserProfile(
+        return new User(
             dto.Id,
             dto.FirstName,
             dto.LastName,
@@ -78,7 +78,7 @@ public class RemoteApiService : IApiService
         );
     }
 
-    public async Task<UserProfile> GetUserProfileAsync(int userId)
+    public async Task<User> GetUserAsync(int userId)
     {
         var response = await _apiClient.GetAsync($"users/{userId}");
         response.EnsureSuccessStatusCode();
@@ -87,7 +87,7 @@ public class RemoteApiService : IApiService
             await response.Content.ReadFromJsonAsync<PublicProfileResponse>()
             ?? throw new InvalidOperationException("Empty profile response from API");
 
-        return new UserProfile(
+        return new User(
             dto.Id,
             dto.FirstName,
             dto.LastName,
@@ -96,13 +96,13 @@ public class RemoteApiService : IApiService
             dto.RentalsCompleted,
             Email: null,
             CreatedAt: null,
-            dto.Reviews?.Select(r => new UserReview(
+            dto.Reviews?.Select(r => new Review(
                     r.Id,
-                    null,
-                    null,
-                    0,
+                    RentalId: null,
+                    ItemId: null,
+                    ReviewerId: null,
                     r.Rating,
-                    null,
+                    ItemTitle: null,
                     r.Comment,
                     r.ReviewerName,
                     r.CreatedAt
@@ -179,7 +179,7 @@ public class RemoteApiService : IApiService
         int Id,
         string FirstName,
         string LastName,
-        double AverageRating,
+        double? AverageRating,
         int ItemsListed,
         int RentalsCompleted,
         List<ReviewResponse>? Reviews

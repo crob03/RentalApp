@@ -17,5 +17,5 @@ public sealed record Item(
     double? AverageRating,
     int? TotalReviews,
     DateTime? CreatedAt,
-    List<ItemReview>? Reviews
+    List<Review>? Reviews
 );

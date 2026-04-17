@@ -6,11 +6,11 @@ public class AuthenticationService : IAuthenticationService
 {
     private readonly IApiService _api;
     private readonly ICredentialStore _credentialStore;
-    private UserProfile? _currentUser;
+    private User? _currentUser;
 
     public event EventHandler<bool>? AuthenticationStateChanged;
     public bool IsAuthenticated => _currentUser != null;
-    public UserProfile? CurrentUser => _currentUser;
+    public User? CurrentUser => _currentUser;
 
     public AuthenticationService(IApiService api, ICredentialStore credentialStore)
     {
