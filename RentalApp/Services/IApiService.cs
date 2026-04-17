@@ -13,7 +13,12 @@ public interface IApiService
 
     // Items
     Task<List<Item>> GetItemsAsync(string? category = null, string? search = null, int page = 1);
-    Task<List<Item>> GetNearbyItemsAsync(double lat, double lon, double radius = 5.0, string? category = null);
+    Task<List<Item>> GetNearbyItemsAsync(
+        double lat,
+        double lon,
+        double radius = 5.0,
+        string? category = null
+    );
     Task<Item> GetItemAsync(int id);
     Task<Item> CreateItemAsync(CreateItemRequest request);
     Task<Item> UpdateItemAsync(int id, UpdateItemRequest request);
