@@ -14,8 +14,8 @@ public static class MauiProgram
 {
     /// <summary>
     /// Creates and configures the <see cref="MauiApp"/> instance.
-    /// Toggles between <see cref="ApiAuthenticationService"/> and
-    /// <see cref="LocalAuthenticationService"/> via the <c>useSharedApi</c> flag.
+    /// Toggles between <see cref="RemoteApiService"/> and
+    /// <see cref="LocalApiService"/> via the <c>useSharedApi</c> flag.
     /// </summary>
     /// <returns>The configured <see cref="MauiApp"/>.</returns>
     public static MauiApp CreateMauiApp()
