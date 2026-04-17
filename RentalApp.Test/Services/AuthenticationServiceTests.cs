@@ -9,6 +9,7 @@ public class AuthenticationServiceTests
 {
     private readonly IApiService _api = Substitute.For<IApiService>();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
+
     private AuthenticationService CreateSut() => new(_api, _credentialStore);
 
     [Fact]
@@ -41,9 +42,8 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_RememberMe_SavesCredentials()
     {
-        _api.GetCurrentUserAsync().Returns(
-            new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow)
-        );
+        _api.GetCurrentUserAsync()
+            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
 
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass", rememberMe: true);
@@ -54,9 +54,8 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_RememberMeFalse_DoesNotSaveCredentials()
     {
-        _api.GetCurrentUserAsync().Returns(
-            new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow)
-        );
+        _api.GetCurrentUserAsync()
+            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
 
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass", rememberMe: false);
@@ -67,9 +66,8 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_Success_FiresAuthenticationStateChangedWithTrue()
     {
-        _api.GetCurrentUserAsync().Returns(
-            new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow)
-        );
+        _api.GetCurrentUserAsync()
+            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
 
         var sut = CreateSut();
         bool? firedWith = null;
@@ -93,7 +91,10 @@ public class AuthenticationServiceTests
     public async Task RegisterAsync_ApiThrows_ReturnsFailure()
     {
         _api.RegisterAsync(
-                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
             )
             .ThrowsAsync(new InvalidOperationException("email taken"));
 
@@ -106,9 +107,8 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LogoutAsync_ClearsCurrentUser()
     {
-        _api.GetCurrentUserAsync().Returns(
-            new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow)
-        );
+        _api.GetCurrentUserAsync()
+            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass");
 

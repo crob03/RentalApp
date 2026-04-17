@@ -11,7 +11,8 @@ public class LocalApiServiceAuthTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
+        var connectionString =
+            Environment.GetEnvironmentVariable("CONNECTION_STRING")
             ?? "Host=localhost;Port=5432;Database=appdb_test;Username=app_user;Password=app_password";
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -44,8 +45,8 @@ public class LocalApiServiceAuthTests : IAsyncLifetime
     {
         await _sut.RegisterAsync("Jane", "Doe", "jane@example.com", "password123");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _sut.RegisterAsync("Jane", "Doe", "jane@example.com", "password456")
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _sut.RegisterAsync("Jane", "Doe", "jane@example.com", "password456")
         );
     }
 
@@ -65,25 +66,23 @@ public class LocalApiServiceAuthTests : IAsyncLifetime
     {
         await _sut.RegisterAsync("Jane", "Doe", "jane@example.com", "password123");
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _sut.LoginAsync("jane@example.com", "wrongpassword")
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _sut.LoginAsync("jane@example.com", "wrongpassword")
         );
     }
 
     [Fact]
     public async Task LoginAsync_UnknownEmail_ThrowsUnauthorizedAccessException()
     {
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _sut.LoginAsync("nobody@example.com", "password")
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _sut.LoginAsync("nobody@example.com", "password")
         );
     }
 
     [Fact]
     public async Task GetCurrentUserAsync_BeforeLogin_ThrowsInvalidOperationException()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _sut.GetCurrentUserAsync()
-        );
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.GetCurrentUserAsync());
     }
 
     [Fact]
@@ -93,8 +92,6 @@ public class LocalApiServiceAuthTests : IAsyncLifetime
         await _sut.LoginAsync("jane@example.com", "password123");
         await _sut.LogoutAsync();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _sut.GetCurrentUserAsync()
-        );
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.GetCurrentUserAsync());
     }
 }
