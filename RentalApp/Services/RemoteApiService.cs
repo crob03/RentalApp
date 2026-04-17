@@ -141,7 +141,7 @@ public class RemoteApiService : IApiService
 
     public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
 
-    public Task<Rental> RequestRentalAsync(int itemId, DateTime startDate, DateTime endDate) =>
+    public Task<Rental> RequestRentalAsync(int itemId, DateOnly startDate, DateOnly endDate) =>
         throw new NotImplementedException();
 
     public Task<List<Rental>> GetIncomingRentalsAsync(string? status = null) =>
@@ -169,7 +169,7 @@ public class RemoteApiService : IApiService
         string Email,
         string FirstName,
         string LastName,
-        double AverageRating,
+        double? AverageRating,
         int ItemsListed,
         int RentalsCompleted,
         DateTime CreatedAt
@@ -188,7 +188,7 @@ public class RemoteApiService : IApiService
     private record ReviewResponse(
         int Id,
         int Rating,
-        string Comment,
+        string? Comment,
         string ReviewerName,
         DateTime CreatedAt
     );

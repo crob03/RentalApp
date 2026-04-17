@@ -1,13 +1,11 @@
 namespace RentalApp.Models;
 
-public sealed record UserReview(
+public sealed record Review(
     int Id,
-    int? RentalId,
-    int? ItemId,
+    int RentalId,
     int ReviewerId,
-    int Rating,
-    string? ItemTitle,
-    string? Comment,
     string ReviewerName,
+    int Rating,
+    string? Comment,
     DateTime CreatedAt
 );

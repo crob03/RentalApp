@@ -103,7 +103,7 @@ public class LocalApiService : IApiService
 
     public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
 
-    public Task<Rental> RequestRentalAsync(int itemId, DateTime startDate, DateTime endDate) =>
+    public Task<Rental> RequestRentalAsync(int itemId, DateOnly startDate, DateOnly endDate) =>
         throw new NotImplementedException();
 
     public Task<List<Rental>> GetIncomingRentalsAsync(string? status = null) =>

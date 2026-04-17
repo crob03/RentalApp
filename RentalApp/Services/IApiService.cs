@@ -27,7 +27,7 @@ public interface IApiService
     Task<List<Category>> GetCategoriesAsync();
 
     // Rentals
-    Task<Rental> RequestRentalAsync(int itemId, DateTime startDate, DateTime endDate);
+    Task<Rental> RequestRentalAsync(int itemId, DateOnly startDate, DateOnly endDate);
     Task<List<Rental>> GetIncomingRentalsAsync(string? status = null);
     Task<List<Rental>> GetOutgoingRentalsAsync(string? status = null);
     Task<Rental> GetRentalAsync(int id);
