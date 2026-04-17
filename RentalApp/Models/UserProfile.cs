@@ -4,6 +4,10 @@ public sealed record UserProfile(
     int Id,
     string FirstName,
     string LastName,
-    string Email,
-    DateTime? CreatedAt
+    double AverageRating,
+    int ItemsListed,
+    int RentalsCompleted,
+    string? Email,
+    DateTime? CreatedAt,
+    List<UserReview>? Reviews
 );

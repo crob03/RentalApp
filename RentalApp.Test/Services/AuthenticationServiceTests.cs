@@ -15,7 +15,17 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
     {
-        var profile = new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow);
+        var profile = new UserProfile(
+            1,
+            "Jane",
+            "Doe",
+            0.0,
+            0,
+            0,
+            "jane@example.com",
+            DateTime.UtcNow,
+            null
+        );
         _api.GetCurrentUserAsync().Returns(profile);
 
         var sut = CreateSut();
@@ -43,7 +53,19 @@ public class AuthenticationServiceTests
     public async Task LoginAsync_RememberMe_SavesCredentials()
     {
         _api.GetCurrentUserAsync()
-            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
+            .Returns(
+                new UserProfile(
+                    1,
+                    "Jane",
+                    "Doe",
+                    0.0,
+                    0,
+                    0,
+                    "jane@example.com",
+                    DateTime.UtcNow,
+                    null
+                )
+            );
 
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass", rememberMe: true);
@@ -55,7 +77,19 @@ public class AuthenticationServiceTests
     public async Task LoginAsync_RememberMeFalse_DoesNotSaveCredentials()
     {
         _api.GetCurrentUserAsync()
-            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
+            .Returns(
+                new UserProfile(
+                    1,
+                    "Jane",
+                    "Doe",
+                    0.0,
+                    0,
+                    0,
+                    "jane@example.com",
+                    DateTime.UtcNow,
+                    null
+                )
+            );
 
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass", rememberMe: false);
@@ -67,7 +101,19 @@ public class AuthenticationServiceTests
     public async Task LoginAsync_Success_FiresAuthenticationStateChangedWithTrue()
     {
         _api.GetCurrentUserAsync()
-            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
+            .Returns(
+                new UserProfile(
+                    1,
+                    "Jane",
+                    "Doe",
+                    0.0,
+                    0,
+                    0,
+                    "jane@example.com",
+                    DateTime.UtcNow,
+                    null
+                )
+            );
 
         var sut = CreateSut();
         bool? firedWith = null;
@@ -108,7 +154,19 @@ public class AuthenticationServiceTests
     public async Task LogoutAsync_ClearsCurrentUser()
     {
         _api.GetCurrentUserAsync()
-            .Returns(new UserProfile(1, "Jane", "Doe", "jane@example.com", DateTime.UtcNow));
+            .Returns(
+                new UserProfile(
+                    1,
+                    "Jane",
+                    "Doe",
+                    0.0,
+                    0,
+                    0,
+                    "jane@example.com",
+                    DateTime.UtcNow,
+                    null
+                )
+            );
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "pass");
 
