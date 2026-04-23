@@ -77,7 +77,7 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
 
     /// <summary>
     /// Receives navigation query parameters. Sets a session-expired error when redirected here
-    /// by <see cref="ApiClient"/> after a token refresh failure; clears any stale error otherwise.
+    /// by <see cref="RentalApp.Http.ApiClient"/> after a token refresh failure; clears any stale error otherwise.
     /// </summary>
     /// <param name="query">The query parameters passed by the navigation system.</param>
     public void ApplyQueryAttributes(IDictionary<string, object> query)

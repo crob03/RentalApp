@@ -1,4 +1,6 @@
-namespace RentalApp.Services;
+using RentalApp.Exceptions;
+
+namespace RentalApp.Http;
 
 /// <summary>
 /// Provides HTTP operations for communicating with the remote API.

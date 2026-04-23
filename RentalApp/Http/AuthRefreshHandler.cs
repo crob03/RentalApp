@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using RentalApp.Exceptions;
+using RentalApp.Services;
 
-namespace RentalApp.Services;
+namespace RentalApp.Http;
 
 /// <summary>
 /// A <see cref="DelegatingHandler"/> that attaches the current bearer token to outgoing requests

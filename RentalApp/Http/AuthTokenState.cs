@@ -1,9 +1,9 @@
-namespace RentalApp.Services;
+namespace RentalApp.Http;
 
 /// <summary>
 /// Holds the current bearer token for the authenticated session.
 /// Shared as a singleton so that <see cref="AuthRefreshHandler"/> and
-/// <see cref="RemoteApiService"/> always read and write the same token.
+/// <see cref="RentalApp.Services.RemoteApiService"/> always read and write the same token.
 /// </summary>
 public class AuthTokenState
 {

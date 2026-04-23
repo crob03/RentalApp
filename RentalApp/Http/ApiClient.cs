@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using RentalApp.Constants;
+using RentalApp.Exceptions;
+using RentalApp.Services;
 
-namespace RentalApp.Services;
+namespace RentalApp.Http;
 
 /// <summary>
 /// Implements <see cref="IApiClient"/> by delegating to an <see cref="HttpClient"/> whose pipeline

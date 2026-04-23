@@ -1,4 +1,6 @@
-namespace RentalApp.Services;
+using RentalApp.Http;
+
+namespace RentalApp.Exceptions;
 
 /// <summary>
 /// Thrown by <see cref="AuthRefreshHandler"/> when a token refresh attempt fails and the session

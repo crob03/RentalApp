@@ -4,7 +4,7 @@ namespace RentalApp.Services;
 /// Implements <see cref="ICredentialStore"/> using MAUI's <see cref="SecureStorage"/> to
 /// encrypt credentials on the device keychain/keystore.
 /// </summary>
-public class SecureCredentialStore : ICredentialStore
+public class CredentialStore : ICredentialStore
 {
     private const string EmailKey = "auth_email";
     private const string PasswordKey = "auth_password";

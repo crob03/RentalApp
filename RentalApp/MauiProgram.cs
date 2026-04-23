@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RentalApp.Database.Data;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 using RentalApp.Views;
@@ -29,7 +30,7 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        builder.Services.AddSingleton<ICredentialStore, SecureCredentialStore>();
+        builder.Services.AddSingleton<ICredentialStore, CredentialStore>();
 
         bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
 
