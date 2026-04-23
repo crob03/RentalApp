@@ -85,7 +85,7 @@ public class RemoteApiService : IApiService
 
     public async Task<User> GetUserAsync(int userId)
     {
-        var response = await _apiClient.GetAsync($"users/{userId}");
+        var response = await _apiClient.GetAsync($"users/{userId}/profile");
         response.EnsureSuccessStatusCode();
 
         var dto =
