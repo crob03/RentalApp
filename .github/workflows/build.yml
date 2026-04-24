@@ -111,7 +111,7 @@ jobs:
         run: dotnet build ./RentalApp.sln --no-restore
 
       - name: Test
-        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage" --settings coverlet.runsettings
 
       - name: Merge coverage reports
         run: reportgenerator -reports:"./test-results/**/coverage.cobertura.xml" -targetdir:"./coverage" -reporttypes:Cobertura
