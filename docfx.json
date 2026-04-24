@@ -3,39 +3,35 @@
     {
       "src": [
         {
-          "src": ".",
-          "files": ["**/*.cs"],
-          "exclude": [
-            "**/obj/**",
-            "**/bin/**",
-            "**/Platforms/Windows/**",
-            "**/Platforms/iOS/**",
-            "**/Platforms/MacCatalyst/**",
-            "**/Platforms/Tizen/**",
-            "RentalApp.Test/**",
-            "RentalApp.Migrations/Migrations/**"
-          ]
+          "files": ["**/*.csproj"],
+          "exclude": ["**/obj/**", "**/bin/**", "**/Views/**", "**/Platforms/**", "**/RentalApp.Test/**", "**/Migrations/**"]
         }
       ],
-      "dest": "api"
+      "dest": "api",
+      "disableGitFeatures": false,
+      "allowCompilationErrors": true
     }
   ],
   "build": {
     "content": [
       {
-        "files": ["api/**.yml", "api/index.md"]
+        "files": ["api/**.yml"]
       },
       {
-        "files": ["toc.yml", "README.md", "DECISIONS.md"]
+        "files": ["toc.yml", "*.md"]
       }
     ],
-    "resource": [],
-    "output": "_site",
-    "template": ["default", "modern"],
+    "resource": [
+      {
+        "files": ["images/**"]
+      }
+    ],
+    "dest": "_site",
     "globalMetadata": {
       "_appName": "RentalApp",
       "_appTitle": "RentalApp Documentation",
       "_enableSearch": true
-    }
+    },
+    "template": ["default", "modern"]
   }
 }

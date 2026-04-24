@@ -13,12 +13,17 @@ public class RemoteApiService : IApiService
     private readonly IApiClient _apiClient;
     private readonly AuthTokenState _tokenState;
 
+    /// <summary>Initialises a new instance of <see cref="RemoteApiService"/>.</summary>
+    /// <param name="apiClient">Typed HTTP client used to communicate with the remote API.</param>
+    /// <param name="tokenState">Singleton bearer token holder shared across the HTTP layer.</param>
     public RemoteApiService(IApiClient apiClient, AuthTokenState tokenState)
     {
         _apiClient = apiClient;
         _tokenState = tokenState;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>On success, the returned bearer token is stored in <see cref="AuthTokenState"/> and attached to all subsequent requests.</remarks>
     public async Task LoginAsync(string email, string password)
     {
         var response = await _apiClient.PostAsJsonAsync("auth/token", new { email, password });
@@ -36,6 +41,7 @@ public class RemoteApiService : IApiService
         _tokenState.CurrentToken = token.Token;
     }
 
+    /// <inheritdoc/>
     public async Task RegisterAsync(
         string firstName,
         string lastName,
@@ -61,6 +67,8 @@ public class RemoteApiService : IApiService
         }
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Maps the API's <c>MeResponse</c> DTO (which includes private fields such as email and account dates) to a <see cref="User"/>.</remarks>
     public async Task<User> GetCurrentUserAsync()
     {
         var response = await _apiClient.GetAsync("users/me");
@@ -83,6 +91,8 @@ public class RemoteApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Maps the API's <c>PublicProfileResponse</c> DTO (no email or account dates) to a <see cref="User"/>. Reviews are included when present.</remarks>
     public async Task<User> GetUserAsync(int userId)
     {
         var response = await _apiClient.GetAsync($"users/{userId}/profile");
@@ -116,6 +126,8 @@ public class RemoteApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Clears the bearer token from <see cref="AuthTokenState"/>. No network call is made.</remarks>
     public Task LogoutAsync()
     {
         _tokenState.CurrentToken = null;
