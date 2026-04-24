@@ -9,19 +9,15 @@ namespace RentalApp.Helpers;
 /// Returns <see langword="null"/> when all inputs are valid.
 /// Returns the first failing error message otherwise.
 /// </remarks>
-public static class RegistrationValidator
+public static partial class RegistrationValidator
 {
-    private static readonly Regex EmailRegex = new(
-        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled
-    );
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)]
+    private static partial Regex EmailRegex();
 
     // Ensures password contains at least one uppercase letter,
     // one lowercase letter, one number, and one special character
-    private static readonly Regex PasswordRegex = new(
-        @"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$",
-        RegexOptions.Compiled
-    );
+    [GeneratedRegex(@"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$")]
+    private static partial Regex PasswordRegex();
 
     /// <summary>
     /// Validates all registration form fields.
@@ -54,7 +50,7 @@ public static class RegistrationValidator
         if (string.IsNullOrWhiteSpace(email))
             return "Email is required";
 
-        if (!EmailRegex.IsMatch(email))
+        if (!EmailRegex().IsMatch(email))
             return "Please enter a valid email address";
 
         if (string.IsNullOrWhiteSpace(password))
@@ -63,7 +59,7 @@ public static class RegistrationValidator
         if (password.Length < 8)
             return "Password must be at least 8 characters long";
 
-        if (!PasswordRegex.IsMatch(password))
+        if (!PasswordRegex().IsMatch(password))
             return "Password must contain an uppercase letter, lowercase letter, number, and special character";
 
         if (password != confirmPassword)

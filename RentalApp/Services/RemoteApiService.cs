@@ -180,7 +180,7 @@ public class RemoteApiService : IApiService
     public Task<List<Review>> GetUserReviewsAsync(int userId, int page = 1) =>
         throw new NotImplementedException();
 
-    private record MeResponse(
+    private sealed record MeResponse(
         int Id,
         string Email,
         string FirstName,
@@ -191,7 +191,7 @@ public class RemoteApiService : IApiService
         DateTime CreatedAt
     );
 
-    private record PublicProfileResponse(
+    private sealed record PublicProfileResponse(
         int Id,
         string FirstName,
         string LastName,
@@ -201,7 +201,7 @@ public class RemoteApiService : IApiService
         List<ReviewResponse>? Reviews
     );
 
-    private record ReviewResponse(
+    private sealed record ReviewResponse(
         int Id,
         int Rating,
         string? Comment,
@@ -209,7 +209,7 @@ public class RemoteApiService : IApiService
         DateTime CreatedAt
     );
 
-    private record ApiErrorResponse(string Error, string Message);
+    private sealed record ApiErrorResponse(string Error, string Message);
 
-    private record AuthToken(string Token, DateTime ExpiresAt, int UserId);
+    private sealed record AuthToken(string Token, DateTime ExpiresAt, int UserId);
 }

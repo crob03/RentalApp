@@ -1,5 +1,4 @@
 using System.Net;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using RentalApp.Constants;
 using RentalApp.Http;
@@ -18,12 +17,7 @@ public class ApiClientTests
         {
             BaseAddress = new Uri("https://api.example.com/"),
         };
-        return new ApiClient(
-            httpClient,
-            _tokenState,
-            _navigationService,
-            NullLogger<ApiClient>.Instance
-        );
+        return new ApiClient(httpClient, _tokenState, _navigationService);
     }
 
     // ── Bearer token attachment ────────────────────────────────────────

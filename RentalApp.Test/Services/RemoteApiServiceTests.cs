@@ -92,6 +92,8 @@ public class RemoteApiServiceTests
         var sut = CreateSut();
 
         await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+
+        await _apiClient.Received(1).PostAsJsonAsync("auth/register", Arg.Any<object>());
     }
 
     [Fact]
