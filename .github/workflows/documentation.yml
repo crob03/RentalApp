@@ -2,8 +2,7 @@ name: Deploy Documentation
 
 on:
   push:
-    branches:
-      - hotfix/fix-docfx
+    branches: [ main ]
 
 concurrency:
   group: pages
