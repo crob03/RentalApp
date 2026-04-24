@@ -39,21 +39,7 @@ public static class MauiProgram
             var baseAddress = new Uri("https://set09102-api.b-davison.workers.dev/");
 
             builder.Services.AddSingleton<AuthTokenState>();
-            builder.Services.AddSingleton(sp => new AuthRefreshHandler(
-                sp.GetRequiredService<AuthTokenState>(),
-                sp.GetRequiredService<ICredentialStore>(),
-                baseAddress,
-                sp.GetRequiredService<ILogger<AuthRefreshHandler>>()
-            )
-            {
-                InnerHandler = new HttpClientHandler(),
-            });
-            builder.Services.AddSingleton(sp => new HttpClient(
-                sp.GetRequiredService<AuthRefreshHandler>()
-            )
-            {
-                BaseAddress = baseAddress,
-            });
+            builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = baseAddress });
             builder.Services.AddSingleton<IApiClient, ApiClient>();
             builder.Services.AddSingleton<IApiService>(sp => new RemoteApiService(
                 sp.GetRequiredService<IApiClient>(),

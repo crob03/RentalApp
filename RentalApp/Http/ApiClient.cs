@@ -1,33 +1,42 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
+using Microsoft.Extensions.Logging;
 using RentalApp.Constants;
-using RentalApp.Exceptions;
 using RentalApp.Services;
 
 namespace RentalApp.Http;
 
 /// <summary>
-/// Implements <see cref="IApiClient"/> by delegating to an <see cref="HttpClient"/> whose pipeline
-/// includes <see cref="AuthRefreshHandler"/>.
-/// Catches <see cref="AuthenticationExpiredException"/> thrown by the handler when a token refresh
-/// fails, navigates to the login route, and returns an empty 401 response so callers can handle
-/// the failure path without knowledge of the session-expiry event.
+/// Implements <see cref="IApiClient"/> by delegating to an <see cref="HttpClient"/>.
+/// Attaches the current bearer token to every outgoing request and navigates to the
+/// login route when a 401 Unauthorized response is received.
 /// </summary>
 public class ApiClient : IApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthTokenState _tokenState;
     private readonly INavigationService _navigationService;
+    private readonly ILogger<ApiClient> _logger;
 
     /// <summary>
     /// Initialises a new instance of <see cref="ApiClient"/>.
     /// </summary>
-    /// <param name="httpClient">The HTTP client whose pipeline includes <see cref="AuthRefreshHandler"/>.</param>
+    /// <param name="httpClient">The underlying HTTP client.</param>
+    /// <param name="tokenState">The shared token state providing the current bearer token.</param>
     /// <param name="navigationService">The navigation service used to redirect to login on session expiry.</param>
-    public ApiClient(HttpClient httpClient, INavigationService navigationService)
+    /// <param name="logger">Logger for HTTP request and response diagnostics.</param>
+    public ApiClient(
+        HttpClient httpClient,
+        AuthTokenState tokenState,
+        INavigationService navigationService,
+        ILogger<ApiClient> logger
+    )
     {
         _httpClient = httpClient;
+        _tokenState = tokenState;
         _navigationService = navigationService;
+        _logger = logger;
     }
 
     /// <inheritdoc/>
@@ -36,14 +45,14 @@ public class ApiClient : IApiClient
         CancellationToken cancellationToken = default
     )
     {
-        try
-        {
-            return await _httpClient.GetAsync(requestUri, cancellationToken);
-        }
-        catch (AuthenticationExpiredException)
-        {
-            return await HandleSessionExpiredAsync();
-        }
+        _logger.LogDebug("GET {Uri}", requestUri);
+        var request = CreateRequest(HttpMethod.Get, requestUri);
+        var sentWithToken = request.Headers.Authorization != null;
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        _logger.LogDebug("GET {Uri} → {StatusCode}", requestUri, (int)response.StatusCode);
+        return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized
+            ? await HandleSessionExpiredAsync(response)
+            : response;
     }
 
     /// <inheritdoc/>
@@ -53,32 +62,35 @@ public class ApiClient : IApiClient
         CancellationToken cancellationToken = default
     )
     {
-        try
-        {
-            return await _httpClient.PostAsJsonAsync(requestUri, value, cancellationToken);
-        }
-        catch (AuthenticationExpiredException)
-        {
-            return await HandleSessionExpiredAsync();
-        }
+        _logger.LogDebug("POST {Uri}", requestUri);
+        var request = CreateRequest(HttpMethod.Post, requestUri);
+        request.Content = JsonContent.Create(value);
+        var sentWithToken = request.Headers.Authorization != null;
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        _logger.LogDebug("POST {Uri} → {StatusCode}", requestUri, (int)response.StatusCode);
+        return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized
+            ? await HandleSessionExpiredAsync(response)
+            : response;
     }
 
-    private async Task<HttpResponseMessage> HandleSessionExpiredAsync()
+    private HttpRequestMessage CreateRequest(HttpMethod method, string requestUri)
     {
+        var request = new HttpRequestMessage(method, requestUri);
+        if (_tokenState.CurrentToken != null)
+            request.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                _tokenState.CurrentToken
+            );
+        return request;
+    }
+
+    private async Task<HttpResponseMessage> HandleSessionExpiredAsync(HttpResponseMessage response)
+    {
+        _logger.LogWarning("Session expired — redirecting to login");
         await _navigationService.NavigateToAsync(
             Routes.Login,
             new Dictionary<string, object> { ["sessionExpired"] = true }
         );
-        return SessionExpiredResponse();
+        return response;
     }
-
-    /// <summary>
-    /// Returns a minimal 401 response used as a sentinel after session-expiry navigation.
-    /// Callers treat it as a regular failure — the user has already been redirected to login.
-    /// </summary>
-    private static HttpResponseMessage SessionExpiredResponse() =>
-        new HttpResponseMessage(HttpStatusCode.Unauthorized)
-        {
-            Content = new StringContent("{}", Encoding.UTF8, "application/json"),
-        };
 }

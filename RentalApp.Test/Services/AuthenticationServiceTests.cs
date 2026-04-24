@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RentalApp.Models;
@@ -10,7 +11,8 @@ public class AuthenticationServiceTests
     private readonly IApiService _api = Substitute.For<IApiService>();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
 
-    private AuthenticationService CreateSut() => new(_api, _credentialStore);
+    private AuthenticationService CreateSut() =>
+        new(_api, _credentialStore, NullLogger<AuthenticationService>.Instance);
 
     private static User FakeUser() =>
         new(1, "Jane", "Doe", null, 0, 0, "jane@example.com", DateTime.UtcNow, null);

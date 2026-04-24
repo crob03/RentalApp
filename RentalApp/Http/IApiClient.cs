@@ -1,11 +1,9 @@
-using RentalApp.Exceptions;
-
 namespace RentalApp.Http;
 
 /// <summary>
 /// Provides HTTP operations for communicating with the remote API.
-/// Implementations are responsible for catching <see cref="AuthenticationExpiredException"/>
-/// and redirecting to the login route so callers are never exposed to session-expiry failures.
+/// Implementations are responsible for redirecting to the login route on session expiry
+/// so callers are never exposed to authentication failures.
 /// </summary>
 public interface IApiClient
 {
