@@ -14,11 +14,15 @@ public class LocalApiService : IApiService
     private readonly AppDbContext _context;
     private User? _currentUser;
 
+    /// <summary>Initialises a new instance of <see cref="LocalApiService"/>.</summary>
+    /// <param name="context">EF Core database context used to query and persist user data.</param>
     public LocalApiService(AppDbContext context)
     {
         _context = context;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Verifies the password against the stored BCrypt hash. The authenticated user is cached in memory for the duration of the session.</remarks>
     public async Task LoginAsync(string email, string password)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -29,6 +33,8 @@ public class LocalApiService : IApiService
         _currentUser = ToUser(user);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Generates a BCrypt salt and hashes the password before persisting to the database.</remarks>
     public async Task RegisterAsync(
         string firstName,
         string lastName,
@@ -56,6 +62,8 @@ public class LocalApiService : IApiService
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Returns the user cached by the most recent <see cref="LoginAsync"/> call. Throws if no session is active.</remarks>
     public Task<User> GetCurrentUserAsync()
     {
         if (_currentUser == null)
@@ -64,6 +72,7 @@ public class LocalApiService : IApiService
         return Task.FromResult(_currentUser);
     }
 
+    /// <inheritdoc/>
     public async Task<User> GetUserAsync(int userId)
     {
         var user =
@@ -73,6 +82,8 @@ public class LocalApiService : IApiService
         return ToUser(user);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Clears the in-memory user cache. No database operation is performed.</remarks>
     public Task LogoutAsync()
     {
         _currentUser = null;

@@ -5,6 +5,10 @@ namespace RentalApp.Http;
 /// Shared as a singleton so that <see cref="ApiClient"/> and
 /// <see cref="RentalApp.Services.RemoteApiService"/> always read and write the same token.
 /// </summary>
+/// <remarks>
+/// Singleton lifetime — <see cref="RentalApp.Services.RemoteApiService"/> writes on login/logout;
+/// <see cref="ApiClient"/> reads to attach the <c>Authorization: Bearer</c> header. Not thread-safe.
+/// </remarks>
 public class AuthTokenState
 {
     /// <summary>
