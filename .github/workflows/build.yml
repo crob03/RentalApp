@@ -90,6 +90,9 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
 
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
       # --- Analysis: Begin ---
       - name: Start Sonar Analysis
         env:
@@ -101,14 +104,17 @@ jobs:
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
             /d:sonar.scanner.scanAll=false \
-            /d:sonar.cs.cobertura.reportsPaths=**/coverage.cobertura.xml
+            /d:sonar.cs.cobertura.reportsPaths="./coverage/Cobertura.xml"
 
       # --- Build & Test ---
       - name: Build
         run: dotnet build ./RentalApp.sln --no-restore
 
       - name: Test
-        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage"
+        run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+      - name: Merge coverage reports
+        run: reportgenerator -reports:"./test-results/**/coverage.cobertura.xml" -targetdir:"./coverage" -reporttypes:Cobertura
 
       # --- Analysis: End ---
       - name: End Sonar Analysis
@@ -129,3 +135,4 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/Cobertura.xml
