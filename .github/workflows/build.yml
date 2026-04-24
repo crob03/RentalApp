@@ -55,7 +55,7 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # --- Dependencies ---
+      # --- Caching ---
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
@@ -71,7 +71,7 @@ jobs:
           key: ${{ runner.os }}-sonar-scanner
           restore-keys: ${{ runner.os }}-sonar-scanner
 
-      - name: Install SonarCloud scanner
+      - name: Install SonarScanner
         if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
         run: |
           mkdir -p .sonar/scanner
@@ -84,14 +84,12 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: ${{ runner.os }}-nuget-
 
+      # --- Restore ---
       - name: Restore workloads
         run: dotnet workload restore ./RentalApp.sln
 
       - name: Restore dependencies
         run: dotnet restore ./RentalApp.sln
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
       # --- Analysis: Begin ---
       - name: Start Sonar Analysis
@@ -101,10 +99,10 @@ jobs:
           ./.sonar/scanner/dotnet-sonarscanner begin \
             /k:"${{ env.SONAR_PROJECT_KEY }}" \
             /o:"${{ env.SONAR_ORG }}" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
-            /d:sonar.scanner.scanAll=false \
-            /d:sonar.cs.cobertura.reportsPaths="./coverage/Cobertura.xml"
+            /d:sonar.cs.opencover.reportsPaths="test-results/**/coverage.opencover.xml" \
+            /d:sonar.verbose=true
 
       # --- Build & Test ---
       - name: Build
@@ -113,14 +111,11 @@ jobs:
       - name: Test
         run: dotnet test ./RentalApp.sln --no-build --logger trx --results-directory ./test-results --collect "XPlat Code Coverage" --settings coverlet.runsettings
 
-      - name: Merge coverage reports
-        run: reportgenerator -reports:"./test-results/**/coverage.cobertura.xml" -targetdir:"./coverage" -reporttypes:Cobertura
-
-      # --- Analysis: End ---
+      # --- Sonar End ---
       - name: End Sonar Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+        run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
       # --- Artifacts ---
       - name: Upload test results
@@ -130,9 +125,9 @@ jobs:
           name: test-results
           path: ./test-results/*.trx
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload to Codecov
         if: always()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/Cobertura.xml
+          files: ./test-results/**/coverage.opencover.xml

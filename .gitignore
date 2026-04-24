@@ -33,6 +33,9 @@ postgres_data/
 pre_install_packs.py
 setup
 
+# Coverage reports
+coverage/
+
 # Environment files
 .env.local
 

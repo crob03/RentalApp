@@ -4,8 +4,8 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <Format>cobertura</Format>
-          <ExcludeByFile>RentalApp/Models/*.cs,RentalApp/Views/*.cs</ExcludeByFile>
+          <Format>opencover</Format>
+          <ExcludeByFile>**/RentalApp/Models/*.cs,**/RentalApp/Views/*.cs</ExcludeByFile>
         </Configuration>
       </DataCollector>
     </DataCollectors>
