@@ -122,64 +122,6 @@ public class RemoteApiService : IApiService
         return Task.CompletedTask;
     }
 
-    // ── Future domain methods ──────────────────────────────────────
-    public Task<List<Item>> GetItemsAsync(
-        string? category = null,
-        string? search = null,
-        int page = 1
-    ) => throw new NotImplementedException();
-
-    public Task<List<Item>> GetNearbyItemsAsync(
-        double lat,
-        double lon,
-        double radius = 5.0,
-        string? category = null
-    ) => throw new NotImplementedException();
-
-    public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();
-
-    public Task<Item> CreateItemAsync(
-        string title,
-        string? description,
-        double dailyRate,
-        int categoryId,
-        double latitude,
-        double longitude
-    ) => throw new NotImplementedException();
-
-    public Task<Item> UpdateItemAsync(
-        int id,
-        string? title,
-        string? description,
-        double? dailyRate,
-        bool? isAvailable
-    ) => throw new NotImplementedException();
-
-    public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
-
-    public Task<Rental> RequestRentalAsync(int itemId, DateOnly startDate, DateOnly endDate) =>
-        throw new NotImplementedException();
-
-    public Task<List<Rental>> GetIncomingRentalsAsync(string? status = null) =>
-        throw new NotImplementedException();
-
-    public Task<List<Rental>> GetOutgoingRentalsAsync(string? status = null) =>
-        throw new NotImplementedException();
-
-    public Task<Rental> GetRentalAsync(int id) => throw new NotImplementedException();
-
-    public Task UpdateRentalStatusAsync(int rentalId, string status) =>
-        throw new NotImplementedException();
-
-    public Task<Review> CreateReviewAsync(int rentalId, int rating, string comment) =>
-        throw new NotImplementedException();
-
-    public Task<List<Review>> GetItemReviewsAsync(int itemId, int page = 1) =>
-        throw new NotImplementedException();
-
-    public Task<List<Review>> GetUserReviewsAsync(int userId, int page = 1) =>
-        throw new NotImplementedException();
-
     private sealed record MeResponse(
         int Id,
         string Email,
