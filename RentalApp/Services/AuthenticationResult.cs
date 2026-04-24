@@ -1,4 +1,4 @@
-namespace RentalApp.Models;
+namespace RentalApp.Services;
 
 /// <summary>
 /// Represents the outcome of an authentication operation such as login or registration.
