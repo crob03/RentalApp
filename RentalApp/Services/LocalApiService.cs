@@ -1,0 +1,84 @@
+using BCrypt.Net;
+using Microsoft.EntityFrameworkCore;
+using RentalApp.Database.Data;
+using RentalApp.Models;
+using DbUser = RentalApp.Database.Models.User;
+
+namespace RentalApp.Services;
+
+/// <summary>
+/// <see cref="IApiService"/> implementation backed by a local PostgreSQL database via EF Core.
+/// </summary>
+public class LocalApiService : IApiService
+{
+    private readonly AppDbContext _context;
+    private User? _currentUser;
+
+    public LocalApiService(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task LoginAsync(string email, string password)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid email or password");
+
+        _currentUser = ToUser(user);
+    }
+
+    public async Task RegisterAsync(
+        string firstName,
+        string lastName,
+        string email,
+        string password
+    )
+    {
+        var existing = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (existing != null)
+            throw new InvalidOperationException("User with this email already exists");
+
+        var salt = BCrypt.Net.BCrypt.GenerateSalt();
+        _context.Users.Add(
+            new DbUser
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, salt),
+                PasswordSalt = salt,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            }
+        );
+        await _context.SaveChangesAsync();
+    }
+
+    public Task<User> GetCurrentUserAsync()
+    {
+        if (_currentUser == null)
+            throw new InvalidOperationException("No user is currently authenticated");
+
+        return Task.FromResult(_currentUser);
+    }
+
+    public async Task<User> GetUserAsync(int userId)
+    {
+        var user =
+            await _context.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException($"User {userId} not found");
+
+        return ToUser(user);
+    }
+
+    public Task LogoutAsync()
+    {
+        _currentUser = null;
+        return Task.CompletedTask;
+    }
+
+    private static User ToUser(DbUser user) =>
+        new(user.Id, user.FirstName, user.LastName, 0.0, 0, 0, user.Email, user.CreatedAt, null);
+}

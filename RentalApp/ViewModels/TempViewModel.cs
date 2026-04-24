@@ -1,30 +1,29 @@
-/// @file TempViewModel.cs
-/// @brief Temporary placeholder view model
-/// @author RentalApp Development Team
-/// @date 2025
-using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 
 namespace RentalApp.ViewModels;
 
-/// @brief Temporary view model for placeholder pages
-/// @details Simple view model that displays basic application information
-/// @note This is a placeholder implementation for temporary pages
+/// <summary>
+/// Placeholder view model used by temporary stub pages during development.
+/// </summary>
 public class TempViewModel
 {
-    /// @brief Gets the application title from AppInfo
-    /// @return The application name as a string
+    /// <summary>
+    /// Gets the application name as reported by <see cref="AppInfo"/>.
+    /// </summary>
     public string Title => AppInfo.Name;
 
-    /// @brief Gets the application version from AppInfo
-    /// @return The application version string
+    /// <summary>
+    /// Gets the application version string as reported by <see cref="AppInfo"/>.
+    /// </summary>
     public string Version => AppInfo.VersionString;
 
-    /// @brief Gets a placeholder message
-    /// @return A message indicating this is a placeholder page
+    /// <summary>
+    /// Gets a message indicating that this page is a placeholder.
+    /// </summary>
     public string Message => "This is a placeholder page.";
 
-    /// @brief Initializes a new instance of the TempViewModel class
-    /// @details Default constructor with no initialization logic
+    /// <summary>
+    /// Initialises a new instance of <see cref="TempViewModel"/>.
+    /// </summary>
     public TempViewModel() { }
 }

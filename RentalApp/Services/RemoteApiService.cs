@@ -1,0 +1,157 @@
+using System.Net.Http.Json;
+using RentalApp.Http;
+using RentalApp.Models;
+
+namespace RentalApp.Services;
+
+/// <summary>
+/// <see cref="IApiService"/> implementation that communicates with the remote HTTP API.
+/// Bearer token authentication is handled internally via <see cref="AuthTokenState"/>.
+/// </summary>
+public class RemoteApiService : IApiService
+{
+    private readonly IApiClient _apiClient;
+    private readonly AuthTokenState _tokenState;
+
+    public RemoteApiService(IApiClient apiClient, AuthTokenState tokenState)
+    {
+        _apiClient = apiClient;
+        _tokenState = tokenState;
+    }
+
+    public async Task LoginAsync(string email, string password)
+    {
+        var response = await _apiClient.PostAsJsonAsync("auth/token", new { email, password });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            throw new UnauthorizedAccessException(error?.Message ?? "Login failed");
+        }
+
+        var token =
+            await response.Content.ReadFromJsonAsync<AuthToken>()
+            ?? throw new InvalidOperationException("Empty token response from API");
+
+        _tokenState.CurrentToken = token.Token;
+    }
+
+    public async Task RegisterAsync(
+        string firstName,
+        string lastName,
+        string email,
+        string password
+    )
+    {
+        var response = await _apiClient.PostAsJsonAsync(
+            "auth/register",
+            new
+            {
+                firstName,
+                lastName,
+                email,
+                password,
+            }
+        );
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+            throw new InvalidOperationException(error?.Message ?? "Registration failed");
+        }
+    }
+
+    public async Task<User> GetCurrentUserAsync()
+    {
+        var response = await _apiClient.GetAsync("users/me");
+        response.EnsureSuccessStatusCode();
+
+        var dto =
+            await response.Content.ReadFromJsonAsync<MeResponse>()
+            ?? throw new InvalidOperationException("Empty profile response from API");
+
+        return new User(
+            dto.Id,
+            dto.FirstName,
+            dto.LastName,
+            dto.AverageRating,
+            dto.ItemsListed,
+            dto.RentalsCompleted,
+            dto.Email,
+            dto.CreatedAt,
+            Reviews: null
+        );
+    }
+
+    public async Task<User> GetUserAsync(int userId)
+    {
+        var response = await _apiClient.GetAsync($"users/{userId}/profile");
+        response.EnsureSuccessStatusCode();
+
+        var dto =
+            await response.Content.ReadFromJsonAsync<PublicProfileResponse>()
+            ?? throw new InvalidOperationException("Empty profile response from API");
+
+        return new User(
+            dto.Id,
+            dto.FirstName,
+            dto.LastName,
+            dto.AverageRating,
+            dto.ItemsListed,
+            dto.RentalsCompleted,
+            Email: null,
+            CreatedAt: null,
+            dto.Reviews?.Select(r => new Review(
+                    r.Id,
+                    RentalId: null,
+                    ItemId: null,
+                    ReviewerId: null,
+                    r.Rating,
+                    ItemTitle: null,
+                    r.Comment,
+                    r.ReviewerName,
+                    r.CreatedAt
+                ))
+                .ToList()
+        );
+    }
+
+    public Task LogoutAsync()
+    {
+        _tokenState.CurrentToken = null;
+        return Task.CompletedTask;
+    }
+
+    private sealed record MeResponse(
+        int Id,
+        string Email,
+        string FirstName,
+        string LastName,
+        double? AverageRating,
+        int ItemsListed,
+        int RentalsCompleted,
+        DateTime CreatedAt
+    );
+
+    private sealed record PublicProfileResponse(
+        int Id,
+        string FirstName,
+        string LastName,
+        double? AverageRating,
+        int ItemsListed,
+        int RentalsCompleted,
+        List<ReviewResponse>? Reviews
+    );
+
+    private sealed record ReviewResponse(
+        int Id,
+        int Rating,
+        string? Comment,
+        string ReviewerName,
+        DateTime CreatedAt
+    );
+
+    private sealed record ApiErrorResponse(string Error, string Message);
+
+    private sealed record AuthToken(string Token, DateTime ExpiresAt, int UserId);
+}

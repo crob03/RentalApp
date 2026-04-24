@@ -133,14 +133,6 @@
           HeightRequest="45"
           CornerRadius="8"
         />
-
-        <Button
-          Text="Forgot Password?"
-          Command="{Binding ForgotPasswordCommand}"
-          BackgroundColor="Transparent"
-          TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-          FontSize="14"
-        />
       </StackLayout>
     </Grid>
   </ScrollView>

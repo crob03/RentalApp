@@ -1,126 +1,139 @@
-/// @file LoginViewModel.cs
-/// @brief Login page view model for user authentication
-/// @author RentalApp Development Team
-/// @date 2025
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the login page that handles user authentication
-/// @details Manages login form data, validation, and authentication process
-/// @extends BaseViewModel
-public partial class LoginViewModel : BaseViewModel
+/// <summary>
+/// View model for the login page. Manages the login form fields, input validation,
+/// and delegates authentication to <see cref="IAuthenticationService"/>.
+/// </summary>
+public partial class LoginViewModel : BaseViewModel, IQueryAttributable
 {
-    /// @brief Authentication service for managing user login
     private readonly IAuthenticationService _authService;
-
-    /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
+    private readonly ICredentialStore _credentialStore;
 
-    /// @brief The user's email address
-    /// @details Observable property bound to the email input field
+    /// <summary>
+    /// The email address entered by the user.
+    /// </summary>
     [ObservableProperty]
     private string email = string.Empty;
 
-    /// @brief The user's password
-    /// @details Observable property bound to the password input field
+    /// <summary>
+    /// The password entered by the user.
+    /// </summary>
     [ObservableProperty]
     private string password = string.Empty;
 
-    /// @brief Whether to remember the user's login credentials
-    /// @details Observable property bound to the remember me checkbox
+    /// <summary>
+    /// Whether the user has opted to persist their credentials for automatic login on next launch.
+    /// </summary>
     [ObservableProperty]
     private bool rememberMe;
 
-    /// @brief Indicates whether a login operation is in progress
-    /// @details Observable property that notifies the LoginCommand when changed
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
-    private bool _isBusy;
-
-    /// @brief Default constructor for design-time support
-    /// @details Sets the title to "Login"
+    /// <summary>
+    /// Initialises a new instance of <see cref="LoginViewModel"/> for design-time support.
+    /// </summary>
     public LoginViewModel()
     {
-        // Default constructor for design time support
         Title = "Login";
     }
 
-    /// @brief Initializes a new instance of the LoginViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services and initializes the title
-    public LoginViewModel(IAuthenticationService authService, INavigationService navigationService)
+    /// <summary>
+    /// Initialises a new instance of <see cref="LoginViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="authService">The authentication service used to perform login.</param>
+    /// <param name="navigationService">The navigation service used to transition between pages.</param>
+    /// <param name="credentialStore">The credential store used to restore saved credentials on page load.</param>
+    public LoginViewModel(
+        IAuthenticationService authService,
+        INavigationService navigationService,
+        ICredentialStore credentialStore
+    )
     {
         _authService = authService;
         _navigationService = navigationService;
+        _credentialStore = credentialStore;
         Title = "Login";
     }
 
-    /// @brief Performs user login authentication
-    /// @details Relay command that validates input and attempts to authenticate the user
-    /// @return A task representing the asynchronous login operation
-    [RelayCommand]
-    private async Task LoginAsync()
+    /// <summary>
+    /// Populates the email, password, and remember-me fields from the credential store, if saved
+    /// credentials exist. Called each time the login page appears.
+    /// </summary>
+    public async Task InitializeAsync()
     {
-        if (IsBusy)
+        var credentials = await _credentialStore.GetAsync();
+        if (credentials is null)
             return;
 
+        Email = credentials.Value.Email;
+        Password = credentials.Value.Password;
+        RememberMe = true;
+    }
+
+    /// <summary>
+    /// Receives navigation query parameters. Sets a session-expired error when redirected here
+    /// by <see cref="RentalApp.Http.ApiClient"/> after a token refresh failure; clears any stale error otherwise.
+    /// </summary>
+    /// <param name="query">The query parameters passed by the navigation system.</param>
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("sessionExpired", out var value) && value is true)
+            SetError("Your session has expired. Please log in again.");
+        else
+            ClearError();
+    }
+
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsBusy))
+            LoginCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanLogin() => !IsBusy;
+
+    /// <summary>
+    /// Validates the login form and attempts to authenticate the user.
+    /// Navigates to the main page on success, or surfaces an error message on failure.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanLogin))]
+    private async Task LoginAsync()
+    {
         if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
         {
             SetError("Please enter both email and password");
             return;
         }
 
-        try
-        {
-            IsBusy = true;
-            ClearError();
+        IsBusy = true;
+        ClearError();
 
-            var result = await _authService.LoginAsync(Email, Password);
+        var result = await _authService.LoginAsync(Email, Password, RememberMe);
 
-            if (result.IsSuccess)
-            {
-                await _navigationService.NavigateToAsync("MainPage");
-            }
-            else
-            {
-                SetError(result.Message);
-            }
-        }
-        catch (Exception ex)
+        if (result.IsSuccess)
         {
-            SetError($"Login failed: {ex.Message}");
+            await _navigationService.NavigateToAsync(Routes.Main);
         }
-        finally
+        else
         {
-            IsBusy = false;
+            SetError(result.ErrorMessage);
         }
+
+        IsBusy = false;
     }
 
-    /// @brief Navigates to the registration page
-    /// @details Relay command that navigates to the user registration page
-    /// @return A task representing the asynchronous navigation operation
+    /// <summary>
+    /// Navigates to the registration page.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToRegisterAsync()
     {
-        await _navigationService.NavigateToAsync("RegisterPage");
-    }
-
-    /// @brief Handles forgot password functionality
-    /// @details Relay command that displays a placeholder message for forgot password
-    /// @return A task representing the asynchronous operation
-    /// @todo Implement actual forgot password functionality
-    [RelayCommand]
-    private async Task ForgotPasswordAsync()
-    {
-        // TODO: Implement forgot password functionality
-        await Application.Current.MainPage.DisplayAlert(
-            "Info",
-            "Forgot password functionality not implemented yet",
-            "OK"
-        );
+        await _navigationService.NavigateToAsync(Routes.Register);
     }
 }

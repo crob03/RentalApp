@@ -1,53 +1,60 @@
-using BCrypt.Net;
-using Microsoft.EntityFrameworkCore;
-using RentalApp.Database.Data;
-using RentalApp.Database.Models;
+using RentalApp.Models;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Manages authentication state on top of <see cref="IApiService"/>.
+/// Handles the current user, authentication events, and credential persistence.
+/// </summary>
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly AppDbContext _context;
+    private readonly IApiService _api;
+    private readonly ICredentialStore _credentialStore;
     private User? _currentUser;
 
+    /// <inheritdoc/>
     public event EventHandler<bool>? AuthenticationStateChanged;
 
-    public AuthenticationService(AppDbContext context)
-    {
-        _context = context;
-    }
-
+    /// <inheritdoc/>
     public bool IsAuthenticated => _currentUser != null;
 
+    /// <inheritdoc/>
     public User? CurrentUser => _currentUser;
 
-    public async Task<AuthenticationResult> LoginAsync(string email, string password)
+    /// <summary>Initialises a new instance of <see cref="AuthenticationService"/>.</summary>
+    /// <param name="api">Data-transport service used to authenticate and fetch user data.</param>
+    /// <param name="credentialStore">Store used to persist credentials when Remember Me is enabled.</param>
+    public AuthenticationService(IApiService api, ICredentialStore credentialStore)
+    {
+        _api = api;
+        _credentialStore = credentialStore;
+    }
+
+    /// <inheritdoc/>
+    public async Task<AuthenticationResult> LoginAsync(
+        string email,
+        string password,
+        bool rememberMe = false
+    )
     {
         try
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            await _api.LoginAsync(email, password);
 
-            if (user == null)
-            {
-                return new AuthenticationResult(false, "Invalid email or password");
-            }
+            if (rememberMe)
+                await _credentialStore.SaveAsync(email, password);
 
-            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return new AuthenticationResult(false, "Invalid email or password");
-            }
-
-            _currentUser = user;
-
+            _currentUser = await _api.GetCurrentUserAsync();
             AuthenticationStateChanged?.Invoke(this, true);
-            return new AuthenticationResult(true, "Login successful");
+            return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Login failed: {ex.Message}");
+            return AuthenticationResult.Failure(ex.Message);
         }
     }
 
+    /// <inheritdoc/>
     public async Task<AuthenticationResult> RegisterAsync(
         string firstName,
         string lastName,
@@ -57,56 +64,21 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            // Check if user already exists
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (existingUser != null)
-            {
-                return new AuthenticationResult(false, "User with this email already exists");
-            }
-
-            // Create password hash
-            var salt = BCrypt.Net.BCrypt.GenerateSalt();
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password, salt);
-
-            // Create new user
-            var user = new User
-            {
-                FirstName = firstName,
-                LastName = lastName,
-                Email = email,
-                PasswordHash = hashedPassword,
-                PasswordSalt = salt,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return new AuthenticationResult(true, "Registration successful");
+            await _api.RegisterAsync(firstName, lastName, email, password);
+            return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
-            return new AuthenticationResult(false, $"Registration failed: {ex.Message}");
+            return AuthenticationResult.Failure(ex.Message);
         }
     }
 
-    public Task LogoutAsync()
+    /// <inheritdoc/>
+    public async Task LogoutAsync()
     {
         _currentUser = null;
+        await _api.LogoutAsync();
+        await _credentialStore.ClearAsync();
         AuthenticationStateChanged?.Invoke(this, false);
-        return Task.CompletedTask;
-    }
-}
-
-public class AuthenticationResult
-{
-    public bool IsSuccess { get; }
-    public string Message { get; }
-
-    public AuthenticationResult(bool isSuccess, string message)
-    {
-        IsSuccess = isSuccess;
-        Message = message;
     }
 }

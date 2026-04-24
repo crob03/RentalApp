@@ -2,19 +2,28 @@ using RentalApp.ViewModels;
 
 namespace RentalApp.Views;
 
+/// <summary>
+/// The login page. Entry point of the application — presented at the <c>//login</c> root route.
+/// </summary>
 public partial class LoginPage : ContentPage
 {
+    /// <summary>
+    /// Initialises the page and binds it to the provided <see cref="LoginViewModel"/>.
+    /// </summary>
+    /// <param name="viewModel">The singleton view model managing login state and commands.</param>
     public LoginPage(LoginViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;
     }
 
-    protected override void OnAppearing()
+    /// <summary>
+    /// Restores saved credentials into the form and focuses the email entry field.
+    /// </summary>
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await ((LoginViewModel)BindingContext).InitializeAsync();
         EmailEntry.Focus();
-        EmailEntry.Text = "admin@company.com";
-        PasswordEntry.Text = "Admin123!";
     }
 }
