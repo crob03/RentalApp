@@ -61,6 +61,16 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<User> Users { get; set; }
 
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Category"/> entity.
+    /// </summary>
+    public DbSet<Category> Categories { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Item"/> entity.
+    /// </summary>
+    public DbSet<Item> Items { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +85,25 @@ public class AppDbContext : DbContext
             entity.Property(e => e.LastName).HasMaxLength(100);
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.PasswordSalt).HasMaxLength(255);
+        });
+
+        // Configure Category entity
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
+        });
+
+        // Configure Item entity
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.Property(e => e.Title).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.ImageUrl).HasMaxLength(2048);
+
+            entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
+
+            entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
         });
     }
 }

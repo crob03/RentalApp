@@ -56,11 +56,4 @@ public class User
     /// Gets or sets the UTC timestamp when the user account was last updated.
     /// </summary>
     public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
-
-    /// <summary>
-    /// Gets the user's full name as a concatenation of <see cref="FirstName"/> and <see cref="LastName"/>.
-    /// Not persisted to the database.
-    /// </summary>
-    [NotMapped]
-    public string FullName => $"{FirstName} {LastName}";
 }
