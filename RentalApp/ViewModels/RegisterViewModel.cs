@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Helpers;
@@ -73,16 +74,23 @@ public partial class RegisterViewModel : BaseViewModel
         Title = "Register";
     }
 
+    /// <inheritdoc/>
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsBusy))
+            RegisterCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanRegister() => !IsBusy;
+
     /// <summary>
     /// Validates the registration form and creates a new user account.
     /// Navigates back to the login page on success, or surfaces an error message on failure.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRegister))]
     private async Task RegisterAsync()
     {
-        if (IsBusy)
-            return;
-
         if (!ValidateForm())
             return;
 

@@ -41,8 +41,10 @@ public partial class BaseViewModel : ObservableObject
     /// <param name="message">The error message to display.</param>
     protected void SetError(string message)
     {
+        if (string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Error message must not be empty.", nameof(message));
         ErrorMessage = message;
-        HasError = !string.IsNullOrEmpty(message);
+        HasError = true;
     }
 
     /// <summary>

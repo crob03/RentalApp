@@ -4,6 +4,9 @@ PREFS_FILE := shared_prefs/$(PKG)_preferences.xml
 build-debug:
 	dotnet build -c Debug /workspace/RentalApp.sln
 
+test:
+	dotnet test /workspace/RentalApp.sln
+
 uninstall:
 	adb uninstall $(PKG)
 
