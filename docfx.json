@@ -4,7 +4,7 @@
       "src": [
         {
           "files": ["**/*.csproj"],
-          "exclude": ["**/obj/**", "**/bin/**", "**/Views/**", "**/Platforms/**", "**/RentalApp.Test/**", "**/RentalApp.Migrations/**"]
+          "exclude": ["**/obj/**", "**/bin/**", "**/Views/**", "**/Platforms/**", "**/RentalApp.Test/**", "**/Migrations/**"]
         }
       ],
       "dest": "api",

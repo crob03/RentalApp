@@ -1,3 +1,5 @@
+- name: README
+  href: README.md
 - name: Decisions
   href: DECISIONS.md
 - name: API Reference

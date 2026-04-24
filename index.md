@@ -14,15 +14,7 @@ A cross-platform rental application built with .NET MAUI, targeting Android. Bac
 | **RentalApp.Database** | Data access — EF Core with PostgreSQL |
 | **RentalApp.Migrations** | EF Core migration library |
 
-## Service Hierarchy
-
-```
-IApiService  →  IAuthenticationService  →  ViewModels
-```
-
-`IApiService` is the low-level transport (remote HTTP or local DB). `IAuthenticationService` wraps it with domain logic. ViewModels depend only on `IAuthenticationService`.
-
 ## Quick Links
 
-- [API Reference](api/)
+- [API Reference](api/RentalApp.html)
 - [Decisions](DECISIONS.md)
