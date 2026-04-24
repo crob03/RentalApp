@@ -210,4 +210,6 @@ public class RemoteApiService : IApiService
     );
 
     private record ApiErrorResponse(string Error, string Message);
+
+    private record AuthToken(string Token, DateTime ExpiresAt, int UserId);
 }
