@@ -133,8 +133,9 @@ Task<IEnumerable<Database.Models.Category>> GetCategoriesAsync();
 
 - `RentalApp.Database/Models/Item.cs`: Replace `Latitude`/`Longitude` doubles with `NetTopologySuite.Geometries.Point Location` (SRID 4326, `geography(Point, 4326)` column)
 - `RentalApp.Database/Models/Item.cs`: Add `bool IsAvailable` property (currently missing)
+- `RentalApp.Database/Models/Item.cs`: Remove `ImageUrl` property — not present in any remote API response
 - `AppDbContext.OnConfiguring`: Add `.UseNetTopologySuite()` to Npgsql options
-- New migration: Enable `CREATE EXTENSION IF NOT EXISTS postgis`, drop old lat/lon columns, add `location geography(Point,4326)` column
+- New migration: Enable `CREATE EXTENSION IF NOT EXISTS postgis`; drop `latitude`, `longitude`, and `image_url` columns; add `location geography(Point, 4326)` column; add `is_available` column
 
 **New NuGet packages (RentalApp.Database):**
 - `Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite`
@@ -301,7 +302,7 @@ RentalApp/Services/LocalApiService.cs        — delegate to ItemRepository; map
 RentalApp/ViewModels/MainViewModel.cs        — 4 new nav RelayCommands
 RentalApp/Constants/Routes.cs               — 4 new route constants
 RentalApp/MauiProgram.cs                    — register new services, VMs, pages
-RentalApp.Database/Models/Item.cs           — Point Location replaces Lat/Lon; add IsAvailable
+RentalApp.Database/Models/Item.cs           — Point Location replaces Lat/Lon; add IsAvailable; remove ImageUrl
 RentalApp.Database/Data/AppDbContext.cs     — UseNetTopologySuite()
 RentalApp.Test/Fixtures/DatabaseFixture.cs  — ResetItemsAsync + item/category seed data
 ```
