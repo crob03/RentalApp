@@ -51,7 +51,7 @@ ViewModels depend on `IItemService` and `ILocationService`. `ItemService` depend
 Domain service — mirrors the role of `IAuthenticationService` for the items domain.
 
 ```csharp
-Task<List<Item>> GetItemsAsync(string? category, string? search, int page, int pageSize, int? ownerId = null);
+Task<List<Item>> GetItemsAsync(string? category, string? search, int page, int pageSize);
 Task<List<Item>> GetNearbyItemsAsync(double lat, double lon, double radius, string? category, int page, int pageSize);
 Task<Item> GetItemAsync(int id);
 Task<Item> CreateItemAsync(string title, string? description, double dailyRate, int categoryId, double lat, double lon);
@@ -79,12 +79,12 @@ Task<List<Item>> GetNearbyItemsAsync(
     string? category = null, int page = 1, int pageSize = 20);
 ```
 
-`GetItemsAsync` gains explicit `pageSize` and `ownerId` parameters:
+`GetItemsAsync` gains an explicit `pageSize` parameter:
 
 ```csharp
 Task<List<Item>> GetItemsAsync(
     string? category = null, string? search = null,
-    int page = 1, int pageSize = 20, int? ownerId = null);
+    int page = 1, int pageSize = 20);
 ```
 
 ### `ILocationService` / `LocationService`
@@ -119,7 +119,7 @@ context.Items
 **Signatures:**
 
 ```csharp
-Task<IEnumerable<Database.Models.Item>> GetItemsAsync(string? category, string? search, int page, int pageSize, int? ownerId = null);
+Task<IEnumerable<Database.Models.Item>> GetItemsAsync(string? category, string? search, int page, int pageSize);
 Task<IEnumerable<Database.Models.Item>> GetNearbyItemsAsync(Point origin, double radiusMeters, string? category, int page, int pageSize);
 Task<Database.Models.Item?> GetItemAsync(int id);
 Task<Database.Models.Item> CreateItemAsync(string title, string? description, double dailyRate, int categoryId, Point location);
@@ -205,11 +205,10 @@ Changing `Radius` or `SelectedCategory` triggers `LoadNearbyItemsCommand` (reset
 
 ### `MainViewModel` additions
 
-Four new `RelayCommand`s navigating to item pages:
+Three new `RelayCommand`s navigating to item pages:
 - `NavigateToItemsListCommand` → `Routes.ItemsList`
 - `NavigateToNearbyItemsCommand` → `Routes.NearbyItems`
 - `NavigateToCreateItemCommand` → `Routes.CreateItem`
-- `NavigateToMyListingsCommand` → `Routes.ItemsList` with current user ID as query parameter
 
 ---
 
@@ -223,6 +222,8 @@ public const string ItemDetails = "ItemDetailsPage";
 public const string CreateItem  = "CreateItemPage";
 public const string NearbyItems = "NearbyItemsPage";
 ```
+
+`MyListingsPage` is not included in this iteration — the remote API `GET /items` has no owner filter parameter, making a reliable remote implementation impossible.
 
 All new pages registered as Transient in `MauiProgram.cs`. All new ViewModels registered as Transient.
 
@@ -294,7 +295,7 @@ RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs
 
 ### Modified files
 ```
-RentalApp/Services/IApiService.cs            — pageSize param on GetItemsAsync; page + pageSize on GetNearbyItemsAsync
+RentalApp/Services/IApiService.cs            — pageSize param added to GetItemsAsync; page + pageSize added to GetNearbyItemsAsync
 RentalApp/Services/RemoteApiService.cs       — implement item methods
 RentalApp/Services/LocalApiService.cs        — delegate to ItemRepository; map DB entities to DTOs
 RentalApp/ViewModels/MainViewModel.cs        — 4 new nav RelayCommands
