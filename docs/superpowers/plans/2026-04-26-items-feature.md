@@ -20,6 +20,8 @@ RentalApp/Services/ILocationService.cs
 RentalApp/Services/LocationService.cs
 RentalApp.Database/Repositories/IItemRepository.cs
 RentalApp.Database/Repositories/ItemRepository.cs
+RentalApp.Database/Repositories/ICategoryRepository.cs
+RentalApp.Database/Repositories/CategoryRepository.cs
 RentalApp/ViewModels/ItemsListViewModel.cs
 RentalApp/ViewModels/ItemDetailsViewModel.cs
 RentalApp/ViewModels/CreateItemViewModel.cs
@@ -29,6 +31,7 @@ RentalApp/Views/ItemDetailsPage.xaml + ItemDetailsPage.xaml.cs
 RentalApp/Views/CreateItemPage.xaml + CreateItemPage.xaml.cs
 RentalApp/Views/NearbyItemsPage.xaml + NearbyItemsPage.xaml.cs
 RentalApp.Test/Repositories/ItemRepositoryTests.cs
+RentalApp.Test/Repositories/CategoryRepositoryTests.cs
 RentalApp.Test/Services/ItemServiceTests.cs
 RentalApp.Test/Services/LocationServiceTests.cs
 RentalApp.Test/ViewModels/ItemsListViewModelTests.cs
@@ -44,7 +47,7 @@ RentalApp.Database/Data/AppDbContext.cs     — UseNetTopologySuite(); update On
 RentalApp.Database/RentalApp.Database.csproj — add NTS NuGet packages
 RentalApp/Services/IApiService.cs           — add pageSize to GetItemsAsync; add page+pageSize to GetNearbyItemsAsync
 RentalApp/Services/RemoteApiService.cs      — implement all item methods
-RentalApp/Services/LocalApiService.cs       — inject IItemRepository; implement all item methods
+RentalApp/Services/LocalApiService.cs       — inject IItemRepository + ICategoryRepository; implement all item methods
 RentalApp/ViewModels/MainViewModel.cs       — 3 new nav RelayCommands
 RentalApp/Constants/Routes.cs              — 4 new route constants
 RentalApp/AppShell.xaml.cs                 — Routing.RegisterRoute for all push pages
@@ -235,6 +238,9 @@ git commit -m "feat: add PostGIS migration — location column, IsAvailable, Cre
 - Create: `RentalApp.Test/Repositories/ItemRepositoryTests.cs`
 - Create: `RentalApp.Database/Repositories/IItemRepository.cs`
 - Create: `RentalApp.Database/Repositories/ItemRepository.cs`
+- Create: `RentalApp.Database/Repositories/ICategoryRepository.cs`
+- Create: `RentalApp.Database/Repositories/CategoryRepository.cs`
+- Create: `RentalApp.Test/Repositories/CategoryRepositoryTests.cs`
 
 - [ ] **Step 1: Update DatabaseFixture to enable PostGIS and seed items**
 
@@ -581,17 +587,6 @@ public class ItemRepositoryTests : IClassFixture<DatabaseFixture>
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
 
-    // ── GetCategoriesAsync ─────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetCategoriesAsync_ReturnsAllCategories()
-    {
-        var sut = CreateSut();
-
-        var categories = await sut.GetCategoriesAsync();
-
-        Assert.Equal(2, categories.Count());
-    }
 }
 ```
 
@@ -609,7 +604,6 @@ Create `RentalApp.Database/Repositories/IItemRepository.cs`:
 
 ```csharp
 using NetTopologySuite.Geometries;
-using DbCategory = RentalApp.Database.Models.Category;
 using DbItem = RentalApp.Database.Models.Item;
 
 namespace RentalApp.Database.Repositories;
@@ -621,7 +615,6 @@ public interface IItemRepository
     Task<DbItem?> GetItemAsync(int id);
     Task<DbItem> CreateItemAsync(string title, string? description, double dailyRate, int categoryId, int ownerId, Point location);
     Task<DbItem> UpdateItemAsync(int id, string? title, string? description, double? dailyRate, bool? isAvailable);
-    Task<IEnumerable<DbCategory>> GetCategoriesAsync();
 }
 ```
 
@@ -760,22 +753,110 @@ public class ItemRepository : IItemRepository
         return item;
     }
 
-    public async Task<IEnumerable<DbCategory>> GetCategoriesAsync()
+}
+```
+
+- [ ] **Step 6: Create ICategoryRepository and CategoryRepository**
+
+Create `RentalApp.Database/Repositories/ICategoryRepository.cs`:
+
+```csharp
+using DbCategory = RentalApp.Database.Models.Category;
+
+namespace RentalApp.Database.Repositories;
+
+public interface ICategoryRepository
+{
+    Task<IEnumerable<DbCategory>> GetAllAsync();
+}
+```
+
+Create `RentalApp.Database/Repositories/CategoryRepository.cs`:
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using RentalApp.Database.Data;
+using DbCategory = RentalApp.Database.Models.Category;
+
+namespace RentalApp.Database.Repositories;
+
+public class CategoryRepository : ICategoryRepository
+{
+    private readonly AppDbContext _context;
+
+    public CategoryRepository(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<DbCategory>> GetAllAsync()
     {
         return await _context.Categories.OrderBy(c => c.Name).ToListAsync();
     }
 }
 ```
 
-- [ ] **Step 6: Run tests — all repository tests should pass**
+- [ ] **Step 7: Write failing CategoryRepository tests**
+
+Create `RentalApp.Test/Repositories/CategoryRepositoryTests.cs`:
+
+```csharp
+using RentalApp.Database.Repositories;
+
+namespace RentalApp.Test.Repositories;
+
+public class CategoryRepositoryTests : IClassFixture<DatabaseFixture>
+{
+    private readonly DatabaseFixture _fixture;
+
+    public CategoryRepositoryTests(DatabaseFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    private CategoryRepository CreateSut() => new(_fixture.Context);
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsAllCategories()
+    {
+        var sut = CreateSut();
+
+        var categories = await sut.GetAllAsync();
+
+        Assert.Equal(2, categories.Count());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsOrderedByName()
+    {
+        var sut = CreateSut();
+
+        var categories = (await sut.GetAllAsync()).ToList();
+
+        Assert.True(
+            string.Compare(categories[0].Name, categories[1].Name, StringComparison.Ordinal) <= 0
+        );
+    }
+}
+```
+
+- [ ] **Step 8: Run CategoryRepository tests — all should pass**
 
 ```bash
-dotnet test RentalApp.Test/RentalApp.Test.csproj --filter "FullyQualifiedName~ItemRepositoryTests"
+dotnet test RentalApp.Test/RentalApp.Test.csproj --filter "FullyQualifiedName~CategoryRepositoryTests"
 ```
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Run full test suite to check nothing is broken**
+- [ ] **Step 9: Run all repository tests to verify nothing is broken**
+
+```bash
+dotnet test RentalApp.Test/RentalApp.Test.csproj --filter "FullyQualifiedName~RepositoryTests"
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 10: Run full test suite**
 
 ```bash
 dotnet test RentalApp.Test/RentalApp.Test.csproj
@@ -783,15 +864,18 @@ dotnet test RentalApp.Test/RentalApp.Test.csproj
 
 Expected: all existing tests still pass.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 dotnet csharpier .
 git add RentalApp.Database/Repositories/IItemRepository.cs
 git add RentalApp.Database/Repositories/ItemRepository.cs
+git add RentalApp.Database/Repositories/ICategoryRepository.cs
+git add RentalApp.Database/Repositories/CategoryRepository.cs
 git add RentalApp.Test/Fixtures/DatabaseFixture.cs
 git add RentalApp.Test/Repositories/ItemRepositoryTests.cs
-git commit -m "feat: add IItemRepository and ItemRepository with PostGIS nearby search and pagination"
+git add RentalApp.Test/Repositories/CategoryRepositoryTests.cs
+git commit -m "feat: add ItemRepository and CategoryRepository with interfaces"
 ```
 
 ---
@@ -968,15 +1052,17 @@ public class LocalApiService : IApiService
 {
     private readonly AppDbContext _context;
     private readonly IItemRepository _itemRepository;
+    private readonly ICategoryRepository _categoryRepository;
     private User? _currentUser;
 
     private static readonly GeometryFactory GeoFactory =
         new GeometryFactory(new PrecisionModel(), 4326);
 
-    public LocalApiService(AppDbContext context, IItemRepository itemRepository)
+    public LocalApiService(AppDbContext context, IItemRepository itemRepository, ICategoryRepository categoryRepository)
     {
         _context = context;
         _itemRepository = itemRepository;
+        _categoryRepository = categoryRepository;
     }
 
     public async Task LoginAsync(string email, string password)
@@ -1128,7 +1214,7 @@ public class LocalApiService : IApiService
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var dbCategories = await _itemRepository.GetCategoriesAsync();
+        var dbCategories = await _categoryRepository.GetAllAsync();
         return dbCategories
             .Select(c => new Category(c.Id, c.Name, c.Slug, ItemCount: 0))
             .ToList();
@@ -1190,9 +1276,11 @@ else
 {
     builder.Services.AddDbContext<AppDbContext>();
     builder.Services.AddScoped<IItemRepository, ItemRepository>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
     builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
         sp.GetRequiredService<AppDbContext>(),
-        sp.GetRequiredService<IItemRepository>()
+        sp.GetRequiredService<IItemRepository>(),
+        sp.GetRequiredService<ICategoryRepository>()
     ));
 }
 ```
