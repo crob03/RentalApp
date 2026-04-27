@@ -58,6 +58,29 @@ public partial class BaseViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Executes <paramref name="operation"/> with standard busy/error lifecycle management:
+    /// sets <see cref="IsBusy"/>, clears any existing error, then restores <see cref="IsBusy"/>
+    /// in a finally block. Catches any exception and surfaces it via <see cref="SetError"/>.
+    /// </summary>
+    protected async Task RunAsync(Func<Task> operation)
+    {
+        try
+        {
+            IsBusy = true;
+            ClearError();
+            await operation();
+        }
+        catch (Exception ex)
+        {
+            SetError(ex.Message);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>
     /// Command that clears the current error state. Intended for binding to dismiss-error
     /// controls in the UI.
     /// </summary>

@@ -107,20 +107,9 @@ public partial class MainViewModel : BaseViewModel
     /// Reloads the current user's data from the authentication service.
     /// </summary>
     [RelayCommand]
-    private async Task RefreshDataAsync()
+    private Task RefreshDataAsync() => RunAsync(() =>
     {
-        try
-        {
-            IsBusy = true;
-            LoadUserData();
-        }
-        catch (Exception ex)
-        {
-            SetError($"Failed to refresh data: {ex.Message}");
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+        LoadUserData();
+        return Task.CompletedTask;
+    });
 }

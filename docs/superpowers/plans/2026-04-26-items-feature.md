@@ -18,7 +18,8 @@ RentalApp/Services/IItemService.cs
 RentalApp/Services/ItemService.cs
 RentalApp/Services/ILocationService.cs
 RentalApp/Services/LocationService.cs
-RentalApp/Services/ItemRepository.cs
+RentalApp.Database/Repositories/IItemRepository.cs
+RentalApp.Database/Repositories/ItemRepository.cs
 RentalApp/ViewModels/ItemsListViewModel.cs
 RentalApp/ViewModels/ItemDetailsViewModel.cs
 RentalApp/ViewModels/CreateItemViewModel.cs
@@ -43,7 +44,7 @@ RentalApp.Database/Data/AppDbContext.cs     — UseNetTopologySuite(); update On
 RentalApp.Database/RentalApp.Database.csproj — add NTS NuGet packages
 RentalApp/Services/IApiService.cs           — add pageSize to GetItemsAsync; add page+pageSize to GetNearbyItemsAsync
 RentalApp/Services/RemoteApiService.cs      — implement all item methods
-RentalApp/Services/LocalApiService.cs       — inject ItemRepository; implement all item methods
+RentalApp/Services/LocalApiService.cs       — inject IItemRepository; implement all item methods
 RentalApp/ViewModels/MainViewModel.cs       — 3 new nav RelayCommands
 RentalApp/Constants/Routes.cs              — 4 new route constants
 RentalApp/AppShell.xaml.cs                 — Routing.RegisterRoute for all push pages
@@ -232,7 +233,8 @@ git commit -m "feat: add PostGIS migration — location column, IsAvailable, Cre
 **Files:**
 - Modify: `RentalApp.Test/Fixtures/DatabaseFixture.cs`
 - Create: `RentalApp.Test/Repositories/ItemRepositoryTests.cs`
-- Create: `RentalApp/Services/ItemRepository.cs`
+- Create: `RentalApp.Database/Repositories/IItemRepository.cs`
+- Create: `RentalApp.Database/Repositories/ItemRepository.cs`
 
 - [ ] **Step 1: Update DatabaseFixture to enable PostGIS and seed items**
 
@@ -601,9 +603,31 @@ dotnet test RentalApp.Test/RentalApp.Test.csproj
 
 Expected: compiler error — `ItemRepository` type not found.
 
-- [ ] **Step 4: Implement ItemRepository**
+- [ ] **Step 4: Create IItemRepository**
 
-Create `RentalApp/Services/ItemRepository.cs`:
+Create `RentalApp.Database/Repositories/IItemRepository.cs`:
+
+```csharp
+using NetTopologySuite.Geometries;
+using DbCategory = RentalApp.Database.Models.Category;
+using DbItem = RentalApp.Database.Models.Item;
+
+namespace RentalApp.Database.Repositories;
+
+public interface IItemRepository
+{
+    Task<IEnumerable<DbItem>> GetItemsAsync(string? category, string? search, int page, int pageSize);
+    Task<IEnumerable<DbItem>> GetNearbyItemsAsync(Point origin, double radiusMeters, string? category, int page, int pageSize);
+    Task<DbItem?> GetItemAsync(int id);
+    Task<DbItem> CreateItemAsync(string title, string? description, double dailyRate, int categoryId, int ownerId, Point location);
+    Task<DbItem> UpdateItemAsync(int id, string? title, string? description, double? dailyRate, bool? isAvailable);
+    Task<IEnumerable<DbCategory>> GetCategoriesAsync();
+}
+```
+
+- [ ] **Step 5: Implement ItemRepository**
+
+Create `RentalApp.Database/Repositories/ItemRepository.cs`:
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -612,9 +636,9 @@ using RentalApp.Database.Data;
 using DbCategory = RentalApp.Database.Models.Category;
 using DbItem = RentalApp.Database.Models.Item;
 
-namespace RentalApp.Services;
+namespace RentalApp.Database.Repositories;
 
-public class ItemRepository
+public class ItemRepository : IItemRepository
 {
     private readonly AppDbContext _context;
 
@@ -743,7 +767,7 @@ public class ItemRepository
 }
 ```
 
-- [ ] **Step 5: Run tests — all repository tests should pass**
+- [ ] **Step 6: Run tests — all repository tests should pass**
 
 ```bash
 dotnet test RentalApp.Test/RentalApp.Test.csproj --filter "FullyQualifiedName~ItemRepositoryTests"
@@ -751,7 +775,7 @@ dotnet test RentalApp.Test/RentalApp.Test.csproj --filter "FullyQualifiedName~It
 
 Expected: all tests pass.
 
-- [ ] **Step 6: Run full test suite to check nothing is broken**
+- [ ] **Step 7: Run full test suite to check nothing is broken**
 
 ```bash
 dotnet test RentalApp.Test/RentalApp.Test.csproj
@@ -759,14 +783,15 @@ dotnet test RentalApp.Test/RentalApp.Test.csproj
 
 Expected: all existing tests still pass.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 dotnet csharpier .
-git add RentalApp/Services/ItemRepository.cs
+git add RentalApp.Database/Repositories/IItemRepository.cs
+git add RentalApp.Database/Repositories/ItemRepository.cs
 git add RentalApp.Test/Fixtures/DatabaseFixture.cs
 git add RentalApp.Test/Repositories/ItemRepositoryTests.cs
-git commit -m "feat: add ItemRepository with PostGIS nearby search and pagination"
+git commit -m "feat: add IItemRepository and ItemRepository with PostGIS nearby search and pagination"
 ```
 
 ---
@@ -933,6 +958,7 @@ using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using RentalApp.Database.Data;
+using RentalApp.Database.Repositories;
 using RentalApp.Models;
 using DbUser = RentalApp.Database.Models.User;
 
@@ -941,13 +967,13 @@ namespace RentalApp.Services;
 public class LocalApiService : IApiService
 {
     private readonly AppDbContext _context;
-    private readonly ItemRepository _itemRepository;
+    private readonly IItemRepository _itemRepository;
     private User? _currentUser;
 
     private static readonly GeometryFactory GeoFactory =
         new GeometryFactory(new PrecisionModel(), 4326);
 
-    public LocalApiService(AppDbContext context, ItemRepository itemRepository)
+    public LocalApiService(AppDbContext context, IItemRepository itemRepository)
     {
         _context = context;
         _itemRepository = itemRepository;
@@ -1163,10 +1189,10 @@ In `RentalApp/MauiProgram.cs`, find the `else` block that registers `LocalApiSer
 else
 {
     builder.Services.AddDbContext<AppDbContext>();
-    builder.Services.AddScoped<ItemRepository>();
+    builder.Services.AddScoped<IItemRepository, ItemRepository>();
     builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
         sp.GetRequiredService<AppDbContext>(),
-        sp.GetRequiredService<ItemRepository>()
+        sp.GetRequiredService<IItemRepository>()
     ));
 }
 ```
@@ -2701,32 +2727,19 @@ public partial class ItemsListViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task LoadItemsAsync()
+    private Task LoadItemsAsync() => RunAsync(async () =>
     {
-        try
-        {
-            IsBusy = true;
-            ClearError();
-            CurrentPage = 1;
+        CurrentPage = 1;
 
-            var result = await _itemService.GetItemsAsync(
-                SelectedCategory, SearchText.Length > 0 ? SearchText : null, CurrentPage, PageSize
-            );
+        var result = await _itemService.GetItemsAsync(
+            SelectedCategory, SearchText.Length > 0 ? SearchText : null, CurrentPage, PageSize
+        );
 
-            Items = new ObservableCollection<Item>(result);
-            HasMorePages = result.Count == PageSize;
-            IsEmpty = Items.Count == 0;
-            _hasLoaded = true;
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+        Items = new ObservableCollection<Item>(result);
+        HasMorePages = result.Count == PageSize;
+        IsEmpty = Items.Count == 0;
+        _hasLoaded = true;
+    });
 
     [RelayCommand]
     private async Task LoadMoreItemsAsync()
@@ -2873,6 +2886,8 @@ namespace RentalApp.Views;
 
 public partial class ItemsListPage : ContentPage
 {
+    private ItemsListViewModel ViewModel => (ItemsListViewModel)BindingContext;
+
     public ItemsListPage(ItemsListViewModel viewModel)
     {
         BindingContext = viewModel;
@@ -2882,7 +2897,7 @@ public partial class ItemsListPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((ItemsListViewModel)BindingContext).LoadItemsCommand.ExecuteAsync(null);
+        await ViewModel.LoadItemsCommand.ExecuteAsync(null);
     }
 }
 ```
@@ -3164,25 +3179,11 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     }
 
     [RelayCommand]
-    private async Task LoadItemAsync()
+    private Task LoadItemAsync() => RunAsync(async () =>
     {
-        try
-        {
-            IsBusy = true;
-            ClearError();
-
-            CurrentItem = await _itemService.GetItemAsync(_itemId);
-            IsOwner = CurrentItem.OwnerId == _authService.CurrentUser?.Id;
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+        CurrentItem = await _itemService.GetItemAsync(_itemId);
+        IsOwner = CurrentItem.OwnerId == _authService.CurrentUser?.Id;
+    });
 
     [RelayCommand]
     private void ToggleEdit()
@@ -3209,11 +3210,8 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
             return;
         }
 
-        try
+        await RunAsync(async () =>
         {
-            IsBusy = true;
-            ClearError();
-
             CurrentItem = await _itemService.UpdateItemAsync(
                 CurrentItem.Id,
                 EditTitle,
@@ -3222,15 +3220,7 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
                 EditIsAvailable
             );
             IsEditing = false;
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        });
     }
 
     [RelayCommand]
@@ -3347,6 +3337,8 @@ namespace RentalApp.Views;
 
 public partial class ItemDetailsPage : ContentPage
 {
+    private ItemDetailsViewModel ViewModel => (ItemDetailsViewModel)BindingContext;
+
     public ItemDetailsPage(ItemDetailsViewModel viewModel)
     {
         BindingContext = viewModel;
@@ -3356,7 +3348,7 @@ public partial class ItemDetailsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((ItemDetailsViewModel)BindingContext).LoadItemCommand.ExecuteAsync(null);
+        await ViewModel.LoadItemCommand.ExecuteAsync(null);
     }
 }
 ```
@@ -3582,23 +3574,10 @@ public partial class CreateItemViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task LoadCategoriesAsync()
+    private Task LoadCategoriesAsync() => RunAsync(async () =>
     {
-        try
-        {
-            IsBusy = true;
-            ClearError();
-            Categories = await _itemService.GetCategoriesAsync();
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+        Categories = await _itemService.GetCategoriesAsync();
+    });
 
     [RelayCommand]
     private async Task CreateItemAsync()
@@ -3615,11 +3594,8 @@ public partial class CreateItemViewModel : BaseViewModel
             return;
         }
 
-        try
+        await RunAsync(async () =>
         {
-            IsBusy = true;
-            ClearError();
-
             var (lat, lon) = await _locationService.GetCurrentLocationAsync();
 
             await _itemService.CreateItemAsync(
@@ -3632,15 +3608,7 @@ public partial class CreateItemViewModel : BaseViewModel
             );
 
             await _navigationService.NavigateBackAsync();
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        });
     }
 }
 ```
@@ -3724,6 +3692,8 @@ namespace RentalApp.Views;
 
 public partial class CreateItemPage : ContentPage
 {
+    private CreateItemViewModel ViewModel => (CreateItemViewModel)BindingContext;
+
     public CreateItemPage(CreateItemViewModel viewModel)
     {
         BindingContext = viewModel;
@@ -3733,7 +3703,7 @@ public partial class CreateItemPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((CreateItemViewModel)BindingContext).LoadCategoriesCommand.ExecuteAsync(null);
+        await ViewModel.LoadCategoriesCommand.ExecuteAsync(null);
     }
 }
 ```
@@ -3977,36 +3947,23 @@ public partial class NearbyItemsViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task LoadNearbyItemsAsync()
+    private Task LoadNearbyItemsAsync() => RunAsync(async () =>
     {
-        try
-        {
-            IsBusy = true;
-            ClearError();
-            CurrentPage = 1;
+        CurrentPage = 1;
 
-            var (lat, lon) = await _locationService.GetCurrentLocationAsync();
-            _cachedLat = lat;
-            _cachedLon = lon;
+        var (lat, lon) = await _locationService.GetCurrentLocationAsync();
+        _cachedLat = lat;
+        _cachedLon = lon;
 
-            var result = await _itemService.GetNearbyItemsAsync(
-                _cachedLat, _cachedLon, Radius, SelectedCategory, CurrentPage, PageSize
-            );
+        var result = await _itemService.GetNearbyItemsAsync(
+            _cachedLat, _cachedLon, Radius, SelectedCategory, CurrentPage, PageSize
+        );
 
-            Items = new ObservableCollection<Item>(result);
-            HasMorePages = result.Count == PageSize;
-            IsEmpty = Items.Count == 0;
-            _hasLoaded = true;
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+        Items = new ObservableCollection<Item>(result);
+        HasMorePages = result.Count == PageSize;
+        IsEmpty = Items.Count == 0;
+        _hasLoaded = true;
+    });
 
     [RelayCommand]
     private async Task LoadMoreItemsAsync()
@@ -4139,6 +4096,8 @@ namespace RentalApp.Views;
 
 public partial class NearbyItemsPage : ContentPage
 {
+    private NearbyItemsViewModel ViewModel => (NearbyItemsViewModel)BindingContext;
+
     public NearbyItemsPage(NearbyItemsViewModel viewModel)
     {
         BindingContext = viewModel;
@@ -4148,7 +4107,7 @@ public partial class NearbyItemsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((NearbyItemsViewModel)BindingContext).LoadNearbyItemsCommand.ExecuteAsync(null);
+        await ViewModel.LoadNearbyItemsCommand.ExecuteAsync(null);
     }
 }
 ```
