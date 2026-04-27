@@ -7,6 +7,8 @@ namespace RentalApp.Views;
 /// </summary>
 public partial class LoginPage : ContentPage
 {
+    private LoginViewModel ViewModel => (LoginViewModel)BindingContext;
+
     /// <summary>
     /// Initialises the page and binds it to the provided <see cref="LoginViewModel"/>.
     /// </summary>
@@ -23,7 +25,7 @@ public partial class LoginPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((LoginViewModel)BindingContext).InitializeAsync();
+        await ViewModel.InitializeAsync();
         EmailEntry.Focus();
     }
 }
