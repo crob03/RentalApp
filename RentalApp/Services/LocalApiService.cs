@@ -92,4 +92,38 @@ public class LocalApiService : IApiService
 
     private static User ToUser(DbUser user) =>
         new(user.Id, user.FirstName, user.LastName, 0.0, 0, 0, user.Email, user.CreatedAt, null);
+
+    public Task<List<Item>> GetItemsAsync(
+        string? category = null,
+        string? search = null,
+        int page = 1
+    ) => throw new NotImplementedException();
+
+    public Task<List<Item>> GetNearbyItemsAsync(
+        double lat,
+        double lon,
+        double radius = 5.0,
+        string? category = null
+    ) => throw new NotImplementedException();
+
+    public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();
+
+    public Task<Item> CreateItemAsync(
+        string title,
+        string? description,
+        double dailyRate,
+        int categoryId,
+        double latitude,
+        double longitude
+    ) => throw new NotImplementedException();
+
+    public Task<Item> UpdateItemAsync(
+        int id,
+        string? title,
+        string? description,
+        double? dailyRate,
+        bool? isAvailable
+    ) => throw new NotImplementedException();
+
+    public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
 }

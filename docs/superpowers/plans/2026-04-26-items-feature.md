@@ -42,7 +42,8 @@ RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs
 
 ### Modified files
 ```
-RentalApp.Database/Models/Item.cs           — replace Lat/Lon with Point; add IsAvailable + CreatedAt; remove ImageUrl
+RentalApp.Database/Models/Item.cs           — replace Lat/Lon with Point; add IsAvailable, CreatedAt, UpdatedAt; remove ImageUrl
+RentalApp.Database/Models/Category.cs       — add CreatedAt, UpdatedAt
 RentalApp.Database/Data/AppDbContext.cs     — UseNetTopologySuite(); update OnModelCreating
 RentalApp.Database/RentalApp.Database.csproj — add NTS NuGet packages
 RentalApp/Services/IApiService.cs           — add pageSize to GetItemsAsync; add page+pageSize to GetNearbyItemsAsync
@@ -117,12 +118,42 @@ public class Item
     [Required]
     public bool IsAvailable { get; set; } = true;
 
-    [Required]
-    public DateTime CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 ```
 
-- [ ] **Step 3: Verify the project builds**
+- [ ] **Step 3: Update Category DB model**
+
+Add `CreatedAt` and `UpdatedAt` to `RentalApp.Database/Models/Category.cs`, matching the `User` model pattern:
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace RentalApp.Database.Models;
+
+[Table("categories")]
+[PrimaryKey(nameof(Id))]
+public class Category
+{
+    public int Id { get; set; }
+
+    [Required]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
+    public string Slug { get; set; } = string.Empty;
+
+    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+```
+
+- [ ] **Step 4: Verify the project builds**
 
 ```bash
 dotnet build RentalApp.Database/RentalApp.Database.csproj
@@ -130,12 +161,14 @@ dotnet build RentalApp.Database/RentalApp.Database.csproj
 
 Expected: build succeeds with no errors.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 dotnet csharpier .
-git add RentalApp.Database/RentalApp.Database.csproj RentalApp.Database/Models/Item.cs
-git commit -m "feat: update Item DB model — PostGIS Point, IsAvailable, CreatedAt, drop ImageUrl"
+git add RentalApp.Database/RentalApp.Database.csproj
+git add RentalApp.Database/Models/Item.cs
+git add RentalApp.Database/Models/Category.cs
+git commit -m "feat: update Item and Category DB models — PostGIS Point, IsAvailable, CreatedAt, UpdatedAt, drop ImageUrl"
 ```
 
 ---
@@ -226,7 +259,7 @@ Expected: build succeeds.
 dotnet csharpier .
 git add RentalApp.Database/Data/AppDbContext.cs
 git add RentalApp.Migrations/Migrations/
-git commit -m "feat: add PostGIS migration — location column, IsAvailable, CreatedAt, drop ImageUrl"
+git commit -m "feat: add PostGIS migration — location column, IsAvailable, CreatedAt, UpdatedAt, drop ImageUrl"
 ```
 
 ---
@@ -326,8 +359,8 @@ public class DatabaseFixture : IAsyncLifetime
         var factory = new GeometryFactory(new PrecisionModel(), 4326);
 
         Context.Categories.AddRange(
-            new Category { Id = 1, Name = "Tools", Slug = "tools" },
-            new Category { Id = 2, Name = "Electronics", Slug = "electronics" }
+            new Category { Id = 1, Name = "Tools", Slug = "tools", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 2, Name = "Electronics", Slug = "electronics", CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
         // Three items at known Edinburgh-area coordinates:
@@ -716,6 +749,7 @@ public class ItemRepository : IItemRepository
             Location = location,
             IsAvailable = true,
             CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
 
         _context.Items.Add(item);
@@ -749,6 +783,8 @@ public class ItemRepository : IItemRepository
         if (isAvailable.HasValue)
             item.IsAvailable = isAvailable.Value;
 
+        item.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
         return item;
     }
@@ -767,7 +803,7 @@ namespace RentalApp.Database.Repositories;
 
 public interface ICategoryRepository
 {
-    Task<IEnumerable<DbCategory>> GetAllAsync();
+    Task<IEnumerable<(DbCategory Category, int ItemCount)>> GetAllAsync();
 }
 ```
 
@@ -789,9 +825,14 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<DbCategory>> GetAllAsync()
+    public async Task<IEnumerable<(DbCategory Category, int ItemCount)>> GetAllAsync()
     {
-        return await _context.Categories.OrderBy(c => c.Name).ToListAsync();
+        var rows = await _context.Categories
+            .OrderBy(c => c.Name)
+            .Select(c => new { Category = c, Count = _context.Items.Count(i => i.CategoryId == c.Id) })
+            .ToListAsync();
+
+        return rows.Select(r => (r.Category, r.Count));
     }
 }
 ```
@@ -821,9 +862,9 @@ public class CategoryRepositoryTests : IClassFixture<DatabaseFixture>
     {
         var sut = CreateSut();
 
-        var categories = await sut.GetAllAsync();
+        var results = await sut.GetAllAsync();
 
-        Assert.Equal(2, categories.Count());
+        Assert.Equal(2, results.Count());
     }
 
     [Fact]
@@ -831,11 +872,25 @@ public class CategoryRepositoryTests : IClassFixture<DatabaseFixture>
     {
         var sut = CreateSut();
 
-        var categories = (await sut.GetAllAsync()).ToList();
+        var results = (await sut.GetAllAsync()).ToList();
 
         Assert.True(
-            string.Compare(categories[0].Name, categories[1].Name, StringComparison.Ordinal) <= 0
+            string.Compare(results[0].Category.Name, results[1].Category.Name, StringComparison.Ordinal) <= 0
         );
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ItemCountMatchesSeededItems()
+    {
+        var sut = CreateSut();
+
+        var results = (await sut.GetAllAsync()).ToList();
+
+        // Seed: Tools (id=1) has 2 items, Electronics (id=2) has 1 item
+        var tools = results.Single(r => r.Category.Slug == "tools");
+        var electronics = results.Single(r => r.Category.Slug == "electronics");
+        Assert.Equal(2, tools.ItemCount);
+        Assert.Equal(1, electronics.ItemCount);
     }
 }
 ```
@@ -1214,9 +1269,9 @@ public class LocalApiService : IApiService
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var dbCategories = await _categoryRepository.GetAllAsync();
-        return dbCategories
-            .Select(c => new Category(c.Id, c.Name, c.Slug, ItemCount: 0))
+        var results = await _categoryRepository.GetAllAsync();
+        return results
+            .Select(r => new Category(r.Category.Id, r.Category.Name, r.Category.Slug, ItemCount: r.ItemCount))
             .ToList();
     }
 

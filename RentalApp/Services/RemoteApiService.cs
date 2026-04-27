@@ -134,6 +134,40 @@ public class RemoteApiService : IApiService
         return Task.CompletedTask;
     }
 
+    public Task<List<Item>> GetItemsAsync(
+        string? category = null,
+        string? search = null,
+        int page = 1
+    ) => throw new NotImplementedException();
+
+    public Task<List<Item>> GetNearbyItemsAsync(
+        double lat,
+        double lon,
+        double radius = 5.0,
+        string? category = null
+    ) => throw new NotImplementedException();
+
+    public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();
+
+    public Task<Item> CreateItemAsync(
+        string title,
+        string? description,
+        double dailyRate,
+        int categoryId,
+        double latitude,
+        double longitude
+    ) => throw new NotImplementedException();
+
+    public Task<Item> UpdateItemAsync(
+        int id,
+        string? title,
+        string? description,
+        double? dailyRate,
+        bool? isAvailable
+    ) => throw new NotImplementedException();
+
+    public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
+
     private sealed record MeResponse(
         int Id,
         string Email,
