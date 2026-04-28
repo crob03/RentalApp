@@ -134,42 +134,304 @@ public class RemoteApiService : IApiService
         return Task.CompletedTask;
     }
 
-    public Task<List<Item>> GetItemsAsync(
+    public async Task<List<Item>> GetItemsAsync(
         string? category = null,
         string? search = null,
         int page = 1,
         int pageSize = 20
-    ) => throw new NotImplementedException();
+    )
+    {
+        var query = $"items?page={page}&pageSize={pageSize}";
+        if (category != null)
+            query += $"&category={Uri.EscapeDataString(category)}";
+        if (search != null)
+            query += $"&search={Uri.EscapeDataString(search)}";
 
-    public Task<List<Item>> GetNearbyItemsAsync(
+        var response = await _apiClient.GetAsync(query);
+        response.EnsureSuccessStatusCode();
+
+        var dto =
+            await response.Content.ReadFromJsonAsync<ItemsListResponse>()
+            ?? throw new InvalidOperationException("Empty items response from API");
+
+        return dto
+            .Items.Select(i => new Item(
+                i.Id,
+                i.Title,
+                i.Description,
+                i.DailyRate,
+                i.CategoryId,
+                i.Category,
+                i.OwnerId,
+                i.OwnerName,
+                i.OwnerRating,
+                Latitude: null,
+                Longitude: null,
+                Distance: null,
+                i.IsAvailable,
+                i.AverageRating,
+                TotalReviews: null,
+                i.CreatedAt,
+                Reviews: null
+            ))
+            .ToList();
+    }
+
+    public async Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
         double radius = 5.0,
         string? category = null,
         int page = 1,
         int pageSize = 20
-    ) => throw new NotImplementedException();
+    )
+    {
+        var query =
+            $"items/nearby?lat={lat}&lon={lon}&radius={radius}&page={page}&pageSize={pageSize}";
+        if (category != null)
+            query += $"&category={Uri.EscapeDataString(category)}";
 
-    public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();
+        var response = await _apiClient.GetAsync(query);
+        response.EnsureSuccessStatusCode();
 
-    public Task<Item> CreateItemAsync(
+        var dto =
+            await response.Content.ReadFromJsonAsync<NearbyItemsResponse>()
+            ?? throw new InvalidOperationException("Empty nearby items response from API");
+
+        return dto
+            .Items.Select(i => new Item(
+                i.Id,
+                i.Title,
+                i.Description,
+                i.DailyRate,
+                i.CategoryId,
+                i.Category,
+                i.OwnerId,
+                i.OwnerName,
+                OwnerRating: null,
+                i.Latitude,
+                i.Longitude,
+                i.Distance,
+                i.IsAvailable,
+                i.AverageRating,
+                TotalReviews: null,
+                CreatedAt: null,
+                Reviews: null
+            ))
+            .ToList();
+    }
+
+    public async Task<Item> GetItemAsync(int id)
+    {
+        var response = await _apiClient.GetAsync($"items/{id}");
+        response.EnsureSuccessStatusCode();
+
+        var dto =
+            await response.Content.ReadFromJsonAsync<ItemDetailDto>()
+            ?? throw new InvalidOperationException("Empty item response from API");
+
+        return new Item(
+            dto.Id,
+            dto.Title,
+            dto.Description,
+            dto.DailyRate,
+            dto.CategoryId,
+            dto.Category,
+            dto.OwnerId,
+            dto.OwnerName,
+            dto.OwnerRating,
+            dto.Latitude,
+            dto.Longitude,
+            Distance: null,
+            dto.IsAvailable,
+            dto.AverageRating,
+            dto.TotalReviews,
+            dto.CreatedAt,
+            dto.Reviews.Select(r => new Review(
+                    r.Id,
+                    RentalId: null,
+                    ItemId: dto.Id,
+                    r.ReviewerId,
+                    r.Rating,
+                    ItemTitle: dto.Title,
+                    r.Comment,
+                    r.ReviewerName,
+                    r.CreatedAt
+                ))
+                .ToList()
+        );
+    }
+
+    public async Task<Item> CreateItemAsync(
         string title,
         string? description,
         double dailyRate,
         int categoryId,
         double latitude,
         double longitude
-    ) => throw new NotImplementedException();
+    )
+    {
+        var response = await _apiClient.PostAsJsonAsync(
+            "items",
+            new
+            {
+                title,
+                description,
+                dailyRate,
+                categoryId,
+                latitude,
+                longitude,
+            }
+        );
+        response.EnsureSuccessStatusCode();
 
-    public Task<Item> UpdateItemAsync(
+        var dto =
+            await response.Content.ReadFromJsonAsync<ItemCreateResponse>()
+            ?? throw new InvalidOperationException("Empty create item response from API");
+
+        return new Item(
+            dto.Id,
+            dto.Title,
+            dto.Description,
+            dto.DailyRate,
+            dto.CategoryId,
+            dto.Category,
+            dto.OwnerId,
+            dto.OwnerName,
+            OwnerRating: null,
+            dto.Latitude,
+            dto.Longitude,
+            Distance: null,
+            dto.IsAvailable,
+            AverageRating: null,
+            TotalReviews: null,
+            dto.CreatedAt,
+            Reviews: null
+        );
+    }
+
+    public async Task<Item> UpdateItemAsync(
         int id,
         string? title,
         string? description,
         double? dailyRate,
         bool? isAvailable
-    ) => throw new NotImplementedException();
+    )
+    {
+        var response = await _apiClient.PutAsJsonAsync(
+            $"items/{id}",
+            new
+            {
+                title,
+                description,
+                dailyRate,
+                isAvailable,
+            }
+        );
+        response.EnsureSuccessStatusCode();
 
-    public Task<List<Category>> GetCategoriesAsync() => throw new NotImplementedException();
+        return await GetItemAsync(id);
+    }
+
+    public async Task<List<Category>> GetCategoriesAsync()
+    {
+        var response = await _apiClient.GetAsync("categories");
+        response.EnsureSuccessStatusCode();
+
+        var dto =
+            await response.Content.ReadFromJsonAsync<CategoriesResponse>()
+            ?? throw new InvalidOperationException("Empty categories response from API");
+
+        return dto.Categories.Select(c => new Category(c.Id, c.Name, c.Slug, c.ItemCount)).ToList();
+    }
+
+    private sealed record ItemsListResponse(
+        List<ItemListDto> Items,
+        int TotalItems,
+        int Page,
+        int PageSize,
+        int TotalPages
+    );
+
+    private sealed record ItemListDto(
+        int Id,
+        string Title,
+        string? Description,
+        double DailyRate,
+        int CategoryId,
+        string Category,
+        int OwnerId,
+        string OwnerName,
+        double? OwnerRating,
+        bool IsAvailable,
+        double? AverageRating,
+        DateTime CreatedAt
+    );
+
+    private sealed record NearbyItemsResponse(List<NearbyItemDto> Items, int TotalResults);
+
+    private sealed record NearbyItemDto(
+        int Id,
+        string Title,
+        string? Description,
+        double DailyRate,
+        int CategoryId,
+        string Category,
+        int OwnerId,
+        string OwnerName,
+        double Latitude,
+        double Longitude,
+        double Distance,
+        bool IsAvailable,
+        double? AverageRating
+    );
+
+    private sealed record ItemDetailDto(
+        int Id,
+        string Title,
+        string? Description,
+        double DailyRate,
+        int CategoryId,
+        string Category,
+        int OwnerId,
+        string OwnerName,
+        double? OwnerRating,
+        double? Latitude,
+        double? Longitude,
+        bool IsAvailable,
+        double? AverageRating,
+        int TotalReviews,
+        DateTime CreatedAt,
+        List<ItemReviewDto> Reviews
+    );
+
+    private sealed record ItemReviewDto(
+        int Id,
+        int ReviewerId,
+        string ReviewerName,
+        int Rating,
+        string? Comment,
+        DateTime CreatedAt
+    );
+
+    private sealed record ItemCreateResponse(
+        int Id,
+        string Title,
+        string? Description,
+        double DailyRate,
+        int CategoryId,
+        string Category,
+        int OwnerId,
+        string OwnerName,
+        double Latitude,
+        double Longitude,
+        bool IsAvailable,
+        DateTime CreatedAt
+    );
+
+    private sealed record CategoriesResponse(List<CategoryDto> Categories);
+
+    private sealed record CategoryDto(int Id, string Name, string Slug, int ItemCount);
 
     private sealed record MeResponse(
         int Id,
