@@ -17,7 +17,8 @@ namespace RentalApp.Migrations.Migrations
                 maxLength: 100,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: "text"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "ImageUrl",
@@ -26,7 +27,8 @@ namespace RentalApp.Migrations.Migrations
                 maxLength: 2048,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: "text"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Description",
@@ -35,7 +37,8 @@ namespace RentalApp.Migrations.Migrations
                 maxLength: 1000,
                 nullable: true,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: "text"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Slug",
@@ -44,7 +47,8 @@ namespace RentalApp.Migrations.Migrations
                 maxLength: 100,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: "text"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Name",
@@ -53,7 +57,8 @@ namespace RentalApp.Migrations.Migrations
                 maxLength: 100,
                 nullable: false,
                 oldClrType: typeof(string),
-                oldType: "text");
+                oldType: "text"
+            );
         }
 
         /// <inheritdoc />
@@ -66,7 +71,8 @@ namespace RentalApp.Migrations.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(100)",
-                oldMaxLength: 100);
+                oldMaxLength: 100
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "ImageUrl",
@@ -75,7 +81,8 @@ namespace RentalApp.Migrations.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(2048)",
-                oldMaxLength: 2048);
+                oldMaxLength: 2048
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Description",
@@ -86,7 +93,8 @@ namespace RentalApp.Migrations.Migrations
                 oldClrType: typeof(string),
                 oldType: "character varying(1000)",
                 oldMaxLength: 1000,
-                oldNullable: true);
+                oldNullable: true
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Slug",
@@ -95,7 +103,8 @@ namespace RentalApp.Migrations.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(100)",
-                oldMaxLength: 100);
+                oldMaxLength: 100
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "Name",
@@ -104,7 +113,8 @@ namespace RentalApp.Migrations.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(100)",
-                oldMaxLength: 100);
+                oldMaxLength: 100
+            );
         }
     }
 }
