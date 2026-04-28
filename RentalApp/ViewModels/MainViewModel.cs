@@ -103,13 +103,32 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(Routes.Temp);
     }
 
+    [RelayCommand]
+    private async Task NavigateToItemsListAsync()
+    {
+        await _navigationService.NavigateToAsync(Routes.ItemsList);
+    }
+
+    [RelayCommand]
+    private async Task NavigateToNearbyItemsAsync()
+    {
+        await _navigationService.NavigateToAsync(Routes.NearbyItems);
+    }
+
+    [RelayCommand]
+    private async Task NavigateToCreateItemAsync()
+    {
+        await _navigationService.NavigateToAsync(Routes.CreateItem);
+    }
+
     /// <summary>
     /// Reloads the current user's data from the authentication service.
     /// </summary>
     [RelayCommand]
-    private Task RefreshDataAsync() => RunAsync(() =>
-    {
-        LoadUserData();
-        return Task.CompletedTask;
-    });
+    private Task RefreshDataAsync() =>
+        RunAsync(() =>
+        {
+            LoadUserData();
+            return Task.CompletedTask;
+        });
 }
