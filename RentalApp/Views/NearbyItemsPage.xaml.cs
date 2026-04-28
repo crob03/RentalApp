@@ -4,12 +4,17 @@ namespace RentalApp.Views;
 
 public partial class NearbyItemsPage : ContentPage
 {
-    public NearbyItemsViewModel ViewModel { get; }
+    private NearbyItemsViewModel ViewModel => (NearbyItemsViewModel)BindingContext;
 
     public NearbyItemsPage(NearbyItemsViewModel viewModel)
     {
-        ViewModel = viewModel;
         BindingContext = viewModel;
         InitializeComponent();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await ViewModel.LoadNearbyItemsCommand.ExecuteAsync(null);
     }
 }

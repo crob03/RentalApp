@@ -4,7 +4,97 @@
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:models="clr-namespace:RentalApp.Models"
   Title="{Binding Title}"
+  x:DataType="vm:NearbyItemsViewModel"
 >
-  <Label Text="Nearby Items — coming soon" HorizontalOptions="Center" VerticalOptions="Center" />
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
+    <!-- Error banner -->
+    <Border
+      Grid.Row="0"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
+
+    <!-- Radius slider -->
+    <StackLayout Grid.Row="1" Orientation="Horizontal" Spacing="8">
+      <Label
+        Text="{Binding Radius, StringFormat='Radius: {0:F0} km'}"
+        VerticalOptions="Center"
+        MinimumWidthRequest="110"
+      />
+      <Slider Value="{Binding Radius}" Minimum="1" Maximum="50" HorizontalOptions="FillAndExpand" />
+    </StackLayout>
+
+    <!-- Loading indicator -->
+    <ActivityIndicator Grid.Row="2" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+    <!-- Items list -->
+    <RefreshView
+      Grid.Row="3"
+      IsRefreshing="{Binding IsBusy}"
+      Command="{Binding LoadNearbyItemsCommand}"
+    >
+      <CollectionView
+        ItemsSource="{Binding Items}"
+        RemainingItemsThreshold="3"
+        RemainingItemsThresholdReachedCommand="{Binding LoadMoreItemsCommand}"
+      >
+        <CollectionView.EmptyView>
+          <Label
+            Text="No items found nearby."
+            HorizontalOptions="Center"
+            Margin="0,40"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </CollectionView.EmptyView>
+        <CollectionView.ItemTemplate>
+          <DataTemplate x:DataType="models:Item">
+            <Border
+              Margin="0,4"
+              Padding="12"
+              StrokeThickness="1"
+              Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+            >
+              <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+              </Border.StrokeShape>
+              <Border.GestureRecognizers>
+                <TapGestureRecognizer
+                  Command="{Binding Source={RelativeSource AncestorType={x:Type vm:NearbyItemsViewModel}}, Path=NavigateToItemCommand}"
+                  CommandParameter="{Binding .}"
+                />
+              </Border.GestureRecognizers>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Title}" FontAttributes="Bold" />
+                <Label
+                  Grid.Row="0"
+                  Grid.Column="1"
+                  Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
+                />
+                <Label
+                  Grid.Row="1"
+                  Grid.Column="0"
+                  Text="{Binding Distance, StringFormat='{0:F1} km away'}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+    </RefreshView>
+  </Grid>
 </ContentPage>
