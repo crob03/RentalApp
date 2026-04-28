@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Geometries;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Database.Data;
@@ -52,7 +53,7 @@ public class AppDbContext : DbContext
 
         optionsBuilder.UseNpgsql(
             connectionString,
-            o => o.MigrationsAssembly("RentalApp.Migrations")
+            o => o.MigrationsAssembly("RentalApp.Migrations").UseNetTopologySuite()
         );
     }
 
@@ -99,10 +100,9 @@ public class AppDbContext : DbContext
         {
             entity.Property(e => e.Title).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.ImageUrl).HasMaxLength(2048);
+            entity.Property(e => e.Location).HasColumnType("geography(Point, 4326)");
 
             entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
-
             entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
         });
     }

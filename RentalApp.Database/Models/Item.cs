@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace RentalApp.Database.Models;
 
@@ -11,29 +12,32 @@ public class Item
     public int Id { get; set; }
 
     [Required]
+    [MaxLength(100)]
     public string Title { get; set; } = string.Empty;
 
+    [MaxLength(1000)]
     public string? Description { get; set; }
 
     [Required]
-    public double DailyRate { get; set; } = 0.0;
+    public double DailyRate { get; set; }
 
     [Required]
-    public int CategoryId { get; set; } = 0;
+    public int CategoryId { get; set; }
 
     public Category Category { get; set; } = null!;
 
     [Required]
-    public int OwnerId { get; set; } = 0;
+    public int OwnerId { get; set; }
 
     public User Owner { get; set; } = null!;
 
     [Required]
-    public double Latitude { get; set; } = 0.0;
+    public Point Location { get; set; } = null!;
 
     [Required]
-    public double Longitude { get; set; } = 0.0;
+    public bool IsAvailable { get; set; } = true;
 
-    [Required]
-    public string ImageUrl { get; set; } = string.Empty;
+    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
 }
