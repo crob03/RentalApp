@@ -85,16 +85,6 @@ public class MainViewModelTests
         await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
     }
 
-    [Fact]
-    public async Task NavigateToSettingsCommand_NavigatesToTemp()
-    {
-        var sut = CreateSut();
-
-        await sut.NavigateToSettingsCommand.ExecuteAsync(null);
-
-        await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
-    }
-
     // ── Item navigation ────────────────────────────────────────────────
 
     [Fact]

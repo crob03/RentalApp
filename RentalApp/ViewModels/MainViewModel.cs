@@ -94,15 +94,6 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(Routes.Temp);
     }
 
-    /// <summary>
-    /// Navigates to the application settings page.
-    /// </summary>
-    [RelayCommand]
-    private async Task NavigateToSettingsAsync()
-    {
-        await _navigationService.NavigateToAsync(Routes.Temp);
-    }
-
     [RelayCommand]
     private async Task NavigateToItemsListAsync()
     {
