@@ -5,6 +5,85 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
   Title="{Binding Title}"
+  x:DataType="vm:CreateItemViewModel"
 >
-  <Label Text="List an Item — coming soon" HorizontalOptions="Center" VerticalOptions="Center" />
+  <ScrollView>
+    <Grid Padding="16" RowSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+      <!-- Error banner -->
+      <Border
+        Grid.Row="0"
+        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+        StrokeThickness="1"
+        Padding="12"
+        IsVisible="{Binding HasError}"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Label
+          Text="{Binding ErrorMessage}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+      </Border>
+
+      <Label Grid.Row="1" Text="Title" FontAttributes="Bold" />
+      <Border
+        Grid.Row="2"
+        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+        StrokeThickness="1"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Entry Text="{Binding ItemTitle}" Placeholder="e.g. Power Drill" Margin="12,8" />
+      </Border>
+
+      <Label Grid.Row="3" Text="Description (optional)" FontAttributes="Bold" />
+      <Border
+        Grid.Row="4"
+        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+        StrokeThickness="1"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Editor
+          Text="{Binding Description}"
+          Placeholder="Describe your item..."
+          Margin="12,8"
+          AutoSize="TextChanges"
+        />
+      </Border>
+
+      <Label Grid.Row="5" Text="Daily Rate (£)" FontAttributes="Bold" />
+      <Border
+        Grid.Row="6"
+        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+        StrokeThickness="1"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Entry Text="{Binding DailyRate}" Keyboard="Numeric" Placeholder="0.00" Margin="12,8" />
+      </Border>
+
+      <StackLayout Grid.Row="7" Spacing="8">
+        <Label Text="Category" FontAttributes="Bold" />
+        <Picker
+          ItemsSource="{Binding Categories}"
+          ItemDisplayBinding="{Binding Name}"
+          SelectedItem="{Binding SelectedCategory}"
+          Title="Select a category"
+        />
+        <Button
+          Text="List Item"
+          Command="{Binding CreateItemCommand}"
+          Margin="0,8,0,0"
+          HeightRequest="50"
+        />
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+      </StackLayout>
+    </Grid>
+  </ScrollView>
 </ContentPage>

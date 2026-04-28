@@ -4,12 +4,17 @@ namespace RentalApp.Views;
 
 public partial class CreateItemPage : ContentPage
 {
-    public CreateItemViewModel ViewModel { get; }
+    private CreateItemViewModel ViewModel => (CreateItemViewModel)BindingContext;
 
     public CreateItemPage(CreateItemViewModel viewModel)
     {
-        ViewModel = viewModel;
         BindingContext = viewModel;
         InitializeComponent();
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await ViewModel.LoadCategoriesCommand.ExecuteAsync(null);
     }
 }
