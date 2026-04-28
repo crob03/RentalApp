@@ -42,18 +42,28 @@ public interface IApiService
     /// <param name="category">Category slug to filter by.</param>
     /// <param name="search">Free-text search term.</param>
     /// <param name="page">Page number (1-based).</param>
-    Task<List<Item>> GetItemsAsync(string? category = null, string? search = null, int page = 1);
+    /// <param name="pageSize">Number of items per page.</param>
+    Task<List<Item>> GetItemsAsync(
+        string? category = null,
+        string? search = null,
+        int page = 1,
+        int pageSize = 20
+    );
 
     /// <summary>Returns items within a given radius of a geographic location.</summary>
     /// <param name="lat">Latitude of the search origin.</param>
     /// <param name="lon">Longitude of the search origin.</param>
     /// <param name="radius">Search radius in kilometres (default 5, max 50).</param>
     /// <param name="category">Category slug to filter by.</param>
+    /// <param name="page">Page number (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
     Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
         double radius = 5.0,
-        string? category = null
+        string? category = null,
+        int page = 1,
+        int pageSize = 20
     );
 
     /// <summary>Returns full details for the specified item, including reviews.</summary>

@@ -137,14 +137,17 @@ public class RemoteApiService : IApiService
     public Task<List<Item>> GetItemsAsync(
         string? category = null,
         string? search = null,
-        int page = 1
+        int page = 1,
+        int pageSize = 20
     ) => throw new NotImplementedException();
 
     public Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
         double radius = 5.0,
-        string? category = null
+        string? category = null,
+        int page = 1,
+        int pageSize = 20
     ) => throw new NotImplementedException();
 
     public Task<Item> GetItemAsync(int id) => throw new NotImplementedException();

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RentalApp.Database.Data;
+using RentalApp.Database.Repositories;
 using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
@@ -49,8 +50,12 @@ public static class MauiProgram
         else
         {
             builder.Services.AddDbContext<AppDbContext>();
+            builder.Services.AddScoped<IItemRepository, ItemRepository>();
+            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
             builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
-                sp.GetRequiredService<AppDbContext>()
+                sp.GetRequiredService<AppDbContext>(),
+                sp.GetRequiredService<IItemRepository>(),
+                sp.GetRequiredService<ICategoryRepository>()
             ));
         }
 
