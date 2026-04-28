@@ -4,7 +4,124 @@
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
-  Title="{Binding Title}"
+  Title="{Binding CurrentItem.Title, FallbackValue='Item Details'}"
+  x:DataType="vm:ItemDetailsViewModel"
 >
-  <Label Text="Item Details — coming soon" HorizontalOptions="Center" VerticalOptions="Center" />
+  <ScrollView>
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+      <!-- Error banner -->
+      <Border
+        Grid.Row="0"
+        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+        StrokeThickness="1"
+        Padding="12"
+        IsVisible="{Binding HasError}"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Label
+          Text="{Binding ErrorMessage}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+      </Border>
+
+      <!-- Loading -->
+      <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+      <!-- View mode -->
+      <StackLayout
+        Grid.Row="2"
+        IsVisible="{Binding IsEditing, Converter={StaticResource InvertedBoolConverter}}"
+        Spacing="8"
+      >
+        <Label Text="{Binding CurrentItem.Title}" FontSize="22" FontAttributes="Bold" />
+        <Label
+          Text="{Binding CurrentItem.Category}"
+          FontSize="14"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+        <Label Text="{Binding CurrentItem.DailyRate, StringFormat='£{0:F2} / day'}" FontSize="18" />
+        <Label Text="{Binding CurrentItem.Description}" />
+        <Label
+          Text="Available"
+          IsVisible="{Binding CurrentItem.IsAvailable}"
+          TextColor="{AppThemeBinding Light=#2E7D32, Dark=#66BB6A}"
+        />
+        <Label
+          Text="Not available"
+          IsVisible="{Binding CurrentItem.IsAvailable, Converter={StaticResource InvertedBoolConverter}}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+        <Label
+          Text="{Binding CurrentItem.OwnerName, StringFormat='Listed by {0}'}"
+          FontSize="13"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+      </StackLayout>
+
+      <!-- Edit mode (owner only) -->
+      <StackLayout Grid.Row="3" IsVisible="{Binding IsEditing}" Spacing="10">
+        <Label Text="Title" FontAttributes="Bold" />
+        <Border
+          Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+          StrokeThickness="1"
+        >
+          <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+          </Border.StrokeShape>
+          <Entry Text="{Binding EditTitle}" Margin="12,8" />
+        </Border>
+
+        <Label Text="Description" FontAttributes="Bold" />
+        <Border
+          Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+          StrokeThickness="1"
+        >
+          <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+          </Border.StrokeShape>
+          <Editor Text="{Binding EditDescription}" Margin="12,8" AutoSize="TextChanges" />
+        </Border>
+
+        <Label Text="Daily Rate (£)" FontAttributes="Bold" />
+        <Border
+          Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+          StrokeThickness="1"
+        >
+          <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+          </Border.StrokeShape>
+          <Entry Text="{Binding EditDailyRate}" Keyboard="Numeric" Margin="12,8" />
+        </Border>
+
+        <StackLayout Orientation="Horizontal">
+          <CheckBox IsChecked="{Binding EditIsAvailable}" />
+          <Label Text="Available for rental" VerticalOptions="Center" />
+        </StackLayout>
+      </StackLayout>
+
+      <!-- Owner action buttons -->
+      <StackLayout Grid.Row="4" IsVisible="{Binding IsOwner}" Orientation="Horizontal" Spacing="8">
+        <Button
+          Text="Edit"
+          Command="{Binding ToggleEditCommand}"
+          IsVisible="{Binding IsEditing, Converter={StaticResource InvertedBoolConverter}}"
+        />
+        <Button
+          Text="Save"
+          Command="{Binding SaveChangesCommand}"
+          IsVisible="{Binding IsEditing}"
+        />
+        <Button
+          Text="Cancel"
+          Command="{Binding CancelEditCommand}"
+          IsVisible="{Binding IsEditing}"
+          BackgroundColor="Transparent"
+          TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+        />
+      </StackLayout>
+    </Grid>
+  </ScrollView>
 </ContentPage>
