@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Devices.Sensors;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
 using RentalApp.Http;
@@ -61,6 +62,10 @@ public static class MauiProgram
 
         builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 
+        builder.Services.AddSingleton<IGeolocation>(Geolocation.Default);
+        builder.Services.AddSingleton<ILocationService, LocationService>();
+        builder.Services.AddTransient<IItemService, ItemService>();
+
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
         builder.Services.AddSingleton<AppShellViewModel>();
@@ -77,6 +82,15 @@ public static class MauiProgram
         builder.Services.AddTransient<RegisterPage>();
         builder.Services.AddSingleton<TempViewModel>();
         builder.Services.AddTransient<TempPage>();
+
+        builder.Services.AddTransient<ItemsListViewModel>();
+        builder.Services.AddTransient<ItemsListPage>();
+        builder.Services.AddTransient<ItemDetailsViewModel>();
+        builder.Services.AddTransient<ItemDetailsPage>();
+        builder.Services.AddTransient<CreateItemViewModel>();
+        builder.Services.AddTransient<CreateItemPage>();
+        builder.Services.AddTransient<NearbyItemsViewModel>();
+        builder.Services.AddTransient<NearbyItemsPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

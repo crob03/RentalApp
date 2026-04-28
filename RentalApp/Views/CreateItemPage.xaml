@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.CreateItemPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  Title="{Binding Title}"
+>
+  <Label Text="List an Item — coming soon" HorizontalOptions="Center" VerticalOptions="Center" />
+</ContentPage>

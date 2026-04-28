@@ -19,4 +19,16 @@ public static class Routes
 
     /// <summary>The registered route name for the temporary placeholder page.</summary>
     public const string Temp = "TempPage";
+
+    /// <summary>The registered route name for the items list page.</summary>
+    public const string ItemsList = "ItemsListPage";
+
+    /// <summary>The registered route name for the item details page.</summary>
+    public const string ItemDetails = "ItemDetailsPage";
+
+    /// <summary>The registered route name for the create item page.</summary>
+    public const string CreateItem = "CreateItemPage";
+
+    /// <summary>The registered route name for the nearby items page.</summary>
+    public const string NearbyItems = "NearbyItemsPage";
 }
