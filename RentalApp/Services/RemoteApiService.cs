@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using RentalApp.Http;
 using RentalApp.Models;
+using static System.FormattableString;
 
 namespace RentalApp.Services;
 
@@ -144,7 +145,7 @@ public class RemoteApiService : IApiService
         var query = $"items?page={page}&pageSize={pageSize}";
         if (category != null)
             query += $"&category={Uri.EscapeDataString(category)}";
-        if (search != null)
+        if (!string.IsNullOrEmpty(search))
             query += $"&search={Uri.EscapeDataString(search)}";
 
         var response = await _apiClient.GetAsync(query);
@@ -186,8 +187,9 @@ public class RemoteApiService : IApiService
         int pageSize = 20
     )
     {
-        var query =
-            $"items/nearby?lat={lat}&lon={lon}&radius={radius}&page={page}&pageSize={pageSize}";
+        var query = Invariant(
+            $"items/nearby?lat={lat}&lon={lon}&radius={radius}&page={page}&pageSize={pageSize}"
+        );
         if (category != null)
             query += $"&category={Uri.EscapeDataString(category)}";
 
