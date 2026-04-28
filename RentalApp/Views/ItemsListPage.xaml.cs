@@ -12,4 +12,10 @@ public partial class ItemsListPage : ContentPage
         BindingContext = viewModel;
         InitializeComponent();
     }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        ViewModel.LoadItemsCommand.Execute(null);
+    }
 }
