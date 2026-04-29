@@ -17,6 +17,8 @@ public partial class NearbyItemsViewModel : BaseViewModel
     private double _cachedLat;
     private double _cachedLon;
     private bool _hasLoaded;
+    private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
+    private bool _restoringCategory;
 
     [ObservableProperty]
     private ObservableCollection<Item> items = [];
@@ -26,6 +28,12 @@ public partial class NearbyItemsViewModel : BaseViewModel
 
     [ObservableProperty]
     private List<Category> categories = [];
+
+    [ObservableProperty]
+    private List<Category> filterCategories = [AllItemsCategory];
+
+    [ObservableProperty]
+    private Category? selectedCategoryItem = AllItemsCategory;
 
     [ObservableProperty]
     private string? selectedCategory;
@@ -68,6 +76,13 @@ public partial class NearbyItemsViewModel : BaseViewModel
             _ = LoadNearbyItemsAsync();
     }
 
+    partial void OnSelectedCategoryItemChanged(Category? value)
+    {
+        if (_restoringCategory)
+            return;
+        SelectedCategory = (value is null || value.Id == 0) ? null : value.Slug;
+    }
+
     [RelayCommand]
     private Task LoadNearbyItemsAsync() =>
         RunAsync(async () =>
@@ -86,48 +101,52 @@ public partial class NearbyItemsViewModel : BaseViewModel
                 CurrentPage,
                 PageSize
             );
+            var cats = await _itemService.GetCategoriesAsync() ?? [];
 
             Items = new ObservableCollection<Item>(result);
             HasMorePages = result.Count == PageSize;
             IsEmpty = Items.Count == 0;
+            Categories = cats;
             _hasLoaded = true;
+
+            var all = new List<Category> { AllItemsCategory };
+            all.AddRange(cats);
+            FilterCategories = all;
+
+            _restoringCategory = true;
+            SelectedCategoryItem = string.IsNullOrEmpty(SelectedCategory)
+                ? AllItemsCategory
+                : all.FirstOrDefault(c => c.Slug == SelectedCategory) ?? AllItemsCategory;
+            _restoringCategory = false;
         });
 
     [RelayCommand]
-    private async Task LoadMoreItemsAsync()
-    {
-        if (!HasMorePages || IsBusy)
-            return;
-
-        try
+    private Task LoadMoreItemsAsync() =>
+        RunAsync(async () =>
         {
-            IsBusy = true;
+            if (!HasMorePages)
+                return;
             CurrentPage++;
-
-            var result = await _itemService.GetNearbyItemsAsync(
-                _cachedLat,
-                _cachedLon,
-                Radius,
-                SelectedCategory,
-                CurrentPage,
-                PageSize
-            );
-
-            foreach (var item in result)
-                Items.Add(item);
-
-            HasMorePages = result.Count == PageSize;
-        }
-        catch (Exception ex)
-        {
-            CurrentPage--;
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+            try
+            {
+                var result = await _itemService.GetNearbyItemsAsync(
+                    _cachedLat,
+                    _cachedLon,
+                    Radius,
+                    SelectedCategory,
+                    CurrentPage,
+                    PageSize
+                );
+                foreach (var item in result)
+                    Items.Add(item);
+                HasMorePages = result.Count == PageSize;
+            }
+            catch
+            {
+                CurrentPage--;
+                throw;
+            }
+        });
 
     [RelayCommand]
     private async Task NavigateToItemAsync(Item item) =>
