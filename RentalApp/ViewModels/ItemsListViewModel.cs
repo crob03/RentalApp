@@ -12,12 +12,20 @@ public partial class ItemsListViewModel : BaseViewModel
     private readonly IItemService _itemService;
     private readonly INavigationService _navigationService;
     private const int PageSize = 20;
+    private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
+    private bool _restoringCategory;
 
     [ObservableProperty]
     private ObservableCollection<Item> items = [];
 
     [ObservableProperty]
     private List<Category> categories = [];
+
+    [ObservableProperty]
+    private List<Category> filterCategories = [AllItemsCategory];
+
+    [ObservableProperty]
+    private Category? selectedCategoryItem = AllItemsCategory;
 
     [ObservableProperty]
     private string? selectedCategory;
@@ -50,6 +58,13 @@ public partial class ItemsListViewModel : BaseViewModel
 
     partial void OnSearchTextChanged(string value) => LoadItemsCommand.Execute(null);
 
+    partial void OnSelectedCategoryItemChanged(Category? value)
+    {
+        if (_restoringCategory)
+            return;
+        SelectedCategory = (value is null || value.Id == 0) ? null : value.Slug;
+    }
+
     [RelayCommand]
     private Task LoadItemsAsync() =>
         RunAsync(async () =>
@@ -67,38 +82,43 @@ public partial class ItemsListViewModel : BaseViewModel
             Categories = cats;
             IsEmpty = results.Count == 0;
             HasMorePages = results.Count == PageSize;
+
+            var all = new List<Category> { AllItemsCategory };
+            all.AddRange(cats);
+            FilterCategories = all;
+
+            _restoringCategory = true;
+            SelectedCategoryItem = string.IsNullOrEmpty(SelectedCategory)
+                ? AllItemsCategory
+                : all.FirstOrDefault(c => c.Slug == SelectedCategory) ?? AllItemsCategory;
+            _restoringCategory = false;
         });
 
     [RelayCommand]
-    private async Task LoadMoreItemsAsync()
-    {
-        if (!HasMorePages || IsBusy)
-            return;
-
-        try
+    private Task LoadMoreItemsAsync() =>
+        RunAsync(async () =>
         {
-            IsBusy = true;
+            if (!HasMorePages)
+                return;
             CurrentPage++;
-            var more = await _itemService.GetItemsAsync(
-                SelectedCategory,
-                SearchText,
-                CurrentPage,
-                PageSize
-            );
-            foreach (var item in more)
-                Items.Add(item);
-            HasMorePages = more.Count == PageSize;
-        }
-        catch (Exception ex)
-        {
-            CurrentPage--;
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
+            try
+            {
+                var more = await _itemService.GetItemsAsync(
+                    SelectedCategory,
+                    SearchText,
+                    CurrentPage,
+                    PageSize
+                );
+                foreach (var item in more)
+                    Items.Add(item);
+                HasMorePages = more.Count == PageSize;
+            }
+            catch
+            {
+                CurrentPage--;
+                throw;
+            }
+        });
 
     [RelayCommand]
     private async Task NavigateToItemAsync(Item item) =>

@@ -168,4 +168,92 @@ public class ItemsListViewModelTests
 
         await _nav.Received(1).NavigateToAsync(Routes.CreateItem);
     }
+
+    // ── Category filter ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadItemsCommand_PopulatesFilterCategoriesWithAllItemsSentinel()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, sut.FilterCategories.Count);
+        Assert.Equal(0, sut.FilterCategories[0].Id);
+        Assert.Equal("All Items", sut.FilterCategories[0].Name);
+        Assert.Equal("tools", sut.FilterCategories[1].Slug);
+    }
+
+    [Fact]
+    public async Task LoadItemsCommand_SelectedCategoryItemDefaultsToAllItems()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, sut.SelectedCategoryItem?.Id);
+        Assert.Equal("All Items", sut.SelectedCategoryItem?.Name);
+    }
+
+    [Fact]
+    public async Task SelectingCategory_UpdatesSelectedCategorySlug()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+
+        sut.SelectedCategoryItem = MakeCategory();
+
+        Assert.Equal("tools", sut.SelectedCategory);
+    }
+
+    [Fact]
+    public async Task SelectingAllItems_ClearsSelectedCategory()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+        sut.SelectedCategoryItem = MakeCategory();
+
+        sut.SelectedCategoryItem = sut.FilterCategories[0];
+
+        Assert.Null(sut.SelectedCategory);
+    }
+
+    [Fact]
+    public async Task CategoryChange_AfterLoad_TriggersReload()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+
+        sut.SelectedCategoryItem = MakeCategory();
+        await Task.Delay(50);
+
+        await _itemService
+            .Received(2)
+            .GetItemsAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task LoadItems_DoesNotTriggerExtraReload_WhenRestoringCategory()
+    {
+        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
+        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        var sut = CreateSut();
+
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+        await sut.LoadItemsCommand.ExecuteAsync(null);
+
+        await _itemService
+            .Received(2)
+            .GetItemsAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>());
+    }
 }
