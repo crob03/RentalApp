@@ -8,7 +8,7 @@
   Title="{Binding Title}"
   x:DataType="vm:ItemsListViewModel"
 >
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
     <!-- Search bar -->
     <SearchBar
       Grid.Row="0"
@@ -17,9 +17,18 @@
       Margin="8,8,8,0"
     />
 
+    <!-- Category filter -->
+    <Picker
+      Grid.Row="1"
+      ItemsSource="{Binding FilterCategories}"
+      SelectedItem="{Binding SelectedCategoryItem}"
+      ItemDisplayBinding="{Binding Name}"
+      Margin="8,4,8,0"
+    />
+
     <!-- Error banner -->
     <Label
-      Grid.Row="1"
+      Grid.Row="2"
       Text="{Binding ErrorMessage}"
       TextColor="Red"
       IsVisible="{Binding HasError}"
@@ -28,7 +37,7 @@
 
     <!-- Loading indicator -->
     <ActivityIndicator
-      Grid.Row="2"
+      Grid.Row="3"
       IsRunning="{Binding IsBusy}"
       IsVisible="{Binding IsBusy}"
       HorizontalOptions="Center"
@@ -37,7 +46,7 @@
 
     <!-- Empty state -->
     <Label
-      Grid.Row="3"
+      Grid.Row="4"
       Text="No items found."
       HorizontalOptions="Center"
       VerticalOptions="Center"
@@ -46,7 +55,7 @@
 
     <!-- Items list -->
     <CollectionView
-      Grid.Row="3"
+      Grid.Row="4"
       ItemsSource="{Binding Items}"
       SelectionMode="None"
       RemainingItemsThreshold="3"
@@ -78,7 +87,7 @@
 
     <!-- FAB: create item -->
     <Button
-      Grid.Row="3"
+      Grid.Row="4"
       Text="+"
       Command="{Binding NavigateToCreateItemCommand}"
       HorizontalOptions="End"
