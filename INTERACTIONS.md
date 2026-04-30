@@ -1144,3 +1144,63 @@ A design spec was saved to `docs/superpowers/specs/2026-04-29-category-filter-ui
 - `docs/superpowers/plans/2026-04-29-category-filter-ui.md` — implementation plan
 
 **Testing**: 27/27 ViewModel unit tests pass. 38 integration test failures are pre-existing (require `docker-compose up db`).
+
+#### Interaction 49: Branch Review and Integration Test Fix
+**Date**: 2026-04-30
+
+**Prompt**: "I'm looking to finish off the branch. First I'd like to review it." Followed by working through all review issues and fixing integration tests.
+
+**AI Suggestion**:
+A full code review was dispatched via `superpowers:requesting-code-review` across the entire `feature/implement-item-crud` branch (`0185ba48..a75d677`). The reviewer identified 3 Critical, 6 Important, and 4 Minor issues.
+
+Issues resolved during this session (tracked in `docs/review-feature-implement-item-crud.md`):
+
+**Critical:**
+- `CreateItemViewModel` — `ClearError()` not called before early-return validation, leaving stale error banners visible. Fixed by adding `ClearError()` as the first statement in `CreateItemAsync`.
+- `ItemDetailsViewModel` / `ItemRepository` — description could not be cleared once set due to a mismatch between patch semantics (`null` = skip) and the ViewModel passing `null` for empty string. Fixed by passing `EditDescription` directly from the ViewModel (empty string = clear intent) and updating the repository to interpret empty string as "set to null in DB".
+- `ItemsListViewModel` — `OnSelectedCategoryChanged` and `OnSearchTextChanged` fired `LoadItemsCommand` on construction with no `_hasLoaded` guard, causing a spurious double-load on every navigation. Fixed by adding the same `_hasLoaded` flag pattern used in `NearbyItemsViewModel`.
+
+**Important:**
+- Dead `Title2` property in `CreateItemViewModel` removed; tests updated to use `ItemTitle` directly.
+- Seed migration made idempotent: categories use `ON CONFLICT ("Slug") DO NOTHING` (after adding a unique index), users use `ON CONFLICT ("Email") DO NOTHING`, items use `WHERE NOT EXISTS` per title+owner.
+- Captive dependency: `IItemRepository`/`ICategoryRepository` changed from `Scoped` to `Singleton` to match `LocalApiService` singleton lifetime.
+- Null guard added: `CurrentItem?.OwnerId` in `ItemDetailsViewModel.LoadItemAsync`.
+- `CategoryRepository.GetAllAsync` refactored from correlated subquery to `GroupJoin` (LEFT JOIN + GROUP BY).
+
+**Minor:**
+- `ItemsListPage` error banner updated from plain `<Label TextColor="Red">` to the styled `Border`/`RoundRectangle` used on all other pages.
+- `Task.Delay(50)` in category-change tests replaced with `await (sut.LoadXxxCommand.ExecutionTask ?? Task.CompletedTask)` for deterministic awaiting. `NearbyItemsViewModel` change handlers updated to call `LoadNearbyItemsCommand.Execute(null)` (instead of `_ = LoadNearbyItemsAsync()`) to make `ExecutionTask` accessible from tests.
+
+**EF Core entity configuration consolidation (Decision 13):**
+EF-specific annotations (`[Table]`, `[PrimaryKey]`, `[MaxLength]`) removed from all three model files and consolidated into `AppDbContext.OnModelCreating` via the Fluent API. `[Required]` retained on models as dual-purpose (EF NOT NULL + validation). A unique index on `Category.Slug` was added as part of this change, enabling the `ON CONFLICT ("Slug") DO NOTHING` fix in the seed migration. A new EF Core migration (`AddCategorySlugUniqueIndex`) was generated.
+
+**Integration test infrastructure overhaul:**
+- `DatabaseFixture` rewritten to use a maintenance connection to `appdb` to drop/recreate the test database using `TEMPLATE template_postgis`, replacing the broken `EnsureDeletedAsync → ExecuteSqlRawAsync("CREATE EXTENSION") → EnsureCreatedAsync` sequence which failed on fresh environments because the database didn't exist when the extension SQL ran.
+- `DatabaseFixture` made generic (`DatabaseFixture<TClass>`) — the database name is derived from the test class name (e.g. `appdb_test_itemrepositorytests`), allowing test classes to run in parallel without race conditions on database creation.
+- `ResetAsync` updated to truncate `items`, `categories`, and `users` before reseeding, fixing a pre-existing bug where reseeding after only truncating users caused PK violations on category inserts.
+- `ItemRepositoryTests` implements `IAsyncLifetime` to call `ResetItemsAsync` before each test, fixing test isolation failures where items created by write tests polluted read test assertions.
+
+**My Evaluation**: All Critical and Important issues were accepted and fixed. Minor issue #5 (duplicate `AllItemsCategory` sentinel) and #10 (parameterless constructors) were deferred to a planned `BaseItemSearchViewModel` refactor. Minor issue #9 (correlated subquery) was fixed despite being marked acceptable — the `GroupJoin` fix was small and correct. The EF configuration consolidation was expanded into a full Decision (13) and recorded in `DECISIONS.md`. The integration test infrastructure rewrite was more involved than anticipated but resulted in a significantly more robust fixture.
+
+**Final Implementation**:
+- `RentalApp/ViewModels/CreateItemViewModel.cs` — `ClearError()` added, dead `Title2` removed
+- `RentalApp/ViewModels/ItemDetailsViewModel.cs` — `EditDescription` passed directly, null guard on `CurrentItem?.OwnerId`
+- `RentalApp/ViewModels/ItemsListViewModel.cs` — `_hasLoaded` guard added to change handlers
+- `RentalApp/ViewModels/NearbyItemsViewModel.cs` — change handlers switched to `LoadNearbyItemsCommand.Execute(null)`
+- `RentalApp/Views/ItemsListPage.xaml` — error banner updated to styled `Border`
+- `RentalApp/MauiProgram.cs` — repositories changed from `Scoped` to `Singleton`
+- `RentalApp.Database/Models/User.cs`, `Category.cs`, `Item.cs` — EF-specific annotations removed
+- `RentalApp.Database/Data/AppDbContext.cs` — `ToTable`, `HasKey`, `HasIndex(Slug).IsUnique()` added to `OnModelCreating`
+- `RentalApp.Database/Repositories/ItemRepository.cs` — empty string description interpreted as "clear to null"
+- `RentalApp.Database/Repositories/CategoryRepository.cs` — `GroupJoin` replaces correlated subquery
+- `RentalApp.Migrations/Migrations/20260429120000_SeedDevelopmentData.cs` — idempotent inserts
+- `RentalApp.Migrations/Migrations/<timestamp>_AddCategorySlugUniqueIndex.cs` — new migration
+- `RentalApp.Test/Fixtures/DatabaseFixture.cs` — rewritten as `DatabaseFixture<TClass>` with maintenance-connection DB creation
+- `RentalApp.Test/Repositories/ItemRepositoryTests.cs` — `IClassFixture<DatabaseFixture<ItemRepositoryTests>>`, `IAsyncLifetime` for per-test reset
+- `RentalApp.Test/Repositories/CategoryRepositoryTests.cs` — `IClassFixture<DatabaseFixture<CategoryRepositoryTests>>`
+- `RentalApp.Test/Services/LocalApiServiceTests.cs` — `IClassFixture<DatabaseFixture<LocalApiServiceTests>>`
+- `RentalApp.Test/ViewModels/CreateItemViewModelTests.cs` — `Title2` references replaced with `ItemTitle`
+- `docs/DECISIONS.md` — Decision 13 added
+- `docs/review-feature-implement-item-crud.md` — review checklist
+
+**Testing**: 212/212 tests pass (174 unit tests + 38 integration tests).

@@ -5,6 +5,10 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// View model for the "List an Item" page. Captures item details from the user, resolves the
+/// device's current location at submission time, and delegates creation to <see cref="IItemService"/>.
+/// </summary>
 public partial class CreateItemViewModel : BaseViewModel
 {
     private readonly IItemService _itemService;
@@ -26,11 +30,20 @@ public partial class CreateItemViewModel : BaseViewModel
     [ObservableProperty]
     private Category? selectedCategory;
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="CreateItemViewModel"/> for design-time support.
+    /// </summary>
     public CreateItemViewModel()
     {
         Title = "List an Item";
     }
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="CreateItemViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="itemService">Service used to fetch categories and submit the new listing.</param>
+    /// <param name="locationService">Service used to capture the device's current location at submission time.</param>
+    /// <param name="navigationService">Service used to navigate back after a successful creation.</param>
     public CreateItemViewModel(
         IItemService itemService,
         ILocationService locationService,
@@ -43,6 +56,10 @@ public partial class CreateItemViewModel : BaseViewModel
         Title = "List an Item";
     }
 
+    /// <summary>
+    /// Populates <see cref="Categories"/> from the item service.
+    /// Intended to be called when the page first appears.
+    /// </summary>
     [RelayCommand]
     private Task LoadCategoriesAsync() =>
         RunAsync(async () =>
@@ -50,6 +67,10 @@ public partial class CreateItemViewModel : BaseViewModel
             Categories = await _itemService.GetCategoriesAsync();
         });
 
+    /// <summary>
+    /// Validates the form, resolves the device location, submits the new listing, and navigates
+    /// back on success. Surfaces validation errors via <see cref="BaseViewModel.SetError"/>.
+    /// </summary>
     [RelayCommand]
     private async Task CreateItemAsync()
     {

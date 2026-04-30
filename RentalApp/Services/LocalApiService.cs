@@ -11,6 +11,11 @@ using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// <see cref="IApiService"/> implementation that operates directly against the local PostgreSQL
+/// database via EF Core repositories. Used for offline development and integration testing in
+/// place of the remote HTTP API.
+/// </summary>
 public class LocalApiService : IApiService
 {
     private readonly AppDbContext _context;
@@ -18,8 +23,15 @@ public class LocalApiService : IApiService
     private readonly ICategoryRepository _categoryRepository;
     private User? _currentUser;
 
+    /// <summary>Shared NTS geometry factory configured for SRID 4326 (WGS 84). Reused across all point creation calls to avoid repeated allocation.</summary>
     private static readonly GeoFactory _geoFactory = new GeoFactory(new NtsPrecisionModel(), 4326);
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="LocalApiService"/> with the required data-access dependencies.
+    /// </summary>
+    /// <param name="context">EF Core database context, used directly for user operations not covered by repositories.</param>
+    /// <param name="itemRepository">Repository for item queries and mutations.</param>
+    /// <param name="categoryRepository">Repository for category queries.</param>
     public LocalApiService(
         AppDbContext context,
         IItemRepository itemRepository,
@@ -31,6 +43,8 @@ public class LocalApiService : IApiService
         _categoryRepository = categoryRepository;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Verifies the BCrypt password hash and stores the authenticated user in <c>_currentUser</c> for the lifetime of this service instance.</remarks>
     public async Task LoginAsync(string email, string password)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -41,6 +55,8 @@ public class LocalApiService : IApiService
         _currentUser = ToUser(user);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Generates a fresh BCrypt salt per registration so no two users share a hash even with the same password.</remarks>
     public async Task RegisterAsync(
         string firstName,
         string lastName,
@@ -68,6 +84,8 @@ public class LocalApiService : IApiService
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Returns the in-memory <c>_currentUser</c> set during <see cref="LoginAsync"/>; no database call is made.</remarks>
     public Task<User> GetCurrentUserAsync()
     {
         if (_currentUser == null)
@@ -76,6 +94,7 @@ public class LocalApiService : IApiService
         return Task.FromResult(_currentUser);
     }
 
+    /// <inheritdoc/>
     public async Task<User> GetUserAsync(int userId)
     {
         var user =
@@ -85,12 +104,15 @@ public class LocalApiService : IApiService
         return ToUser(user);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Clears the in-memory <c>_currentUser</c>. No database call is made.</remarks>
     public Task LogoutAsync()
     {
         _currentUser = null;
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
     public async Task<List<Item>> GetItemsAsync(
         string? category = null,
         string? search = null,
@@ -102,6 +124,12 @@ public class LocalApiService : IApiService
         return dbItems.Select(ToItem).ToList();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Converts <paramref name="radius"/> from kilometres to metres before passing it to the repository,
+    /// as PostGIS geography distance functions operate in metres.
+    /// The NTS <c>Point</c> is constructed as <c>(X=longitude, Y=latitude)</c> — NTS coordinate order is (lon, lat).
+    /// </remarks>
     public async Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
@@ -125,6 +153,7 @@ public class LocalApiService : IApiService
         return dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
     }
 
+    /// <inheritdoc/>
     public async Task<Item> GetItemAsync(int id)
     {
         var dbItem =
@@ -134,6 +163,8 @@ public class LocalApiService : IApiService
         return ToItem(dbItem);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Uses <c>_currentUser.Id</c> as the owner ID; throws if no user is logged in.</remarks>
     public async Task<Item> CreateItemAsync(
         string title,
         string? description,
@@ -159,6 +190,7 @@ public class LocalApiService : IApiService
         return ToItem(dbItem);
     }
 
+    /// <inheritdoc/>
     public async Task<Item> UpdateItemAsync(
         int id,
         string? title,
@@ -178,6 +210,7 @@ public class LocalApiService : IApiService
         return ToItem(dbItem);
     }
 
+    /// <inheritdoc/>
     public async Task<List<Category>> GetCategoriesAsync()
     {
         var results = await _categoryRepository.GetAllAsync();
@@ -191,9 +224,14 @@ public class LocalApiService : IApiService
             .ToList();
     }
 
+    /// <summary>Maps a database <see cref="DbUser"/> to the application <see cref="User"/> model. Rating and rental stats are zeroed as they are not stored on the user entity.</summary>
     private static User ToUser(DbUser user) =>
         new(user.Id, user.FirstName, user.LastName, 0.0, 0, 0, user.Email, user.CreatedAt, null);
 
+    /// <summary>
+    /// Maps a database item to the application <see cref="Item"/> model.
+    /// NTS stores coordinates as <c>(X=longitude, Y=latitude)</c>, so <c>Location.Y</c> is latitude and <c>Location.X</c> is longitude.
+    /// </summary>
     private static Item ToItem(Database.Models.Item i) =>
         new(
             i.Id,
@@ -215,6 +253,10 @@ public class LocalApiService : IApiService
             Reviews: null
         );
 
+    /// <summary>
+    /// Maps a database item to the application <see cref="Item"/> model with the distance from <paramref name="origin"/> populated.
+    /// Distance is converted from metres (returned by NTS) to kilometres by dividing by 1000.
+    /// </summary>
     private static Item ToNearbyItem(Database.Models.Item i, GeoPoint origin) =>
         new(
             i.Id,

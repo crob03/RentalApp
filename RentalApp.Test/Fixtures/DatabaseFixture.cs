@@ -8,8 +8,7 @@ namespace RentalApp.Test.Fixtures;
 
 public class DatabaseFixture<TClass> : IAsyncLifetime
 {
-    private static readonly string DbName =
-        $"appdb_test_{typeof(TClass).Name.ToLower()}";
+    private static readonly string DbName = $"appdb_test_{typeof(TClass).Name.ToLower()}";
 
     private static readonly string FallbackConnectionString =
         $"Host=localhost;Port=5432;Database={DbName};Username=app_user;Password=app_password";
@@ -65,18 +64,12 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
         await conn.OpenAsync();
 
         await using (
-            var cmd = new NpgsqlCommand(
-                $"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)",
-                conn
-            )
+            var cmd = new NpgsqlCommand($"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)", conn)
         )
             await cmd.ExecuteNonQueryAsync();
 
         await using (
-            var cmd = new NpgsqlCommand(
-                $"CREATE DATABASE {DbName} TEMPLATE template_postgis",
-                conn
-            )
+            var cmd = new NpgsqlCommand($"CREATE DATABASE {DbName} TEMPLATE template_postgis", conn)
         )
             await cmd.ExecuteNonQueryAsync();
     }
@@ -93,7 +86,10 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
     }
 
     private string GetMaintenanceConnectionString() =>
-        new NpgsqlConnectionStringBuilder(_connectionString) { Database = "appdb" }.ConnectionString;
+        new NpgsqlConnectionStringBuilder(_connectionString)
+        {
+            Database = "appdb",
+        }.ConnectionString;
 
     // Replace the database name in an externally-supplied CONNECTION_STRING with the
     // per-class name so that parallel test classes each get their own isolated database.

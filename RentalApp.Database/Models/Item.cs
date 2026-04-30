@@ -3,6 +3,9 @@ using NetTopologySuite.Geometries;
 
 namespace RentalApp.Database.Models;
 
+/// <summary>
+/// Represents a rental item listing created by a user.
+/// </summary>
 public class Item
 {
     public int Id { get; set; }
@@ -25,6 +28,7 @@ public class Item
 
     public User Owner { get; set; } = null!;
 
+    /// <summary>Geographic coordinates of the item stored as a PostGIS <c>geometry(Point, 4326)</c> column. Used for proximity queries via <c>IsWithinDistance</c>.</summary>
     [Required]
     public Point Location { get; set; } = null!;
 

@@ -94,18 +94,21 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(Routes.Temp);
     }
 
+    /// <summary>Navigates to the browsable items list page.</summary>
     [RelayCommand]
     private async Task NavigateToItemsListAsync()
     {
         await _navigationService.NavigateToAsync(Routes.ItemsList);
     }
 
+    /// <summary>Navigates to the nearby items page, which resolves the device location on arrival.</summary>
     [RelayCommand]
     private async Task NavigateToNearbyItemsAsync()
     {
         await _navigationService.NavigateToAsync(Routes.NearbyItems);
     }
 
+    /// <summary>Navigates to the create-item page so the user can list a new rental.</summary>
     [RelayCommand]
     private async Task NavigateToCreateItemAsync()
     {

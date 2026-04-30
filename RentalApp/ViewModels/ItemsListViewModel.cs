@@ -7,13 +7,20 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// View model for the browsable items list. Supports category filtering, text search, and infinite-scroll pagination.
+/// </summary>
 public partial class ItemsListViewModel : BaseViewModel
 {
     private readonly IItemService _itemService;
     private readonly INavigationService _navigationService;
     private const int PageSize = 20;
     private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
+
+    /// <summary>Guards against <see cref="OnSelectedCategoryItemChanged"/> re-triggering a load while <see cref="LoadItemsAsync"/> is restoring the picker selection.</summary>
     private bool _restoringCategory;
+
+    /// <summary>Prevents property-change callbacks from firing a reload before the first <see cref="LoadItemsAsync"/> completes.</summary>
     private bool _hasLoaded;
 
     [ObservableProperty]
@@ -43,11 +50,19 @@ public partial class ItemsListViewModel : BaseViewModel
     [ObservableProperty]
     private bool hasMorePages;
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="ItemsListViewModel"/> for design-time support.
+    /// </summary>
     public ItemsListViewModel()
     {
         Title = "Browse Items";
     }
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="ItemsListViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="itemService">Service used to fetch items and categories.</param>
+    /// <param name="navigationService">Service used to navigate to item details and the create-item page.</param>
     public ItemsListViewModel(IItemService itemService, INavigationService navigationService)
     {
         _itemService = itemService;
@@ -67,6 +82,7 @@ public partial class ItemsListViewModel : BaseViewModel
             LoadItemsCommand.Execute(null);
     }
 
+    /// <summary>Translates the UI picker selection into the slug used for API calls, skipping the synthetic "All Items" entry (Id == 0).</summary>
     partial void OnSelectedCategoryItemChanged(Category? value)
     {
         if (_restoringCategory)
@@ -74,6 +90,10 @@ public partial class ItemsListViewModel : BaseViewModel
         SelectedCategory = (value is null || value.Id == 0) ? null : value.Slug;
     }
 
+    /// <summary>
+    /// Resets to page 1 and loads items matching the current <see cref="SelectedCategory"/> and
+    /// <see cref="SearchText"/> filters. Also refreshes the category picker list.
+    /// </summary>
     [RelayCommand]
     private Task LoadItemsAsync() =>
         RunAsync(async () =>
@@ -105,6 +125,10 @@ public partial class ItemsListViewModel : BaseViewModel
             _hasLoaded = true;
         });
 
+    /// <summary>
+    /// Appends the next page of results to <see cref="Items"/>. Rolls back <see cref="CurrentPage"/>
+    /// if the request fails so a retry will not skip a page.
+    /// </summary>
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
         RunAsync(async () =>
@@ -131,6 +155,9 @@ public partial class ItemsListViewModel : BaseViewModel
             }
         });
 
+    /// <summary>
+    /// Navigates to the item details page, passing <paramref name="item"/>'s ID as a query parameter.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToItemAsync(Item item) =>
         await _navigationService.NavigateToAsync(
@@ -138,6 +165,9 @@ public partial class ItemsListViewModel : BaseViewModel
             new Dictionary<string, object> { ["itemId"] = item.Id }
         );
 
+    /// <summary>
+    /// Navigates to the create-item page so the user can list a new rental.
+    /// </summary>
     [RelayCommand]
     private async Task NavigateToCreateItemAsync() =>
         await _navigationService.NavigateToAsync(Routes.CreateItem);

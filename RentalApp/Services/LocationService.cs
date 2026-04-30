@@ -2,6 +2,11 @@ using Microsoft.Maui.Devices.Sensors;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// MAUI implementation of <see cref="ILocationService"/>. Wraps platform-specific
+/// <see cref="PermissionException"/> and <see cref="FeatureNotEnabledException"/> into
+/// <see cref="InvalidOperationException"/> so callers have a single error type to handle.
+/// </summary>
 public class LocationService : ILocationService
 {
     private readonly IGeolocation _geolocation;
@@ -11,6 +16,7 @@ public class LocationService : ILocationService
         _geolocation = geolocation;
     }
 
+    /// <inheritdoc/>
     public async Task<(double Lat, double Lon)> GetCurrentLocationAsync()
     {
         try

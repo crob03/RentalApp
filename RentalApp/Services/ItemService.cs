@@ -2,6 +2,11 @@ using RentalApp.Models;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Application-layer implementation of <see cref="IItemService"/>. Applies input validation
+/// before forwarding requests to <see cref="IApiService"/>, ensuring constraints are enforced
+/// consistently regardless of which API backend is active.
+/// </summary>
 public class ItemService : IItemService
 {
     private readonly IApiService _api;
@@ -11,6 +16,7 @@ public class ItemService : IItemService
         _api = api;
     }
 
+    /// <inheritdoc/>
     public Task<List<Item>> GetItemsAsync(
         string? category = null,
         string? search = null,
@@ -18,6 +24,7 @@ public class ItemService : IItemService
         int pageSize = 20
     ) => _api.GetItemsAsync(category, search, page, pageSize);
 
+    /// <inheritdoc/>
     public Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
@@ -27,8 +34,11 @@ public class ItemService : IItemService
         int pageSize = 20
     ) => _api.GetNearbyItemsAsync(lat, lon, radius, category, page, pageSize);
 
+    /// <inheritdoc/>
     public Task<Item> GetItemAsync(int id) => _api.GetItemAsync(id);
 
+    /// <inheritdoc/>
+    /// <remarks>Validates all arguments before forwarding to the API; throws <see cref="ArgumentException"/> on failure so the caller never reaches the network with invalid data.</remarks>
     public async Task<Item> CreateItemAsync(
         string title,
         string? description,
@@ -46,6 +56,7 @@ public class ItemService : IItemService
         return await _api.CreateItemAsync(title, description, dailyRate, categoryId, lat, lon);
     }
 
+    /// <inheritdoc/>
     public async Task<Item> UpdateItemAsync(
         int id,
         string? title,
@@ -64,6 +75,7 @@ public class ItemService : IItemService
         return await _api.UpdateItemAsync(id, title, description, dailyRate, isAvailable);
     }
 
+    /// <inheritdoc/>
     public Task<List<Category>> GetCategoriesAsync() => _api.GetCategoriesAsync();
 
     private static void ValidateTitle(string title)

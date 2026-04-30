@@ -135,6 +135,8 @@ public class RemoteApiService : IApiService
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Category and search terms are URL-encoded before appending to the query string. The list DTO omits coordinates; <c>Latitude</c>/<c>Longitude</c> are <see langword="null"/> on returned items.</remarks>
     public async Task<List<Item>> GetItemsAsync(
         string? category = null,
         string? search = null,
@@ -178,6 +180,8 @@ public class RemoteApiService : IApiService
             .ToList();
     }
 
+    /// <inheritdoc/>
+    /// <remarks><c>FormattableString.Invariant</c> is used to format the URL so that decimal values use <c>.</c> as the separator regardless of the current thread culture.</remarks>
     public async Task<List<Item>> GetNearbyItemsAsync(
         double lat,
         double lon,
@@ -223,6 +227,8 @@ public class RemoteApiService : IApiService
             .ToList();
     }
 
+    /// <inheritdoc/>
+    /// <remarks>Returns the full detail DTO including reviews and owner rating, unlike the list endpoints which return summary data only.</remarks>
     public async Task<Item> GetItemAsync(int id)
     {
         var response = await _apiClient.GetAsync($"items/{id}");
@@ -264,6 +270,7 @@ public class RemoteApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<Item> CreateItemAsync(
         string title,
         string? description,
@@ -312,6 +319,8 @@ public class RemoteApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
+    /// <remarks>The API returns a minimal acknowledgement; the method re-fetches via <see cref="GetItemAsync"/> to return a fully-hydrated item.</remarks>
     public async Task<Item> UpdateItemAsync(
         int id,
         string? title,
@@ -335,6 +344,7 @@ public class RemoteApiService : IApiService
         return await GetItemAsync(id);
     }
 
+    /// <inheritdoc/>
     public async Task<List<Category>> GetCategoriesAsync()
     {
         var response = await _apiClient.GetAsync("categories");

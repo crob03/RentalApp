@@ -5,6 +5,11 @@ using DbItem = RentalApp.Database.Models.Item;
 
 namespace RentalApp.Database.Repositories;
 
+/// <summary>
+/// EF Core / PostGIS implementation of <see cref="IItemRepository"/>.
+/// Text search uses <c>EF.Functions.ILike</c> (Npgsql-specific PostgreSQL <c>ILIKE</c>).
+/// Proximity queries delegate to PostGIS via NTS <c>IsWithinDistance</c> / <c>Distance</c>.
+/// </summary>
 public class ItemRepository : IItemRepository
 {
     private readonly AppDbContext _context;
@@ -14,6 +19,7 @@ public class ItemRepository : IItemRepository
         _context = context;
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<DbItem>> GetItemsAsync(
         string? category,
         string? search,
@@ -36,6 +42,7 @@ public class ItemRepository : IItemRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc/>
     public async Task<IEnumerable<DbItem>> GetNearbyItemsAsync(
         Point origin,
         double radiusMeters,
@@ -60,6 +67,7 @@ public class ItemRepository : IItemRepository
             .ToListAsync();
     }
 
+    /// <inheritdoc/>
     public async Task<DbItem?> GetItemAsync(int id)
     {
         return await _context
@@ -68,6 +76,8 @@ public class ItemRepository : IItemRepository
             .FirstOrDefaultAsync(i => i.Id == id);
     }
 
+    /// <inheritdoc/>
+    /// <remarks>After saving, re-fetches the entity by ID so the returned object includes the populated <c>Category</c> and <c>Owner</c> navigation properties.</remarks>
     public async Task<DbItem> CreateItemAsync(
         string title,
         string? description,
@@ -97,6 +107,7 @@ public class ItemRepository : IItemRepository
             ?? throw new InvalidOperationException("Failed to retrieve created item.");
     }
 
+    /// <inheritdoc/>
     public async Task<DbItem> UpdateItemAsync(
         int id,
         string? title,

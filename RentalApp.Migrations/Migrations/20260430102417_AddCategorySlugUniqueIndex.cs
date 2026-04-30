@@ -14,15 +14,14 @@ namespace RentalApp.Migrations.Migrations
                 name: "IX_categories_Slug",
                 table: "categories",
                 column: "Slug",
-                unique: true);
+                unique: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_categories_Slug",
-                table: "categories");
+            migrationBuilder.DropIndex(name: "IX_categories_Slug", table: "categories");
         }
     }
 }

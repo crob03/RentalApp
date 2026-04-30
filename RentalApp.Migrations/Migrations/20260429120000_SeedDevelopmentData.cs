@@ -10,7 +10,8 @@ namespace RentalApp.Migrations.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO categories ("Name", "Slug", "CreatedAt", "UpdatedAt")
                 VALUES
                     ('Music',   'music',   NOW(), NOW()),
@@ -18,7 +19,8 @@ namespace RentalApp.Migrations.Migrations
                     ('DIY',     'diy',     NOW(), NOW()),
                     ('Games',   'games',   NOW(), NOW())
                 ON CONFLICT ("Slug") DO NOTHING;
-                """);
+                """
+            );
 
             var salt1 = BCrypt.Net.BCrypt.GenerateSalt();
             var hash1 = BCrypt.Net.BCrypt.HashPassword("Password1!", salt1);
@@ -29,17 +31,20 @@ namespace RentalApp.Migrations.Migrations
             var salt3 = BCrypt.Net.BCrypt.GenerateSalt();
             var hash3 = BCrypt.Net.BCrypt.HashPassword("Password3!", salt3);
 
-            migrationBuilder.Sql($"""
+            migrationBuilder.Sql(
+                $"""
                 INSERT INTO users ("FirstName", "LastName", "Email", "PasswordHash", "PasswordSalt", "CreatedAt", "UpdatedAt")
                 VALUES
                     ('Alice', 'Smith', 'alice@example.com', '{hash1}', '{salt1}', NOW(), NOW()),
                     ('Bob',   'Jones', 'bob@example.com',   '{hash2}', '{salt2}', NOW(), NOW()),
                     ('Carol', 'White', 'carol@example.com', '{hash3}', '{salt3}', NOW(), NOW())
                 ON CONFLICT ("Email") DO NOTHING;
-                """);
+                """
+            );
 
             // Bob's 3 items
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Acoustic Guitar',
@@ -54,9 +59,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Acoustic Guitar'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Two-Man Tent',
@@ -71,9 +78,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Two-Man Tent'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Power Drill Set',
@@ -88,10 +97,12 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Power Drill Set'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
                 );
-                """);
+                """
+            );
 
             // Carol's 5 items
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Electric Keyboard',
@@ -106,9 +117,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Electric Keyboard'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Sleeping Bag',
@@ -123,9 +136,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Sleeping Bag'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Jigsaw Puzzle Bundle',
@@ -140,9 +155,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Jigsaw Puzzle Bundle'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Circular Saw',
@@ -157,9 +174,11 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Circular Saw'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 INSERT INTO items ("Title", "Description", "DailyRate", "CategoryId", "OwnerId", "Location", "IsAvailable", "CreatedAt", "UpdatedAt")
                 SELECT
                     'Board Game Bundle',
@@ -174,29 +193,36 @@ namespace RentalApp.Migrations.Migrations
                     WHERE "Title" = 'Board Game Bundle'
                     AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
                 );
-                """);
+                """
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 DELETE FROM items
                 WHERE "OwnerId" IN (
                     SELECT "Id" FROM users
                     WHERE "Email" IN ('alice@example.com', 'bob@example.com', 'carol@example.com')
                 );
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 DELETE FROM users
                 WHERE "Email" IN ('alice@example.com', 'bob@example.com', 'carol@example.com');
-                """);
+                """
+            );
 
-            migrationBuilder.Sql("""
+            migrationBuilder.Sql(
+                """
                 DELETE FROM categories
                 WHERE "Slug" IN ('music', 'camping', 'diy', 'games');
-                """);
+                """
+            );
         }
     }
 }
