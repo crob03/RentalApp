@@ -19,7 +19,15 @@ public class RegistrationValidatorTests
         string password = ValidPassword,
         string confirmPassword = ValidConfirm,
         bool acceptTerms = AcceptTerms
-    ) => RegistrationValidator.Validate(firstName, lastName, email, password, confirmPassword, acceptTerms);
+    ) =>
+        RegistrationValidator.Validate(
+            firstName,
+            lastName,
+            email,
+            password,
+            confirmPassword,
+            acceptTerms
+        );
 
     // ── Happy path ─────────────────────────────────────────────────────
 

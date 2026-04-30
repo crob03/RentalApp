@@ -85,13 +85,35 @@ public class MainViewModelTests
         await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
     }
 
+    // ── Item navigation ────────────────────────────────────────────────
+
     [Fact]
-    public async Task NavigateToSettingsCommand_NavigatesToTemp()
+    public async Task NavigateToItemsListCommand_NavigatesToItemsList()
     {
         var sut = CreateSut();
 
-        await sut.NavigateToSettingsCommand.ExecuteAsync(null);
+        await sut.NavigateToItemsListCommand.ExecuteAsync(null);
 
-        await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
+        await _navigationService.Received(1).NavigateToAsync(Routes.ItemsList);
+    }
+
+    [Fact]
+    public async Task NavigateToNearbyItemsCommand_NavigatesToNearbyItems()
+    {
+        var sut = CreateSut();
+
+        await sut.NavigateToNearbyItemsCommand.ExecuteAsync(null);
+
+        await _navigationService.Received(1).NavigateToAsync(Routes.NearbyItems);
+    }
+
+    [Fact]
+    public async Task NavigateToCreateItemCommand_NavigatesToCreateItem()
+    {
+        var sut = CreateSut();
+
+        await sut.NavigateToCreateItemCommand.ExecuteAsync(null);
+
+        await _navigationService.Received(1).NavigateToAsync(Routes.CreateItem);
     }
 }

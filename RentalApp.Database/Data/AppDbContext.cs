@@ -52,7 +52,7 @@ public class AppDbContext : DbContext
 
         optionsBuilder.UseNpgsql(
             connectionString,
-            o => o.MigrationsAssembly("RentalApp.Migrations")
+            o => o.MigrationsAssembly("RentalApp.Migrations").UseNetTopologySuite()
         );
     }
 
@@ -61,20 +61,51 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<User> Users { get; set; }
 
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Category"/> entity.
+    /// </summary>
+    public DbSet<Category> Categories { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Item"/> entity.
+    /// </summary>
+    public DbSet<Item> Items { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure User entity
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("users");
+            entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.FirstName).HasMaxLength(100);
             entity.Property(e => e.LastName).HasMaxLength(100);
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.PasswordSalt).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("categories");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.ToTable("items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.Location).HasColumnType("geography(Point, 4326)");
+            entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
+            entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
         });
     }
 }

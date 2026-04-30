@@ -20,15 +20,15 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      CONNECTION_STRING: "Host=localhost;Database=testdb;Username=test_user;Password=test_password"
+      CONNECTION_STRING: "Host=localhost;Database=appdb;Username=test_user;Password=test_password"
 
     services:
       postgres:
-        image: postgres:16
+        image: postgis/postgis:16-3.5
         env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: testdb
+          POSTGRES_DB: appdb
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -102,7 +102,7 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
             /d:sonar.cs.opencover.reportsPaths="test-results/**/coverage.opencover.xml" \
-            /d:sonar.verbose=true
+            /d:sonar.coverage.exclusions="**/RentalApp.Migrations/**" \
 
       # --- Build & Test ---
       - name: Build

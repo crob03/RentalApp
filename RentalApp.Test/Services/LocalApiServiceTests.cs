@@ -1,19 +1,25 @@
 using Microsoft.EntityFrameworkCore;
+using RentalApp.Database.Repositories;
 using RentalApp.Services;
 using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Services;
 
-public class LocalApiServiceTests : IClassFixture<DatabaseFixture>
+public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServiceTests>>
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture<LocalApiServiceTests> _fixture;
 
-    public LocalApiServiceTests(DatabaseFixture fixture)
+    public LocalApiServiceTests(DatabaseFixture<LocalApiServiceTests> fixture)
     {
         _fixture = fixture;
     }
 
-    private LocalApiService CreateSut() => new(_fixture.Context);
+    private LocalApiService CreateSut() =>
+        new(
+            _fixture.Context,
+            new ItemRepository(_fixture.Context),
+            new CategoryRepository(_fixture.Context)
+        );
 
     // ── Register ───────────────────────────────────────────────────────
 
@@ -146,5 +152,141 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture>
         var act = () => sut.GetCurrentUserAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
+    }
+
+    // ── GetItemsAsync ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetItemsAsync_NoFilter_ReturnsItems()
+    {
+        var sut = CreateSut();
+
+        var items = await sut.GetItemsAsync();
+
+        Assert.NotEmpty(items);
+    }
+
+    [Fact]
+    public async Task GetItemsAsync_CategoryFilter_ReturnsMappedDtos()
+    {
+        var sut = CreateSut();
+
+        var items = await sut.GetItemsAsync(category: "tools");
+
+        Assert.All(items, i => Assert.Equal("Tools", i.Category));
+    }
+
+    [Fact]
+    public async Task GetItemsAsync_MapsLocationToLatLon()
+    {
+        var sut = CreateSut();
+
+        var items = await sut.GetItemsAsync();
+
+        Assert.All(
+            items,
+            i =>
+            {
+                Assert.NotNull(i.Latitude);
+                Assert.NotNull(i.Longitude);
+            }
+        );
+    }
+
+    // ── GetNearbyItemsAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetNearbyItemsAsync_WithinRadius_ReturnsNearbyItems()
+    {
+        var sut = CreateSut();
+
+        var items = await sut.GetNearbyItemsAsync(55.9533, -3.1883, 5.0);
+
+        Assert.Equal(2, items.Count);
+    }
+
+    [Fact]
+    public async Task GetNearbyItemsAsync_PopulatesDistance()
+    {
+        var sut = CreateSut();
+
+        var items = await sut.GetNearbyItemsAsync(55.9533, -3.1883, 5.0);
+
+        Assert.All(items, i => Assert.NotNull(i.Distance));
+    }
+
+    // ── GetItemAsync ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetItemAsync_ExistingId_ReturnsMappedItem()
+    {
+        var sut = CreateSut();
+
+        var item = await sut.GetItemAsync(1);
+
+        Assert.Equal(1, item.Id);
+        Assert.Equal("Test Drill", item.Title);
+    }
+
+    [Fact]
+    public async Task GetItemAsync_NonExistentId_ThrowsInvalidOperationException()
+    {
+        var sut = CreateSut();
+
+        var act = () => sut.GetItemAsync(999);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
+    }
+
+    // ── CreateItemAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateItemAsync_AuthenticatedUser_CreatesAndReturnsItem()
+    {
+        await _fixture.ResetAsync();
+        var sut = CreateSut();
+        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await sut.LoginAsync("jane@example.com", "Password1!");
+
+        var item = await sut.CreateItemAsync("My Drill", "desc", 10.0, 1, 55.9533, -3.1883);
+
+        Assert.True(item.Id > 0);
+        Assert.Equal("My Drill", item.Title);
+        Assert.True(item.IsAvailable);
+    }
+
+    [Fact]
+    public async Task CreateItemAsync_NotAuthenticated_ThrowsInvalidOperationException()
+    {
+        var sut = CreateSut();
+
+        var act = () => sut.CreateItemAsync("Drill", null, 10.0, 1, 55.9533, -3.1883);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
+    }
+
+    // ── UpdateItemAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateItemAsync_ValidUpdate_ReturnsUpdatedItem()
+    {
+        await _fixture.ResetItemsAsync();
+        var sut = CreateSut();
+
+        var item = await sut.UpdateItemAsync(1, "Updated Title", null, null, null);
+
+        Assert.Equal("Updated Title", item.Title);
+    }
+
+    // ── GetCategoriesAsync ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetCategoriesAsync_ReturnsAllCategories()
+    {
+        var sut = CreateSut();
+
+        var categories = await sut.GetCategoriesAsync();
+
+        Assert.Equal(2, categories.Count);
     }
 }

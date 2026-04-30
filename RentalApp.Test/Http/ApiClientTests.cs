@@ -164,6 +164,76 @@ public class ApiClientTests
             .NavigateToAsync(Arg.Any<string>(), Arg.Any<Dictionary<string, object>>());
     }
 
+    // ── PutAsJsonAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task PutAsJsonAsync_SuccessResponse_ReturnsResponse()
+    {
+        var sut = CreateSut(_ => new HttpResponseMessage(HttpStatusCode.OK));
+
+        var response = await sut.PutAsJsonAsync("items/1", new { name = "Tent" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutAsJsonAsync_UsesHttpPutMethod()
+    {
+        HttpRequestMessage? captured = null;
+        var sut = CreateSut(req =>
+        {
+            captured = req;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+
+        await sut.PutAsJsonAsync("items/1", new { name = "Tent" });
+
+        Assert.Equal(HttpMethod.Put, captured?.Method);
+    }
+
+    [Fact]
+    public async Task PutAsJsonAsync_401Response_NavigatesToLoginWithSessionExpiredFlag()
+    {
+        _tokenState.CurrentToken = "active-token";
+        var sut = CreateSut(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+
+        await sut.PutAsJsonAsync("items/1", new { name = "Tent" });
+
+        await _navigationService
+            .Received(1)
+            .NavigateToAsync(
+                Routes.Login,
+                Arg.Is<Dictionary<string, object>>(d =>
+                    d.ContainsKey("sessionExpired") && (bool)d["sessionExpired"]
+                )
+            );
+    }
+
+    [Fact]
+    public async Task PutAsJsonAsync_401Response_ReturnsOriginalResponse()
+    {
+        _tokenState.CurrentToken = "active-token";
+        var sut = CreateSut(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+
+        var response = await sut.PutAsJsonAsync("items/1", new { name = "Tent" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutAsJsonAsync_TokenAbsent_401ResponsePassesThroughWithoutNavigation()
+    {
+        _tokenState.CurrentToken = null;
+        var sut = CreateSut(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+
+        var response = await sut.PutAsJsonAsync("items/1", new { name = "Tent" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        await _navigationService
+            .DidNotReceive()
+            .NavigateToAsync(Arg.Any<string>(), Arg.Any<Dictionary<string, object>>());
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────
 
     private sealed class FakeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond)
