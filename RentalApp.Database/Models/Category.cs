@@ -1,11 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace RentalApp.Database.Models;
 
-[Table("categories")]
-[PrimaryKey(nameof(Id))]
 public class Category
 {
     public int Id { get; set; }

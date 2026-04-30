@@ -21,6 +21,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 10 | 2026-04-17 | Architecture | `IApiService` facade with `RemoteApiService` and `LocalApiService` as symmetric implementations |
 | 11 | 2026-04-17 | Architecture | `LoginAsync` returns `Task`; each implementation manages its own session state internally |
 | 12 | 2026-04-17 | Architecture | `RentalApp.Models` DTOs as the exclusive return types of `IApiService` — never EF entities |
+| 13 | 2026-04-30 | Architecture / Data Access | All EF Core entity configuration lives in `AppDbContext.OnModelCreating`; models carry only `[Required]` |
 
 ---
 
@@ -195,3 +196,18 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Shared models used by both EF and the transport layer** — a single model class annotated for both JSON deserialisation and EF column mapping. Rejected as an anti-pattern; EF attributes (`[Column]`, `[Key]`, navigation properties) have no meaning in a transport context and vice versa.
 
 **Rationale**: The transport layer and the persistence layer have different shapes, different nullability requirements, and different lifecycles. Keeping them separate means each can evolve independently. The `User` DTO, for example, carries `AverageRating`, `ItemsListed`, and `Reviews` — none of which exist on the EF `User` entity.
+
+---
+
+### Decision 13: Consolidate EF Core Entity Configuration in `AppDbContext.OnModelCreating`
+**Date**: 2026-04-30
+**Area**: Architecture / Data Access
+
+**Decision**: All EF Core entity configuration — table names, primary keys, indexes, column constraints, and relationships — is expressed via the Fluent API in `AppDbContext.OnModelCreating`. EF-specific annotations (`[Table]`, `[PrimaryKey]`, `[MaxLength]`) are removed from model files. `[Required]` is retained on model properties as it serves dual purpose: EF NOT NULL constraint and model validation.
+
+**Alternatives considered**:
+- **Mixed annotations + Fluent API** — the prior state. Rejected because configuration was split across two places with no clear rule for what belonged where, making it easy to miss or duplicate settings (e.g. `[MaxLength]` was present on `Item` properties that were already constrained in `AppDbContext`).
+- **`IEntityTypeConfiguration<T>` per entity** — the most scalable pattern; each entity gets its own configuration class, and `OnModelCreating` calls `modelBuilder.ApplyConfigurationsFromAssembly(...)`. Not adopted because the overhead of separate files per entity is unnecessary at the current scale of three entities, and `OnModelCreating` remains readable. This remains the preferred migration path if the model grows significantly.
+- **All configuration via annotations** — cannot express all EF behaviour (relationships, custom column types such as `geography(Point, 4326)`, composite indexes). Not viable as a complete solution.
+
+**Rationale**: `AppDbContext` is already the single place that configures indexes, max lengths, relationships, and column types. Extending it to also own table names and primary keys makes it the unambiguous source of truth for how EF sees each entity. Models become near-POCOs decorated only with validation annotations, with no dependency on `Microsoft.EntityFrameworkCore` or `System.ComponentModel.DataAnnotations.Schema`.

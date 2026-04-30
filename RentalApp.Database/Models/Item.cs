@@ -1,21 +1,15 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace RentalApp.Database.Models;
 
-[Table("items")]
-[PrimaryKey(nameof(Id))]
 public class Item
 {
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(100)]
     public string Title { get; set; } = string.Empty;
 
-    [MaxLength(1000)]
     public string? Description { get; set; }
 
     [Required]

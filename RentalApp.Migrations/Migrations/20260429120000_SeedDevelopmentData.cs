@@ -16,7 +16,8 @@ namespace RentalApp.Migrations.Migrations
                     ('Music',   'music',   NOW(), NOW()),
                     ('Camping', 'camping', NOW(), NOW()),
                     ('DIY',     'diy',     NOW(), NOW()),
-                    ('Games',   'games',   NOW(), NOW());
+                    ('Games',   'games',   NOW(), NOW())
+                ON CONFLICT ("Slug") DO NOTHING;
                 """);
 
             var salt1 = BCrypt.Net.BCrypt.GenerateSalt();
@@ -33,7 +34,8 @@ namespace RentalApp.Migrations.Migrations
                 VALUES
                     ('Alice', 'Smith', 'alice@example.com', '{hash1}', '{salt1}', NOW(), NOW()),
                     ('Bob',   'Jones', 'bob@example.com',   '{hash2}', '{salt2}', NOW(), NOW()),
-                    ('Carol', 'White', 'carol@example.com', '{hash3}', '{salt3}', NOW(), NOW());
+                    ('Carol', 'White', 'carol@example.com', '{hash3}', '{salt3}', NOW(), NOW())
+                ON CONFLICT ("Email") DO NOTHING;
                 """);
 
             // Bob's 3 items
@@ -46,7 +48,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'music'),
                     (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.1883, 55.9533), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Acoustic Guitar'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -58,7 +65,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'camping'),
                     (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.2030, 55.9486), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Two-Man Tent'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -70,7 +82,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'diy'),
                     (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.1719, 55.9626), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Power Drill Set'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'bob@example.com')
+                );
                 """);
 
             // Carol's 5 items
@@ -83,7 +100,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'music'),
                     (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.1878, 55.9419), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Electric Keyboard'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -95,7 +117,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'camping'),
                     (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.2127, 55.9501), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Sleeping Bag'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -107,7 +134,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'games'),
                     (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.1546, 55.9442), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Jigsaw Puzzle Bundle'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -119,7 +151,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'diy'),
                     (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.1573, 55.9614), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Circular Saw'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
+                );
                 """);
 
             migrationBuilder.Sql("""
@@ -131,7 +168,12 @@ namespace RentalApp.Migrations.Migrations
                     (SELECT "Id" FROM categories WHERE "Slug" = 'games'),
                     (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com'),
                     ST_SetSRID(ST_MakePoint(-3.2290, 55.9384), 4326)::geography,
-                    true, NOW(), NOW();
+                    true, NOW(), NOW()
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM items
+                    WHERE "Title" = 'Board Game Bundle'
+                    AND "OwnerId" = (SELECT "Id" FROM users WHERE "Email" = 'carol@example.com')
+                );
                 """);
         }
 

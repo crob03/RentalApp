@@ -1,7 +1,6 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using NetTopologySuite.Geometries;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Database.Data;
@@ -77,9 +76,10 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure User entity
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("users");
+            entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.FirstName).HasMaxLength(100);
@@ -88,20 +88,22 @@ public class AppDbContext : DbContext
             entity.Property(e => e.PasswordSalt).HasMaxLength(255);
         });
 
-        // Configure Category entity
         modelBuilder.Entity<Category>(entity =>
         {
+            entity.ToTable("categories");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Slug).IsUnique();
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
         });
 
-        // Configure Item entity
         modelBuilder.Entity<Item>(entity =>
         {
+            entity.ToTable("items");
+            entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.Location).HasColumnType("geography(Point, 4326)");
-
             entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
             entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
         });

@@ -1,6 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace RentalApp.Database.Models;
 
@@ -8,8 +6,6 @@ namespace RentalApp.Database.Models;
 /// Represents a registered user of the application.
 /// Maps to the <c>users</c> table in the database.
 /// </summary>
-[Table("users")]
-[PrimaryKey(nameof(Id))]
 public class User
 {
     /// <summary>
