@@ -26,7 +26,7 @@ public partial class NearbyItemsViewModel : BaseViewModel
     private bool _hasLoaded;
     private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
 
-    /// <summary>Guards against <see cref="OnSelectedCategoryItemChanged"/> re-triggering a load while <see cref="LoadNearbyItemsAsync"/> is restoring the picker selection.</summary>
+    /// <summary>Guards against <see cref="OnSelectedCategoryItemChanged(Category?)"/> re-triggering a load while <see cref="LoadNearbyItemsAsync"/> is restoring the picker selection.</summary>
     private bool _restoringCategory;
 
     [ObservableProperty]

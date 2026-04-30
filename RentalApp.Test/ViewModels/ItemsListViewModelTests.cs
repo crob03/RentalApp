@@ -67,8 +67,8 @@ public class ItemsListViewModelTests
         _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem(2, "Ladder")]);
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
-        Assert.Equal(1, sut.Items.Count);
-        Assert.Equal("Ladder", sut.Items[0].Title);
+        var item = Assert.Single(sut.Items);
+        Assert.Equal("Ladder", item.Title);
     }
 
     [Fact]

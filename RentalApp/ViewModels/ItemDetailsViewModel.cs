@@ -13,7 +13,6 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
 {
     private readonly IItemService _itemService;
     private readonly IAuthenticationService _authService;
-    private readonly INavigationService _navigationService;
     private int _itemId;
 
     [ObservableProperty]
@@ -50,16 +49,10 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     /// </summary>
     /// <param name="itemService">Service used to fetch and update the item.</param>
     /// <param name="authService">Authentication service used to determine whether the current user owns the item.</param>
-    /// <param name="navigationService">Navigation service (reserved for future back-navigation use).</param>
-    public ItemDetailsViewModel(
-        IItemService itemService,
-        IAuthenticationService authService,
-        INavigationService navigationService
-    )
+    public ItemDetailsViewModel(IItemService itemService, IAuthenticationService authService)
     {
         _itemService = itemService;
         _authService = authService;
-        _navigationService = navigationService;
         Title = "Item Details";
     }
 
