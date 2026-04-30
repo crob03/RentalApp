@@ -10,9 +10,8 @@ public class ItemDetailsViewModelTests
 {
     private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
-    private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private ItemDetailsViewModel CreateSut() => new(_itemService, _authService, _nav);
+    private ItemDetailsViewModel CreateSut() => new(_itemService, _authService);
 
     private static Item MakeItem(int id, int ownerId) =>
         new(
