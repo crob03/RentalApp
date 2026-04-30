@@ -5,11 +5,11 @@ using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Services;
 
-public class LocalApiServiceTests : IClassFixture<DatabaseFixture>
+public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServiceTests>>
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture<LocalApiServiceTests> _fixture;
 
-    public LocalApiServiceTests(DatabaseFixture fixture)
+    public LocalApiServiceTests(DatabaseFixture<LocalApiServiceTests> fixture)
     {
         _fixture = fixture;
     }

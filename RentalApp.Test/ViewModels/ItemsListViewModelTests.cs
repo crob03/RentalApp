@@ -235,7 +235,7 @@ public class ItemsListViewModelTests
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
         sut.SelectedCategoryItem = MakeCategory();
-        await Task.Delay(50);
+        await (sut.LoadItemsCommand.ExecutionTask ?? Task.CompletedTask);
 
         await _itemService
             .Received(2)

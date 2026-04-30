@@ -4,18 +4,24 @@ using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Repositories;
 
-public class ItemRepositoryTests : IClassFixture<DatabaseFixture>
+public class ItemRepositoryTests
+    : IClassFixture<DatabaseFixture<ItemRepositoryTests>>,
+        IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture<ItemRepositoryTests> _fixture;
     private static readonly GeometryFactory Factory = new GeometryFactory(
         new PrecisionModel(),
         4326
     );
 
-    public ItemRepositoryTests(DatabaseFixture fixture)
+    public ItemRepositoryTests(DatabaseFixture<ItemRepositoryTests> fixture)
     {
         _fixture = fixture;
     }
+
+    public Task InitializeAsync() => _fixture.ResetItemsAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private ItemRepository CreateSut() => new(_fixture.Context);
 
@@ -163,7 +169,6 @@ public class ItemRepositoryTests : IClassFixture<DatabaseFixture>
     [Fact]
     public async Task CreateItemAsync_ValidInput_PersistsAndReturnsItem()
     {
-        await _fixture.ResetItemsAsync();
         var sut = CreateSut();
         var location = Factory.CreatePoint(new Coordinate(-3.1883, 55.9533));
 
@@ -179,7 +184,6 @@ public class ItemRepositoryTests : IClassFixture<DatabaseFixture>
     [Fact]
     public async Task UpdateItemAsync_PartialUpdate_OnlyChangesSuppliedFields()
     {
-        await _fixture.ResetItemsAsync();
         var sut = CreateSut();
 
         var updated = await sut.UpdateItemAsync(1, "Updated Title", null, null, null);

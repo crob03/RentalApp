@@ -62,7 +62,7 @@ public class CreateItemViewModelTests
                 )
             );
         var sut = CreateSut();
-        sut.Title2 = "My Drill";
+        sut.ItemTitle = "My Drill";
         sut.Description = "desc";
         sut.DailyRate = "10.00";
         sut.SelectedCategory = new Category(1, "Tools", "tools", 5);
@@ -79,7 +79,7 @@ public class CreateItemViewModelTests
     public async Task CreateItemCommand_NoCategory_SetsError()
     {
         var sut = CreateSut();
-        sut.Title2 = "My Drill";
+        sut.ItemTitle = "My Drill";
         sut.DailyRate = "10.00";
         sut.SelectedCategory = null;
 
@@ -102,7 +102,7 @@ public class CreateItemViewModelTests
     public async Task CreateItemCommand_InvalidRate_SetsError()
     {
         var sut = CreateSut();
-        sut.Title2 = "My Drill";
+        sut.ItemTitle = "My Drill";
         sut.DailyRate = "not-a-number";
         sut.SelectedCategory = new Category(1, "Tools", "tools", 5);
 
@@ -122,7 +122,7 @@ public class CreateItemViewModelTests
                 )
             );
         var sut = CreateSut();
-        sut.Title2 = "My Drill";
+        sut.ItemTitle = "My Drill";
         sut.DailyRate = "10.00";
         sut.SelectedCategory = new Category(1, "Tools", "tools", 5);
 
@@ -147,7 +147,7 @@ public class CreateItemViewModelTests
             )
             .ThrowsAsync(new ArgumentException("Title must be between 5 and 100 characters."));
         var sut = CreateSut();
-        sut.Title2 = "Hi";
+        sut.ItemTitle = "Hi";
         sut.DailyRate = "10.00";
         sut.SelectedCategory = new Category(1, "Tools", "tools", 5);
 

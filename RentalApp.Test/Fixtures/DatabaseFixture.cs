@@ -1,43 +1,51 @@
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using Npgsql;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Test.Fixtures;
 
-public class DatabaseFixture : IAsyncLifetime
+public class DatabaseFixture<TClass> : IAsyncLifetime
 {
-    private const string FallbackConnectionString =
-        "Host=localhost;Port=5432;Database=appdb_test;Username=app_user;Password=app_password";
+    private static readonly string DbName =
+        $"appdb_test_{typeof(TClass).Name.ToLower()}";
+
+    private static readonly string FallbackConnectionString =
+        $"Host=localhost;Port=5432;Database={DbName};Username=app_user;Password=app_password";
+
+    private string _connectionString = FallbackConnectionString;
 
     public AppDbContext Context { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
-        var connectionString =
-            Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? FallbackConnectionString;
+        _connectionString = BuildConnectionString(
+            Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? FallbackConnectionString
+        );
+
+        await RecreateDatabaseAsync();
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connectionString, o => o.UseNetTopologySuite())
+            .UseNpgsql(_connectionString, o => o.UseNetTopologySuite())
             .Options;
 
         Context = new AppDbContext(options);
-
-        await Context.Database.EnsureDeletedAsync();
-        await Context.Database.ExecuteSqlRawAsync("CREATE EXTENSION IF NOT EXISTS postgis");
         await Context.Database.EnsureCreatedAsync();
         await SeedAsync();
     }
 
     public async Task DisposeAsync()
     {
-        await Context.Database.EnsureDeletedAsync();
         await Context.DisposeAsync();
+        await DropDatabaseAsync();
     }
 
     public async Task ResetAsync()
     {
-        await Context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
+        await Context.Database.ExecuteSqlRawAsync(
+            "TRUNCATE TABLE items, categories, users RESTART IDENTITY CASCADE"
+        );
         Context.ChangeTracker.Clear();
         await SeedAsync();
     }
@@ -49,6 +57,50 @@ public class DatabaseFixture : IAsyncLifetime
         );
         Context.ChangeTracker.Clear();
         await SeedItemsAsync();
+    }
+
+    private async Task RecreateDatabaseAsync()
+    {
+        await using var conn = new NpgsqlConnection(GetMaintenanceConnectionString());
+        await conn.OpenAsync();
+
+        await using (
+            var cmd = new NpgsqlCommand(
+                $"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)",
+                conn
+            )
+        )
+            await cmd.ExecuteNonQueryAsync();
+
+        await using (
+            var cmd = new NpgsqlCommand(
+                $"CREATE DATABASE {DbName} TEMPLATE template_postgis",
+                conn
+            )
+        )
+            await cmd.ExecuteNonQueryAsync();
+    }
+
+    private async Task DropDatabaseAsync()
+    {
+        await using var conn = new NpgsqlConnection(GetMaintenanceConnectionString());
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand(
+            $"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)",
+            conn
+        );
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private string GetMaintenanceConnectionString() =>
+        new NpgsqlConnectionStringBuilder(_connectionString) { Database = "appdb" }.ConnectionString;
+
+    // Replace the database name in an externally-supplied CONNECTION_STRING with the
+    // per-class name so that parallel test classes each get their own isolated database.
+    private static string BuildConnectionString(string baseConnectionString)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(baseConnectionString) { Database = DbName };
+        return builder.ConnectionString;
     }
 
     private async Task SeedAsync()

@@ -3,11 +3,11 @@ using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Repositories;
 
-public class CategoryRepositoryTests : IClassFixture<DatabaseFixture>
+public class CategoryRepositoryTests : IClassFixture<DatabaseFixture<CategoryRepositoryTests>>
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture<CategoryRepositoryTests> _fixture;
 
-    public CategoryRepositoryTests(DatabaseFixture fixture)
+    public CategoryRepositoryTests(DatabaseFixture<CategoryRepositoryTests> fixture)
     {
         _fixture = fixture;
     }

@@ -161,7 +161,7 @@ public class NearbyItemsViewModelTests
 
         sut.Radius = 10.0;
 
-        await Task.Delay(50);
+        await (sut.LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
         await _itemService
             .Received(2)
             .GetNearbyItemsAsync(
@@ -290,7 +290,7 @@ public class NearbyItemsViewModelTests
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
         sut.SelectedCategoryItem = MakeCategory();
-        await Task.Delay(50);
+        await (sut.LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
 
         await _itemService
             .Received(2)
