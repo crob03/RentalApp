@@ -61,7 +61,7 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
         RunAsync(async () =>
         {
             CurrentItem = await _itemService.GetItemAsync(_itemId);
-            IsOwner = CurrentItem.OwnerId == _authService.CurrentUser?.Id;
+            IsOwner = CurrentItem?.OwnerId == _authService.CurrentUser?.Id;
         });
 
     [RelayCommand]
@@ -94,7 +94,7 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
             CurrentItem = await _itemService.UpdateItemAsync(
                 CurrentItem.Id,
                 EditTitle,
-                EditDescription.Length > 0 ? EditDescription : null,
+                EditDescription,
                 rate,
                 EditIsAvailable
             );

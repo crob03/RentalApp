@@ -115,7 +115,7 @@ public class ItemRepository : IItemRepository
         if (title != null)
             item.Title = title;
         if (description != null)
-            item.Description = description;
+            item.Description = description.Length > 0 ? description : null;
         if (dailyRate.HasValue)
             item.DailyRate = dailyRate.Value;
         if (isAvailable.HasValue)

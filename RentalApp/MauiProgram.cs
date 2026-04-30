@@ -51,8 +51,8 @@ public static class MauiProgram
         else
         {
             builder.Services.AddDbContext<AppDbContext>();
-            builder.Services.AddScoped<IItemRepository, ItemRepository>();
-            builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+            builder.Services.AddSingleton<IItemRepository, ItemRepository>();
+            builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
             builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
                 sp.GetRequiredService<AppDbContext>(),
                 sp.GetRequiredService<IItemRepository>(),

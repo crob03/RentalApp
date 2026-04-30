@@ -17,11 +17,12 @@ public class CategoryRepository : ICategoryRepository
     {
         var rows = await _context
             .Categories.OrderBy(c => c.Name)
-            .Select(c => new
-            {
-                Category = c,
-                Count = _context.Items.Count(i => i.CategoryId == c.Id),
-            })
+            .GroupJoin(
+                _context.Items,
+                c => c.Id,
+                i => i.CategoryId,
+                (c, items) => new { Category = c, Count = items.Count() }
+            )
             .ToListAsync();
 
         return rows.Select(r => (r.Category, r.Count));

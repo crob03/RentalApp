@@ -14,6 +14,7 @@ public partial class ItemsListViewModel : BaseViewModel
     private const int PageSize = 20;
     private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
     private bool _restoringCategory;
+    private bool _hasLoaded;
 
     [ObservableProperty]
     private ObservableCollection<Item> items = [];
@@ -54,9 +55,17 @@ public partial class ItemsListViewModel : BaseViewModel
         Title = "Browse Items";
     }
 
-    partial void OnSelectedCategoryChanged(string? value) => LoadItemsCommand.Execute(null);
+    partial void OnSelectedCategoryChanged(string? value)
+    {
+        if (_hasLoaded)
+            LoadItemsCommand.Execute(null);
+    }
 
-    partial void OnSearchTextChanged(string value) => LoadItemsCommand.Execute(null);
+    partial void OnSearchTextChanged(string value)
+    {
+        if (_hasLoaded)
+            LoadItemsCommand.Execute(null);
+    }
 
     partial void OnSelectedCategoryItemChanged(Category? value)
     {
@@ -92,6 +101,8 @@ public partial class ItemsListViewModel : BaseViewModel
                 ? AllItemsCategory
                 : all.FirstOrDefault(c => c.Slug == SelectedCategory) ?? AllItemsCategory;
             _restoringCategory = false;
+
+            _hasLoaded = true;
         });
 
     [RelayCommand]

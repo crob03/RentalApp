@@ -27,13 +27,23 @@
     />
 
     <!-- Error banner -->
-    <Label
+    <Border
       Grid.Row="2"
-      Text="{Binding ErrorMessage}"
-      TextColor="Red"
-      IsVisible="{Binding HasError}"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
       Margin="8,4"
-    />
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
 
     <!-- Loading indicator -->
     <ActivityIndicator

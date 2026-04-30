@@ -43,12 +43,6 @@ public partial class CreateItemViewModel : BaseViewModel
         Title = "List an Item";
     }
 
-    public string Title2
-    {
-        get => ItemTitle;
-        set => ItemTitle = value;
-    }
-
     [RelayCommand]
     private Task LoadCategoriesAsync() =>
         RunAsync(async () =>
@@ -59,6 +53,8 @@ public partial class CreateItemViewModel : BaseViewModel
     [RelayCommand]
     private async Task CreateItemAsync()
     {
+        ClearError();
+
         if (SelectedCategory == null)
         {
             SetError("Please select a category.");

@@ -67,13 +67,13 @@ public partial class NearbyItemsViewModel : BaseViewModel
     partial void OnRadiusChanged(double value)
     {
         if (_hasLoaded)
-            _ = LoadNearbyItemsAsync();
+            LoadNearbyItemsCommand.Execute(null);
     }
 
     partial void OnSelectedCategoryChanged(string? value)
     {
         if (_hasLoaded)
-            _ = LoadNearbyItemsAsync();
+            LoadNearbyItemsCommand.Execute(null);
     }
 
     partial void OnSelectedCategoryItemChanged(Category? value)
