@@ -1,6 +1,8 @@
 - name: README
   href: README.md
 - name: Decisions
-  href: DECISIONS.md
+  href: docs/DECISIONS.md
+- name: Database Seeding
+  href: docs/SEED_DATA.md
 - name: API Reference
   href: api/

@@ -1,64 +1,107 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
+using Npgsql;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 
 namespace RentalApp.Test.Fixtures;
 
-/// <summary>
-/// Creates a real PostgreSQL database for integration tests and tears it down when the test
-/// class is done. Intended for use with xUnit's <see cref="IClassFixture{TFixture}"/>.
-/// </summary>
-/// <remarks>
-/// The connection string is read from the <c>CONNECTION_STRING</c> environment variable,
-/// matching the value injected by the CI pipeline. Falls back to a local dev database.
-/// </remarks>
-public class DatabaseFixture : IAsyncLifetime
+public class DatabaseFixture<TClass> : IAsyncLifetime
 {
-    private const string FallbackConnectionString =
-        "Host=localhost;Port=5432;Database=appdb_test;Username=app_user;Password=app_password";
+    private static readonly string DbName = $"appdb_test_{typeof(TClass).Name.ToLower()}";
+
+    private static readonly string FallbackConnectionString =
+        $"Host=localhost;Port=5432;Database={DbName};Username=app_user;Password=app_password";
+
+    private string _connectionString = FallbackConnectionString;
 
     public AppDbContext Context { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
-        var connectionString =
-            Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? FallbackConnectionString;
+        _connectionString = BuildConnectionString(
+            Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? FallbackConnectionString
+        );
+
+        await RecreateDatabaseAsync();
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(_connectionString, o => o.UseNetTopologySuite())
             .Options;
 
         Context = new AppDbContext(options);
-
-        // Ensure a clean schema on every run, even if a previous run failed before DisposeAsync.
-        await Context.Database.EnsureDeletedAsync();
         await Context.Database.EnsureCreatedAsync();
         await SeedAsync();
     }
 
     public async Task DisposeAsync()
     {
-        await Context.Database.EnsureDeletedAsync();
         await Context.DisposeAsync();
+        await DropDatabaseAsync();
     }
 
-    /// <summary>
-    /// Deletes all rows and re-seeds the database. Call at the start of tests that mutate data.
-    /// </summary>
     public async Task ResetAsync()
     {
-        // RESTART IDENTITY resets the sequence so auto-generated inserts don't collide with seeded Ids.
         await Context.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE users RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE items, categories, users RESTART IDENTITY CASCADE"
         );
-        // Prevent stale tracked entities from the previous test interfering with the fresh seed.
         Context.ChangeTracker.Clear();
         await SeedAsync();
     }
 
+    public async Task ResetItemsAsync()
+    {
+        await Context.Database.ExecuteSqlRawAsync(
+            "TRUNCATE TABLE items, categories RESTART IDENTITY CASCADE"
+        );
+        Context.ChangeTracker.Clear();
+        await SeedItemsAsync();
+    }
+
+    private async Task RecreateDatabaseAsync()
+    {
+        await using var conn = new NpgsqlConnection(GetMaintenanceConnectionString());
+        await conn.OpenAsync();
+
+        await using (
+            var cmd = new NpgsqlCommand($"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)", conn)
+        )
+            await cmd.ExecuteNonQueryAsync();
+
+        await using (
+            var cmd = new NpgsqlCommand($"CREATE DATABASE {DbName} TEMPLATE template_postgis", conn)
+        )
+            await cmd.ExecuteNonQueryAsync();
+    }
+
+    private async Task DropDatabaseAsync()
+    {
+        await using var conn = new NpgsqlConnection(GetMaintenanceConnectionString());
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand(
+            $"DROP DATABASE IF EXISTS {DbName} WITH (FORCE)",
+            conn
+        );
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private string GetMaintenanceConnectionString() =>
+        new NpgsqlConnectionStringBuilder(_connectionString)
+        {
+            Database = "appdb",
+        }.ConnectionString;
+
+    // Replace the database name in an externally-supplied CONNECTION_STRING with the
+    // per-class name so that parallel test classes each get their own isolated database.
+    private static string BuildConnectionString(string baseConnectionString)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(baseConnectionString) { Database = DbName };
+        return builder.ConnectionString;
+    }
+
     private async Task SeedAsync()
     {
-        Context.Users.AddRange(
+        Context.Users.Add(
             new User
             {
                 Id = 1,
@@ -69,12 +112,85 @@ public class DatabaseFixture : IAsyncLifetime
                 PasswordSalt = "salt",
             }
         );
+        await Context.SaveChangesAsync();
+
+        await Context.Database.ExecuteSqlRawAsync(
+            """SELECT setval(pg_get_serial_sequence('users', 'Id'), (SELECT MAX("Id") FROM users))"""
+        );
+
+        await SeedItemsAsync();
+    }
+
+    private async Task SeedItemsAsync()
+    {
+        var factory = new GeometryFactory(new PrecisionModel(), 4326);
+
+        Context.Categories.AddRange(
+            new Category
+            {
+                Id = 1,
+                Name = "Tools",
+                Slug = "tools",
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            },
+            new Category
+            {
+                Id = 2,
+                Name = "Electronics",
+                Slug = "electronics",
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            }
+        );
+
+        // Item 1: ~0.5 km from origin, Item 2: ~1.5 km from origin, Item 3: ~20 km (excluded from 5 km search)
+        Context.Items.AddRange(
+            new Item
+            {
+                Id = 1,
+                Title = "Test Drill",
+                Description = "A power drill",
+                DailyRate = 10.0,
+                CategoryId = 1,
+                OwnerId = 1,
+                Location = factory.CreatePoint(new Coordinate(-3.1883, 55.9533)),
+                IsAvailable = true,
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            },
+            new Item
+            {
+                Id = 2,
+                Title = "Test Ladder",
+                Description = "A step ladder",
+                DailyRate = 8.0,
+                CategoryId = 1,
+                OwnerId = 1,
+                Location = factory.CreatePoint(new Coordinate(-3.2050, 55.9600)),
+                IsAvailable = true,
+                CreatedAt = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+            },
+            new Item
+            {
+                Id = 3,
+                Title = "Far Away Laptop",
+                Description = "A laptop",
+                DailyRate = 25.0,
+                CategoryId = 2,
+                OwnerId = 1,
+                Location = factory.CreatePoint(new Coordinate(-3.5200, 56.1200)),
+                IsAvailable = false,
+                CreatedAt = new DateTime(2026, 1, 3, 0, 0, 0, DateTimeKind.Utc),
+            }
+        );
 
         await Context.SaveChangesAsync();
 
-        // Explicit Id inserts bypass the sequence — advance it to avoid PK collisions on subsequent auto-generated inserts.
         await Context.Database.ExecuteSqlRawAsync(
-            """SELECT setval(pg_get_serial_sequence('users', 'Id'), (SELECT MAX("Id") FROM users))"""
+            """SELECT setval(pg_get_serial_sequence('categories', 'Id'), (SELECT MAX("Id") FROM categories))"""
+        );
+        await Context.Database.ExecuteSqlRawAsync(
+            """SELECT setval(pg_get_serial_sequence('items', 'Id'), (SELECT MAX("Id") FROM items))"""
         );
     }
 }

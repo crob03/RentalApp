@@ -7,6 +7,8 @@ namespace RentalApp.Views;
 /// </summary>
 public partial class LoadingPage : ContentPage
 {
+    private LoadingViewModel ViewModel => (LoadingViewModel)BindingContext;
+
     /// <summary>
     /// Initialises the page and binds it to the provided <see cref="LoadingViewModel"/>.
     /// </summary>
@@ -24,6 +26,6 @@ public partial class LoadingPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await ((LoadingViewModel)BindingContext).InitializeAsync();
+        await ViewModel.InitializeAsync();
     }
 }

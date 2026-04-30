@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.ItemsListPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:models="clr-namespace:RentalApp.Models"
+  Title="{Binding Title}"
+  x:DataType="vm:ItemsListViewModel"
+>
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+    <!-- Search bar -->
+    <SearchBar
+      Grid.Row="0"
+      Placeholder="Search items…"
+      Text="{Binding SearchText}"
+      Margin="8,8,8,0"
+    />
+
+    <!-- Category filter -->
+    <Picker
+      Grid.Row="1"
+      ItemsSource="{Binding FilterCategories}"
+      SelectedItem="{Binding SelectedCategoryItem}"
+      ItemDisplayBinding="{Binding Name}"
+      Margin="8,4,8,0"
+    />
+
+    <!-- Error banner -->
+    <Border
+      Grid.Row="2"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
+      Margin="8,4"
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
+
+    <!-- Loading indicator -->
+    <ActivityIndicator
+      Grid.Row="3"
+      IsRunning="{Binding IsBusy}"
+      IsVisible="{Binding IsBusy}"
+      HorizontalOptions="Center"
+      Margin="0,4"
+    />
+
+    <!-- Empty state -->
+    <Label
+      Grid.Row="4"
+      Text="No items found."
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+      IsVisible="{Binding IsEmpty}"
+    />
+
+    <!-- Items list -->
+    <CollectionView
+      Grid.Row="4"
+      ItemsSource="{Binding Items}"
+      SelectionMode="None"
+      RemainingItemsThreshold="3"
+      RemainingItemsThresholdReachedCommand="{Binding LoadMoreItemsCommand}"
+    >
+      <CollectionView.ItemTemplate>
+        <DataTemplate x:DataType="models:Item">
+          <Grid Padding="12,8" ColumnDefinitions="*,Auto">
+            <VerticalStackLayout>
+              <Label Text="{Binding Title}" FontAttributes="Bold" FontSize="15" />
+              <Label Text="{Binding Category}" FontSize="12" TextColor="Gray" />
+            </VerticalStackLayout>
+            <Label
+              Grid.Column="1"
+              Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
+              VerticalOptions="Center"
+              FontAttributes="Bold"
+            />
+            <Grid.GestureRecognizers>
+              <TapGestureRecognizer
+                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ItemsListViewModel}}, Path=NavigateToItemCommand}"
+                CommandParameter="{Binding .}"
+              />
+            </Grid.GestureRecognizers>
+          </Grid>
+        </DataTemplate>
+      </CollectionView.ItemTemplate>
+    </CollectionView>
+
+    <!-- FAB: create item -->
+    <Button
+      Grid.Row="4"
+      Text="+"
+      Command="{Binding NavigateToCreateItemCommand}"
+      HorizontalOptions="End"
+      VerticalOptions="End"
+      WidthRequest="56"
+      HeightRequest="56"
+      CornerRadius="28"
+      Margin="16"
+      FontSize="24"
+    />
+  </Grid>
+</ContentPage>

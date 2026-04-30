@@ -64,6 +64,22 @@ public class ApiClient : IApiClient
             : response;
     }
 
+    /// <inheritdoc/>
+    public async Task<HttpResponseMessage> PutAsJsonAsync<T>(
+        string requestUri,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var request = CreateRequest(HttpMethod.Put, requestUri);
+        request.Content = JsonContent.Create(value);
+        var sentWithToken = request.Headers.Authorization != null;
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized
+            ? await HandleSessionExpiredAsync(response)
+            : response;
+    }
+
     private HttpRequestMessage CreateRequest(HttpMethod method, string requestUri)
     {
         var request = new HttpRequestMessage(method, requestUri);

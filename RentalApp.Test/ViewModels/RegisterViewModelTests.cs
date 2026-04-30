@@ -28,7 +28,12 @@ public class RegisterViewModelTests
     public async Task RegisterAsync_SuccessfulRegistration_NavigatesBack()
     {
         _authService
-            .RegisterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .RegisterAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
+            )
             .Returns(AuthenticationResult.Success());
         var sut = WithValidForm(CreateSut());
 
@@ -41,7 +46,12 @@ public class RegisterViewModelTests
     public async Task RegisterAsync_FailedRegistration_DoesNotNavigate()
     {
         _authService
-            .RegisterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .RegisterAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
+            )
             .Returns(AuthenticationResult.Failure("Email already registered"));
         var sut = WithValidForm(CreateSut());
 
@@ -59,9 +69,14 @@ public class RegisterViewModelTests
         await sut.RegisterCommand.ExecuteAsync(null);
 
         await _navigationService.DidNotReceive().NavigateBackAsync();
-        await _authService.DidNotReceive().RegisterAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>()
-        );
+        await _authService
+            .DidNotReceive()
+            .RegisterAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
+            );
     }
 
     // ── RegisterAsync — error state ────────────────────────────────────
@@ -70,7 +85,12 @@ public class RegisterViewModelTests
     public async Task RegisterAsync_FailedRegistration_SetsErrorFromService()
     {
         _authService
-            .RegisterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .RegisterAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
+            )
             .Returns(AuthenticationResult.Failure("Email already registered"));
         var sut = WithValidForm(CreateSut());
 
@@ -95,7 +115,12 @@ public class RegisterViewModelTests
     public async Task RegisterAsync_SuccessfulRegistration_ClearsError()
     {
         _authService
-            .RegisterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .RegisterAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<string>()
+            )
             .Returns(AuthenticationResult.Success());
         var sut = WithValidForm(CreateSut());
 

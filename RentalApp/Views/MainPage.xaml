@@ -16,11 +16,6 @@
       Command="{Binding NavigateToProfileCommand}"
       IconImageSource="user.png"
     />
-    <ToolbarItem
-      Text="Settings"
-      Command="{Binding NavigateToSettingsCommand}"
-      IconImageSource="settings.png"
-    />
     <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
   </ContentPage.ToolbarItems>
 
@@ -106,7 +101,7 @@
 
         <!-- Action Cards -->
         <StackLayout Grid.Row="3" Spacing="15">
-          <!-- Profile Card -->
+          <!-- Browse Items Card -->
           <Border
             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
             Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
@@ -118,14 +113,14 @@
               <RoundRectangle CornerRadius="12" />
             </Border.StrokeShape>
             <Border.GestureRecognizers>
-              <TapGestureRecognizer Command="{Binding NavigateToProfileCommand}" />
+              <TapGestureRecognizer Command="{Binding NavigateToItemsListCommand}" />
             </Border.GestureRecognizers>
             <Grid ColumnDefinitions="Auto,*,Auto">
-              <Label Grid.Column="0" Text="👤" FontSize="24" VerticalOptions="Center" />
+              <Label Grid.Column="0" Text="🔍" FontSize="24" VerticalOptions="Center" />
               <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
-                <Label Text="Profile Settings" FontSize="16" FontAttributes="Bold" />
+                <Label Text="Browse Items" FontSize="16" FontAttributes="Bold" />
                 <Label
-                  Text="Manage your account information"
+                  Text="Search and browse available rentals"
                   FontSize="12"
                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                 />
@@ -140,7 +135,7 @@
             </Grid>
           </Border>
 
-          <!-- Settings Card -->
+          <!-- Create Item Card -->
           <Border
             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
             Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
@@ -152,14 +147,48 @@
               <RoundRectangle CornerRadius="12" />
             </Border.StrokeShape>
             <Border.GestureRecognizers>
-              <TapGestureRecognizer Command="{Binding NavigateToSettingsCommand}" />
+              <TapGestureRecognizer Command="{Binding NavigateToCreateItemCommand}" />
             </Border.GestureRecognizers>
             <Grid ColumnDefinitions="Auto,*,Auto">
-              <Label Grid.Column="0" Text="⚙️" FontSize="24" VerticalOptions="Center" />
+              <Label Grid.Column="0" Text="➕" FontSize="24" VerticalOptions="Center" />
               <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
-                <Label Text="App Settings" FontSize="16" FontAttributes="Bold" />
+                <Label Text="List an Item" FontSize="16" FontAttributes="Bold" />
                 <Label
-                  Text="Configure app preferences"
+                  Text="Add a new item for rent"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                />
+              </StackLayout>
+              <Label
+                Grid.Column="2"
+                Text=">"
+                FontSize="18"
+                VerticalOptions="Center"
+                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+              />
+            </Grid>
+          </Border>
+
+          <!-- Nearby Items Card -->
+          <Border
+            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+            StrokeThickness="1"
+            Padding="20"
+            HeightRequest="80"
+          >
+            <Border.StrokeShape>
+              <RoundRectangle CornerRadius="12" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+              <TapGestureRecognizer Command="{Binding NavigateToNearbyItemsCommand}" />
+            </Border.GestureRecognizers>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Label Grid.Column="0" Text="📍" FontSize="24" VerticalOptions="Center" />
+              <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
+                <Label Text="Nearby Items" FontSize="16" FontAttributes="Bold" />
+                <Label
+                  Text="Find rentals close to your location"
                   FontSize="12"
                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                 />
