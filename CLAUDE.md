@@ -55,16 +55,22 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 
 **Service hierarchy**: `IApiService` is the low-level abstraction (raw HTTP via `RemoteApiService` targeting `https://set09102-api.b-davison.workers.dev/`, or local DB via `LocalApiService`). `IAuthenticationService` wraps it with domain logic. ViewModels depend only on `IAuthenticationService`, never on `IApiService` directly.
 
-**Http layer**: `Http/` contains `ApiClient` (typed `HttpClient` wrapper implementing `IApiClient`) and `AuthTokenState` (singleton bearer token holder). `RemoteApiService` uses both. Switch to `LocalApiService` via `make use-local-api` for offline dev.
+**Http layer**: `Http/` contains `IApiClient`/`ApiClient` (typed `HttpClient` wrapper) and `AuthTokenState` (singleton bearer token holder). `RemoteApiService` uses both. Switch to `LocalApiService` via `make use-local-api` for offline dev.
 
-**TempPage**: Post-login placeholder (`TempViewModel`/`TempPage`) — the authenticated landing screen until real content pages are built.
+**Domain services**: `IItemService`/`ItemService` handles item CRUD with input validation before delegating to `IApiService`. `ILocationService`/`LocationService` wraps `IGeolocation` (device GPS) — both are registered in DI. ViewModels that need items or location inject these, not `IApiService` directly.
 
-**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). All other ViewModels and Pages are Transient.
+**TempPage**: Legacy post-login placeholder — still registered but superseded by `MainPage` as the authenticated landing screen. `LoadingPage` handles initial app startup before routing.
 
-**Shell navigation**: Root route is `//login` (`Routes.Login`). AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`.
+**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). `IAuthenticationService`, `ILocationService`, and `INavigationService` are also Singleton. `IItemService` is Transient — it holds no auth state and is cheap to construct. All other ViewModels and Pages are Transient.
+
+**Shell navigation**: Root route is `//login` (`Routes.Login`). AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`: `Login`, `Main`, `Temp`, `ItemsList`, `ItemDetails`, `CreateItem`, `NearbyItems`.
+
+**Dual Item model gotcha**: Two `Item` classes exist — do not confuse them. `RentalApp.Models.Item` is a `record` (API response DTO, used by ViewModels). `RentalApp.Database.Models.Item` is an EF entity with a PostGIS `Point Location` column. The UI project never references the Database models directly.
 
 ### RentalApp.Database (Data Access Layer)
-EntityFrameworkCore with Npgsql (PostgreSQL). `AppDbContext` manages the `User` entity. Connection string is read from the `CONNECTION_STRING` environment variable, falling back to embedded `appsettings.json` in the assembly. Passwords are hashed with BCrypt.
+EntityFrameworkCore with Npgsql (PostgreSQL) and **NetTopologySuite** for PostGIS geography support. `AppDbContext` manages three entities: `User`, `Category`, and `Item`. `Item.Location` is stored as a PostGIS `geography(Point, 4326)` column — `UseNetTopologySuite()` must be present on the EF options (it is; don't remove it). Connection string is read from the `CONNECTION_STRING` environment variable, falling back to embedded `appsettings.json` in the assembly. Passwords are hashed with BCrypt.
+
+**Repositories**: `IItemRepository`/`ItemRepository` and `ICategoryRepository`/`CategoryRepository` sit between `AppDbContext` and `LocalApiService`. They are registered as Singleton and injected into `LocalApiService` only — `RemoteApiService` has no dependency on them.
 
 ### RentalApp.Migrations (Migrations Library)
 Class library housing EF Core migration files under `Migrations/`. Implements `IDesignTimeDbContextFactory<AppDbContext>` so `dotnet ef` can target this project directly without a separate startup project. Applied via `dotnet ef database update --project RentalApp.Migrations` (handled by docker-compose service ordering).
