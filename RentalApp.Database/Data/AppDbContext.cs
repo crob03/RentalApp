@@ -43,7 +43,11 @@ public class AppDbContext : DbContext
         if (string.IsNullOrEmpty(connectionString))
         {
             var a = Assembly.GetExecutingAssembly();
-            using var stream = a.GetManifestResourceStream("RentalApp.Database.appsettings.json");
+            using var stream =
+                a.GetManifestResourceStream("RentalApp.Database.appsettings.json")
+                ?? throw new InvalidOperationException(
+                    "Embedded resource 'RentalApp.Database.appsettings.json' not found. Ensure the file exists and is marked as EmbeddedResource."
+                );
 
             var config = new ConfigurationBuilder().AddJsonStream(stream).Build();
 
