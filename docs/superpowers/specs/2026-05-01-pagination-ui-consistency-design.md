@@ -33,7 +33,7 @@ BaseViewModel                    ← unchanged
 
 ### `SearchBaseViewModel : BaseViewModel`
 
-New `partial` class. Owns all state shared between the two paginated search pages.
+New `partial` class. Owns all state shared between the two paginated search pages. Receives `INavigationService` via constructor so it can own `NavigateToCreateItemCommand` directly.
 
 **Observable properties:**
 - `ObservableCollection<Item> Items`
@@ -59,6 +59,7 @@ New `partial` class. Owns all state shared between the two paginated search page
 - `RunLoadMoreAsync(Func<Task>)` — sets `IsLoadingMore`, clears error, restores in finally. Catches exceptions via `SetError`.
 - `RestoreCategory(List<Category> all)` — the shared `_restoringCategory` block; sets `SelectedCategoryItem` from `SelectedCategory` without triggering a reload.
 - `abstract Task ReloadAsync()` — called by `OnSelectedCategoryChanged`; each subclass implements it to invoke its own load command.
+- `NavigateToCreateItemCommand` — navigates to `Routes.CreateItem`; shared so both pages get the FAB without duplication.
 
 **Partial methods:**
 - `OnSelectedCategoryItemChanged(Category? value)` — translates picker selection to `SelectedCategory` slug; skips synthetic "All Items" (Id == 0); respects `_restoringCategory`.
@@ -72,7 +73,6 @@ Retains only:
 - `LoadItemsAsync` — calls `RunLoadAsync`; resets to page 1, fetches items + categories, calls `RestoreCategory`
 - `LoadMoreItemsAsync` — calls `RunLoadMoreAsync`; rolls back `CurrentPage` on failure
 - `NavigateToItemCommand`
-- `NavigateToCreateItemCommand`
 - `override Task ReloadAsync()` — executes `LoadItemsCommand`
 
 ### `NearbyItemsViewModel : SearchBaseViewModel`
@@ -138,9 +138,9 @@ Both pages render item cards directly as `<Border>` with no outer wrapper `<Grid
 - `ItemsListPage` `SearchBar`: `Margin="0,4"`
 - `NearbyItemsPage` Radius `StackLayout`: `Margin="0,4"`
 
-### FAB (ItemsListPage only)
+### FAB (both pages)
 
-Remains at `Grid.Row="4"`, `HorizontalOptions="End"`, `VerticalOptions="End"` — overlaid on the `RefreshView`.
+Both pages show a "+" FAB at `Grid.Row="3"`, `HorizontalOptions="End"`, `VerticalOptions="End"`, overlaid on the `RefreshView`. Bound to `NavigateToCreateItemCommand` from `SearchBaseViewModel`.
 
 ---
 
