@@ -1,7 +1,6 @@
 // RentalApp/MauiProgram.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Devices.Sensors;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
 using RentalApp.Http;
