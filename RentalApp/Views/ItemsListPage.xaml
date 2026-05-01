@@ -3,11 +3,17 @@
   x:Class="RentalApp.Views.ItemsListPage"
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
   xmlns:models="clr-namespace:RentalApp.Models"
-  Title="{Binding Title}"
+  mc:Ignorable="d"
   x:DataType="vm:ItemsListViewModel"
+  Title="{Binding Title}"
 >
+  <d:ContentPage.BindingContext>
+    <vm:ItemsListViewModel />
+  </d:ContentPage.BindingContext>
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
     <!-- Search bar -->
     <SearchBar

@@ -16,6 +16,7 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
     private string _connectionString = FallbackConnectionString;
 
     public AppDbContext Context { get; private set; } = null!;
+    public IDbContextFactory<AppDbContext> ContextFactory { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
@@ -29,6 +30,7 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
             .UseNpgsql(_connectionString, o => o.UseNetTopologySuite())
             .Options;
 
+        ContextFactory = new FixtureContextFactory(options);
         Context = new AppDbContext(options);
         await Context.Database.EnsureCreatedAsync();
         await SeedAsync();
@@ -83,6 +85,12 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
             conn
         );
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    private sealed class FixtureContextFactory(DbContextOptions<AppDbContext> options)
+        : IDbContextFactory<AppDbContext>
+    {
+        public AppDbContext CreateDbContext() => new(options);
     }
 
     private string GetMaintenanceConnectionString() =>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Devices.Sensors;
 using RentalApp.Database.Data;
@@ -50,11 +51,11 @@ public static class MauiProgram
         }
         else
         {
-            builder.Services.AddDbContext<AppDbContext>();
+            builder.Services.AddDbContextFactory<AppDbContext>();
             builder.Services.AddSingleton<IItemRepository, ItemRepository>();
             builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
             builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
-                sp.GetRequiredService<AppDbContext>(),
+                sp.GetRequiredService<IDbContextFactory<AppDbContext>>(),
                 sp.GetRequiredService<IItemRepository>(),
                 sp.GetRequiredService<ICategoryRepository>()
             ));

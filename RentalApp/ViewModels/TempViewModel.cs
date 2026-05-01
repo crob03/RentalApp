@@ -22,8 +22,4 @@ public class TempViewModel
     /// </summary>
     public string Message => "This is a placeholder page.";
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="TempViewModel"/>.
-    /// </summary>
-    public TempViewModel() { }
 }

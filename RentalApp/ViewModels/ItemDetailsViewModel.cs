@@ -37,14 +37,6 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     private bool editIsAvailable;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="ItemDetailsViewModel"/> for design-time support.
-    /// </summary>
-    public ItemDetailsViewModel()
-    {
-        Title = "Item Details";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="ItemDetailsViewModel"/> with the required services.
     /// </summary>
     /// <param name="itemService">Service used to fetch and update the item.</param>

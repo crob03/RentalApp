@@ -18,7 +18,7 @@ namespace RentalApp.Services;
 /// </summary>
 public class LocalApiService : IApiService
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
     private User? _currentUser;
@@ -29,16 +29,16 @@ public class LocalApiService : IApiService
     /// <summary>
     /// Initialises a new instance of <see cref="LocalApiService"/> with the required data-access dependencies.
     /// </summary>
-    /// <param name="context">EF Core database context, used directly for user operations not covered by repositories.</param>
+    /// <param name="contextFactory">EF Core context factory, used directly for user operations not covered by repositories.</param>
     /// <param name="itemRepository">Repository for item queries and mutations.</param>
     /// <param name="categoryRepository">Repository for category queries.</param>
     public LocalApiService(
-        AppDbContext context,
+        IDbContextFactory<AppDbContext> contextFactory,
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository
     )
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
     }
@@ -47,7 +47,8 @@ public class LocalApiService : IApiService
     /// <remarks>Verifies the BCrypt password hash and stores the authenticated user in <c>_currentUser</c> for the lifetime of this service instance.</remarks>
     public async Task LoginAsync(string email, string password)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        await using var context = _contextFactory.CreateDbContext();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password");
@@ -64,12 +65,13 @@ public class LocalApiService : IApiService
         string password
     )
     {
-        var existing = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        await using var context = _contextFactory.CreateDbContext();
+        var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (existing != null)
             throw new InvalidOperationException("User with this email already exists");
 
         var salt = BCrypt.Net.BCrypt.GenerateSalt();
-        _context.Users.Add(
+        context.Users.Add(
             new DbUser
             {
                 FirstName = firstName,
@@ -81,7 +83,7 @@ public class LocalApiService : IApiService
                 UpdatedAt = DateTime.UtcNow,
             }
         );
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     /// <inheritdoc/>
@@ -97,8 +99,9 @@ public class LocalApiService : IApiService
     /// <inheritdoc/>
     public async Task<User> GetUserAsync(int userId)
     {
+        await using var context = _contextFactory.CreateDbContext();
         var user =
-            await _context.Users.FindAsync(userId)
+            await context.Users.FindAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
         return ToUser(user);

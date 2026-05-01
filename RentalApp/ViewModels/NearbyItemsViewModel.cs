@@ -18,9 +18,12 @@ public partial class NearbyItemsViewModel : BaseViewModel
     private readonly INavigationService _navigationService;
     private const int PageSize = 20;
 
-    /// <summary>Device coordinates captured during the most recent full load; reused by load-more and filter changes.</summary>
+    /// <summary>Device coordinates captured on first load; reused by radius/category changes and pagination to avoid repeated GPS requests.</summary>
     private double _cachedLat;
     private double _cachedLon;
+
+    /// <summary>Set to true after the first successful GPS fetch so subsequent loads skip the location request.</summary>
+    private bool _locationFetched;
 
     /// <summary>Prevents property-change callbacks from firing a reload before the first <see cref="LoadNearbyItemsAsync"/> completes.</summary>
     private bool _hasLoaded;
@@ -55,14 +58,6 @@ public partial class NearbyItemsViewModel : BaseViewModel
 
     [ObservableProperty]
     private bool hasMorePages;
-
-    /// <summary>
-    /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> for design-time support.
-    /// </summary>
-    public NearbyItemsViewModel()
-    {
-        Title = "Nearby Items";
-    }
 
     /// <summary>
     /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> with the required services.
@@ -113,9 +108,13 @@ public partial class NearbyItemsViewModel : BaseViewModel
         {
             CurrentPage = 1;
 
-            var (lat, lon) = await _locationService.GetCurrentLocationAsync();
-            _cachedLat = lat;
-            _cachedLon = lon;
+            if (!_locationFetched)
+            {
+                var (lat, lon) = await _locationService.GetCurrentLocationAsync();
+                _cachedLat = lat;
+                _cachedLon = lon;
+                _locationFetched = true;
+            }
 
             var result = await _itemService.GetNearbyItemsAsync(
                 _cachedLat,

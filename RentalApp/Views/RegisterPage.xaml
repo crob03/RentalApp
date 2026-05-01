@@ -3,12 +3,16 @@
   x:Class="RentalApp.Views.RegisterPage"
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  mc:Ignorable="d"
+  x:DataType="vm:RegisterViewModel"
   Title="{Binding Title}"
 >
-  <ContentPage.BindingContext>
+  <d:ContentPage.BindingContext>
     <vm:RegisterViewModel />
-  </ContentPage.BindingContext>
+  </d:ContentPage.BindingContext>
 
   <ScrollView>
     <Grid Padding="30" RowSpacing="20">
