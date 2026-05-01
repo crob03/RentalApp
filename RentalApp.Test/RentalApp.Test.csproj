@@ -19,4 +19,8 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RentalApp.Contracts\RentalApp.Contracts.csproj" />
+  </ItemGroup>
 </Project>
