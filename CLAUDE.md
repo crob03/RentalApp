@@ -59,6 +59,10 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 
 **Domain services**: `IItemService`/`ItemService` handles item CRUD with input validation before delegating to `IApiService`. `ILocationService`/`LocationService` wraps `IGeolocation` (device GPS) — both are registered in DI. ViewModels that need items or location inject these, not `IApiService` directly.
 
+**Item listing ViewModels**: `ItemsSearchBaseViewModel` (abstract, extends `BaseViewModel`) is the required base for all item-listing pages. It provides shared pagination state (`IsLoading`/`IsLoadingMore`/`CurrentPage`/`HasMorePages`), category filtering, and `RunLoadAsync`/`RunLoadMoreAsync` lifecycle helpers. Subclasses implement `ReloadAsync()` — triggered automatically after first load when filters change. Use `_ = TriggerReloadIfLoaded()` in `partial void` property callbacks (which cannot be async) to make fire-and-forget explicit.
+
+**NearbyItems pagination**: The nearby items API endpoint ignores `page`/`pageSize` and returns all results. `NearbyItemsViewModel` caches the full result in `_allNearbyItems` and slices client-side — do not add server-side paging calls here.
+
 **TempPage**: Legacy post-login placeholder — still registered but superseded by `MainPage` as the authenticated landing screen. `LoadingPage` handles initial app startup before routing.
 
 **DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). `IAuthenticationService`, `ILocationService`, and `INavigationService` are also Singleton. `IItemService` is Transient — it holds no auth state and is cheap to construct. All other ViewModels and Pages are Transient.
@@ -79,6 +83,7 @@ Class library housing EF Core migration files under `Migrations/`. Implements `I
 
 - Tests live in `RentalApp.Test/`, mirroring the source structure: `ViewModels/`, `Services/`, `Http/`
 - Integration tests use a **real PostgreSQL database** via `Fixtures/DatabaseFixture` — no mocking of `AppDbContext`
+- To test abstract ViewModels, create a `private sealed TestableViewModel` inner class that exposes protected methods — see `ItemsSearchBaseViewModelTests` for the pattern.
 - `DatabaseFixture` implements xUnit's `IClassFixture<T>`: one DB per test class, torn down after
 - Requires `CONNECTION_STRING` env var (falls back to `Host=localhost;Port=5432;Database=appdb_test;Username=app_user;Password=app_password`)
 - Run the DB first: `docker-compose up db` before running tests locally
