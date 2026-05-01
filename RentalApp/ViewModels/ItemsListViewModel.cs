@@ -22,11 +22,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
 
     partial void OnSearchTextChanged(string value) => TriggerReloadIfLoaded();
 
-    protected override Task ReloadAsync()
-    {
-        LoadItemsCommand.Execute(null);
-        return Task.CompletedTask;
-    }
+    protected override Task ReloadAsync() => LoadItemsCommand.ExecuteAsync(null);
 
     [RelayCommand]
     private Task LoadItemsAsync() =>
