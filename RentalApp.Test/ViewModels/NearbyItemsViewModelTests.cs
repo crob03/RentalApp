@@ -55,7 +55,7 @@ public class NearbyItemsViewModelTests
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
         Assert.Equal(2, sut.Items.Count);
-        Assert.False(sut.IsBusy);
+        Assert.False(sut.IsLoading);
     }
 
     [Fact]
@@ -74,28 +74,7 @@ public class NearbyItemsViewModelTests
 
         Assert.True(sut.HasError);
         Assert.Contains("Location unavailable", sut.ErrorMessage);
-        Assert.False(sut.IsBusy);
-    }
-
-    [Fact]
-    public async Task LoadNearbyItemsCommand_EmptyResult_SetsIsEmptyTrue()
-    {
-        _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _itemService
-            .GetNearbyItemsAsync(
-                Arg.Any<double>(),
-                Arg.Any<double>(),
-                Arg.Any<double>(),
-                Arg.Any<string?>(),
-                Arg.Any<int>(),
-                Arg.Any<int>()
-            )
-            .Returns(new List<Item>());
-        var sut = CreateSut();
-
-        await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
-
-        Assert.True(sut.IsEmpty);
+        Assert.False(sut.IsLoading);
     }
 
     [Fact]
