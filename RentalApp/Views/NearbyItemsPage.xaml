@@ -6,7 +6,7 @@
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
-  xmlns:models="clr-namespace:RentalApp.Models"
+  xmlns:responses="clr-namespace:RentalApp.Contracts.Responses;assembly=RentalApp.Contracts"
   mc:Ignorable="d"
   x:DataType="vm:NearbyItemsViewModel"
   Title="{Binding Title}"
@@ -84,7 +84,7 @@
           </StackLayout>
         </CollectionView.Footer>
         <CollectionView.ItemTemplate>
-          <DataTemplate x:DataType="models:Item">
+          <DataTemplate x:DataType="responses:NearbyItemResponse">
             <Border
               Margin="0,4"
               Padding="12"
