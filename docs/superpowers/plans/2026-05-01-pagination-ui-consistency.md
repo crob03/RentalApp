@@ -682,3 +682,251 @@ git add RentalApp/ViewModels/NearbyItemsViewModel.cs \
         RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs
 git commit -m "refactor: simplify NearbyItemsViewModel to extend ItemsSearchBaseViewModel"
 ```
+
+---
+
+### Task 4: Update `ItemsListPage.xaml`
+
+**Files:**
+- Modify: `RentalApp/ViewModels/ItemsSearchBaseViewModel.cs`
+- Modify: `RentalApp.Test/ViewModels/ItemsSearchBaseViewModelTests.cs`
+- Modify: `RentalApp/Views/ItemsListPage.xaml`
+
+- [ ] **Step 1: Add `ShowLoadMoreButton` test to `ItemsSearchBaseViewModelTests`**
+
+The footer needs to swap between a "Load More" button and a spinner. Without a value converter, a computed property handles this. Add to `ItemsSearchBaseViewModelTests.cs`:
+
+```csharp
+// ── ShowLoadMoreButton ─────────────────────────────────────────────
+
+[Fact]
+public void ShowLoadMoreButton_TrueWhenHasMorePagesAndNotLoadingMore()
+{
+    var sut = CreateSut();
+    sut.HasMorePages = true;
+    Assert.True(sut.ShowLoadMoreButton);
+}
+
+[Fact]
+public void ShowLoadMoreButton_FalseWhenIsLoadingMore()
+{
+    var sut = CreateSut();
+    sut.HasMorePages = true;
+    sut.IsLoadingMore = true;
+    Assert.False(sut.ShowLoadMoreButton);
+}
+
+[Fact]
+public void ShowLoadMoreButton_FalseWhenNoMorePages()
+{
+    var sut = CreateSut();
+    sut.HasMorePages = false;
+    Assert.False(sut.ShowLoadMoreButton);
+}
+```
+
+- [ ] **Step 2: Run new tests to verify they fail**
+
+```bash
+dotnet test RentalApp.Test --filter "FullyQualifiedName~ItemsSearchBaseViewModelTests" 2>&1 | tail -5
+```
+
+Expected: 3 failures — `ShowLoadMoreButton` does not exist yet.
+
+- [ ] **Step 3: Add `ShowLoadMoreButton` to `ItemsSearchBaseViewModel`**
+
+Add `[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]` to the `hasMorePages` and `isLoadingMore` fields, and add the computed property:
+
+```csharp
+[ObservableProperty]
+[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]
+private bool hasMorePages;
+
+[ObservableProperty]
+[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]
+private bool isLoadingMore;
+
+public bool ShowLoadMoreButton => HasMorePages && !IsLoadingMore;
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+```bash
+dotnet test RentalApp.Test --filter "FullyQualifiedName~ItemsSearchBaseViewModelTests" 2>&1 | tail -5
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 5: Replace `ItemsListPage.xaml` with the unified structure**
+
+Replace the entire contents of `RentalApp/Views/ItemsListPage.xaml`:
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.ItemsListPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:models="clr-namespace:RentalApp.Models"
+  mc:Ignorable="d"
+  x:DataType="vm:ItemsListViewModel"
+  Title="{Binding Title}"
+>
+  <d:ContentPage.BindingContext>
+    <vm:ItemsListViewModel />
+  </d:ContentPage.BindingContext>
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
+
+    <!-- Error banner -->
+    <Border
+      Grid.Row="0"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
+      Margin="0,0,0,4"
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
+
+    <!-- Search bar -->
+    <SearchBar
+      Grid.Row="1"
+      Placeholder="Search items…"
+      Text="{Binding SearchText}"
+      Margin="0,4"
+    />
+
+    <!-- Category filter -->
+    <Picker
+      Grid.Row="2"
+      ItemsSource="{Binding FilterCategories}"
+      SelectedItem="{Binding SelectedCategoryItem}"
+      ItemDisplayBinding="{Binding Name}"
+      Margin="0,4"
+    />
+
+    <!-- Items list with pull-to-refresh -->
+    <RefreshView
+      Grid.Row="3"
+      IsRefreshing="{Binding IsLoading}"
+      Command="{Binding LoadItemsCommand}"
+    >
+      <CollectionView
+        ItemsSource="{Binding Items}"
+        SelectionMode="None"
+      >
+        <CollectionView.EmptyView>
+          <Label
+            Text="No items found."
+            HorizontalOptions="Center"
+            Margin="0,40"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </CollectionView.EmptyView>
+        <CollectionView.Footer>
+          <StackLayout Padding="0,8">
+            <Button
+              Text="Load More"
+              Command="{Binding LoadMoreItemsCommand}"
+              IsVisible="{Binding ShowLoadMoreButton}"
+              HorizontalOptions="Center"
+            />
+            <ActivityIndicator
+              IsRunning="{Binding IsLoadingMore}"
+              IsVisible="{Binding IsLoadingMore}"
+              HorizontalOptions="Center"
+            />
+          </StackLayout>
+        </CollectionView.Footer>
+        <CollectionView.ItemTemplate>
+          <DataTemplate x:DataType="models:Item">
+            <Border
+              Margin="0,4"
+              Padding="12"
+              StrokeThickness="1"
+              Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+            >
+              <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+              </Border.StrokeShape>
+              <Border.GestureRecognizers>
+                <TapGestureRecognizer
+                  Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ItemsListViewModel}}, Path=NavigateToItemCommand}"
+                  CommandParameter="{Binding .}"
+                />
+              </Border.GestureRecognizers>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Title}" FontAttributes="Bold" />
+                <Label
+                  Grid.Row="1"
+                  Grid.Column="0"
+                  Text="{Binding Category}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+                <Label
+                  Grid.Row="0"
+                  Grid.Column="1"
+                  Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
+                />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+    </RefreshView>
+
+    <!-- Initial load indicator (overlaid, centred) -->
+    <ActivityIndicator
+      Grid.Row="3"
+      IsRunning="{Binding IsLoading}"
+      IsVisible="{Binding IsLoading}"
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+    />
+
+    <!-- FAB: create item -->
+    <Button
+      Grid.Row="3"
+      Text="+"
+      Command="{Binding NavigateToCreateItemCommand}"
+      HorizontalOptions="End"
+      VerticalOptions="End"
+      WidthRequest="56"
+      HeightRequest="56"
+      CornerRadius="28"
+      Margin="16"
+      FontSize="24"
+    />
+
+  </Grid>
+</ContentPage>
+```
+
+- [ ] **Step 6: Run the full test suite**
+
+```bash
+dotnet test RentalApp.Test 2>&1 | tail -10
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add RentalApp/ViewModels/ItemsSearchBaseViewModel.cs \
+        RentalApp.Test/ViewModels/ItemsSearchBaseViewModelTests.cs \
+        RentalApp/Views/ItemsListPage.xaml
+git commit -m "feat: update ItemsListPage with load more button, pull-to-refresh, and unified layout"
+```
