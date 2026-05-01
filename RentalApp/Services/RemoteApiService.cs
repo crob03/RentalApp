@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using static System.FormattableString;
 
 namespace RentalApp.Services;

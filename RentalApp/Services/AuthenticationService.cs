@@ -46,6 +46,7 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (Exception ex)
         {
+            _tokenState.CurrentToken = null;
             return AuthenticationResult.Failure(ex.Message);
         }
     }
@@ -70,9 +71,9 @@ public class AuthenticationService : IAuthenticationService
 
     public async Task LogoutAsync()
     {
-        _currentUser = null;
-        _tokenState.CurrentToken = null;
         await _credentialStore.ClearAsync();
+        _tokenState.CurrentToken = null;
+        _currentUser = null;
         AuthenticationStateChanged?.Invoke(this, false);
     }
 }
