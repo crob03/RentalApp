@@ -688,76 +688,11 @@ git commit -m "refactor: simplify NearbyItemsViewModel to extend ItemsSearchBase
 ### Task 4: Update `ItemsListPage.xaml`
 
 **Files:**
-- Modify: `RentalApp/ViewModels/ItemsSearchBaseViewModel.cs`
-- Modify: `RentalApp.Test/ViewModels/ItemsSearchBaseViewModelTests.cs`
 - Modify: `RentalApp/Views/ItemsListPage.xaml`
 
-- [ ] **Step 1: Add `ShowLoadMoreButton` test to `ItemsSearchBaseViewModelTests`**
+The project already has `InvertedBoolConverter` registered in `App.xaml` as `{StaticResource InvertedBoolConverter}`. The footer uses `IsVisible="{Binding HasMorePages}"` on the wrapper to hide everything when there are no more pages, then `IsVisible="{Binding IsLoadingMore, Converter={StaticResource InvertedBoolConverter}}"` on the button to swap it out for the spinner when loading.
 
-The footer needs to swap between a "Load More" button and a spinner. Without a value converter, a computed property handles this. Add to `ItemsSearchBaseViewModelTests.cs`:
-
-```csharp
-// ── ShowLoadMoreButton ─────────────────────────────────────────────
-
-[Fact]
-public void ShowLoadMoreButton_TrueWhenHasMorePagesAndNotLoadingMore()
-{
-    var sut = CreateSut();
-    sut.HasMorePages = true;
-    Assert.True(sut.ShowLoadMoreButton);
-}
-
-[Fact]
-public void ShowLoadMoreButton_FalseWhenIsLoadingMore()
-{
-    var sut = CreateSut();
-    sut.HasMorePages = true;
-    sut.IsLoadingMore = true;
-    Assert.False(sut.ShowLoadMoreButton);
-}
-
-[Fact]
-public void ShowLoadMoreButton_FalseWhenNoMorePages()
-{
-    var sut = CreateSut();
-    sut.HasMorePages = false;
-    Assert.False(sut.ShowLoadMoreButton);
-}
-```
-
-- [ ] **Step 2: Run new tests to verify they fail**
-
-```bash
-dotnet test RentalApp.Test --filter "FullyQualifiedName~ItemsSearchBaseViewModelTests" 2>&1 | tail -5
-```
-
-Expected: 3 failures — `ShowLoadMoreButton` does not exist yet.
-
-- [ ] **Step 3: Add `ShowLoadMoreButton` to `ItemsSearchBaseViewModel`**
-
-Add `[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]` to the `hasMorePages` and `isLoadingMore` fields, and add the computed property:
-
-```csharp
-[ObservableProperty]
-[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]
-private bool hasMorePages;
-
-[ObservableProperty]
-[NotifyPropertyChangedFor(nameof(ShowLoadMoreButton))]
-private bool isLoadingMore;
-
-public bool ShowLoadMoreButton => HasMorePages && !IsLoadingMore;
-```
-
-- [ ] **Step 4: Run tests to verify they pass**
-
-```bash
-dotnet test RentalApp.Test --filter "FullyQualifiedName~ItemsSearchBaseViewModelTests" 2>&1 | tail -5
-```
-
-Expected: all tests pass.
-
-- [ ] **Step 5: Replace `ItemsListPage.xaml` with the unified structure**
+- [ ] **Step 1: Replace `ItemsListPage.xaml` with the unified structure**
 
 Replace the entire contents of `RentalApp/Views/ItemsListPage.xaml`:
 
@@ -835,11 +770,11 @@ Replace the entire contents of `RentalApp/Views/ItemsListPage.xaml`:
           />
         </CollectionView.EmptyView>
         <CollectionView.Footer>
-          <StackLayout Padding="0,8">
+          <StackLayout Padding="0,8" IsVisible="{Binding HasMorePages}">
             <Button
               Text="Load More"
               Command="{Binding LoadMoreItemsCommand}"
-              IsVisible="{Binding ShowLoadMoreButton}"
+              IsVisible="{Binding IsLoadingMore, Converter={StaticResource InvertedBoolConverter}}"
               HorizontalOptions="Center"
             />
             <ActivityIndicator
@@ -914,7 +849,7 @@ Replace the entire contents of `RentalApp/Views/ItemsListPage.xaml`:
 </ContentPage>
 ```
 
-- [ ] **Step 6: Run the full test suite**
+- [ ] **Step 2: Run the full test suite**
 
 ```bash
 dotnet test RentalApp.Test 2>&1 | tail -10
@@ -922,11 +857,9 @@ dotnet test RentalApp.Test 2>&1 | tail -10
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add RentalApp/ViewModels/ItemsSearchBaseViewModel.cs \
-        RentalApp.Test/ViewModels/ItemsSearchBaseViewModelTests.cs \
-        RentalApp/Views/ItemsListPage.xaml
+git add RentalApp/Views/ItemsListPage.xaml
 git commit -m "feat: update ItemsListPage with load more button, pull-to-refresh, and unified layout"
 ```
