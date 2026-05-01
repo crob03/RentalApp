@@ -6,11 +6,22 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// View model for the "Browse Items" page.
+/// Supports free-text search, category filtering, and server-side pagination via
+/// <see cref="ItemsSearchBaseViewModel"/>.
+/// </summary>
 public partial class ItemsListViewModel : ItemsSearchBaseViewModel
 {
+    /// <summary>The current free-text search query; changes trigger a full reload.</summary>
     [ObservableProperty]
     private string searchText = string.Empty;
 
+    /// <summary>
+    /// Initialises a new instance of <see cref="ItemsListViewModel"/> with the required services.
+    /// </summary>
+    /// <param name="itemService">Service used to fetch items and categories.</param>
+    /// <param name="navigationService">Service used to navigate to item details and the create-item page.</param>
     public ItemsListViewModel(IItemService itemService, INavigationService navigationService)
         : base(itemService, navigationService)
     {
@@ -19,8 +30,13 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
 
     partial void OnSearchTextChanged(string value) => TriggerReloadIfLoaded();
 
+    /// <inheritdoc/>
     protected override Task ReloadAsync() => LoadItemsCommand.ExecuteAsync(null);
 
+    /// <summary>
+    /// Resets to page 1, fetches a page of items matching the current search and category filter,
+    /// and refreshes the category list.
+    /// </summary>
     [RelayCommand]
     private Task LoadItemsAsync() =>
         RunLoadAsync(async () =>
@@ -37,6 +53,9 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
             await LoadCategoriesAsync();
         });
 
+    /// <summary>
+    /// Appends the next page of items to <see cref="ItemsSearchBaseViewModel.Items"/>.
+    /// </summary>
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(async () =>
