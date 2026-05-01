@@ -8,15 +8,12 @@ namespace RentalApp.ViewModels;
 
 public partial class ItemsListViewModel : ItemsSearchBaseViewModel
 {
-    private readonly IItemService _itemService;
-
     [ObservableProperty]
     private string searchText = string.Empty;
 
     public ItemsListViewModel(IItemService itemService, INavigationService navigationService)
-        : base(navigationService)
+        : base(itemService, navigationService)
     {
-        _itemService = itemService;
         Title = "Browse Items";
     }
 
@@ -35,16 +32,9 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
                 CurrentPage,
                 PageSize
             );
-            var cats = await _itemService.GetCategoriesAsync();
-
             Items = new ObservableCollection<Item>(results);
-            Categories = cats;
             HasMorePages = results.Count == PageSize;
-
-            var all = new List<Category> { AllItemsCategory };
-            all.AddRange(cats);
-            FilterCategories = all;
-            RestoreCategory(all);
+            await LoadCategoriesAsync();
         });
 
     [RelayCommand]

@@ -8,7 +8,6 @@ namespace RentalApp.ViewModels;
 
 public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
 {
-    private readonly IItemService _itemService;
     private readonly ILocationService _locationService;
 
     private double _cachedLat;
@@ -24,9 +23,8 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
         ILocationService locationService,
         INavigationService navigationService
     )
-        : base(navigationService)
+        : base(itemService, navigationService)
     {
-        _itemService = itemService;
         _locationService = locationService;
         Title = "Nearby Items";
     }
@@ -57,16 +55,9 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
                 CurrentPage,
                 PageSize
             );
-            var cats = await _itemService.GetCategoriesAsync() ?? [];
-
             Items = new ObservableCollection<Item>(_allNearbyItems.Take(PageSize));
             HasMorePages = _allNearbyItems.Count > PageSize;
-            Categories = cats;
-
-            var all = new List<Category> { AllItemsCategory };
-            all.AddRange(cats);
-            FilterCategories = all;
-            RestoreCategory(all);
+            await LoadCategoriesAsync();
         });
 
     [RelayCommand]

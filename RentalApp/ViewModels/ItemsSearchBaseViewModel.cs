@@ -10,6 +10,7 @@ namespace RentalApp.ViewModels;
 public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
 {
     private readonly INavigationService _navigationService;
+    protected readonly IItemService _itemService;
     protected const int PageSize = 20;
     protected static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
 
@@ -43,9 +44,23 @@ public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
     [ObservableProperty]
     private bool isLoadingMore;
 
-    protected ItemsSearchBaseViewModel(INavigationService navigationService)
+    protected ItemsSearchBaseViewModel(
+        IItemService itemService,
+        INavigationService navigationService
+    )
     {
+        _itemService = itemService;
         _navigationService = navigationService;
+    }
+
+    protected async Task LoadCategoriesAsync()
+    {
+        var cats = await _itemService.GetCategoriesAsync() ?? [];
+        var all = new List<Category> { AllItemsCategory };
+        all.AddRange(cats);
+        Categories = cats;
+        FilterCategories = all;
+        RestoreCategory(all);
     }
 
     partial void OnSelectedCategoryItemChanged(Category? value)
