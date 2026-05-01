@@ -108,9 +108,9 @@ public class ItemRepository : IItemRepository
         await context.SaveChangesAsync();
 
         return await context
-            .Items.Include(i => i.Category)
-            .Include(i => i.Owner)
-            .FirstOrDefaultAsync(i => i.Id == item.Id)
+                .Items.Include(i => i.Category)
+                .Include(i => i.Owner)
+                .FirstOrDefaultAsync(i => i.Id == item.Id)
             ?? throw new InvalidOperationException("Failed to retrieve created item.");
     }
 
