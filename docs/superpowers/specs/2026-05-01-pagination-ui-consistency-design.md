@@ -13,7 +13,7 @@
 - Both use infinite scroll (`RemainingItemsThreshold`) — replacing with an explicit "Load More" button.
 - Both bind `IsBusy` to both `ActivityIndicator` and `RefreshView`, causing two simultaneous loading indicators when refreshing.
 - `ItemsListPage` has no pull-to-refresh; `NearbyItemsPage` does.
-- Empty state handling differs: `ItemsListPage` uses an overlapping `Label`; `NearbyItemsPage` uses `CollectionView.EmptyView`.
+- Empty state handling differs: `ItemsListPage` uses an overlapping `Label` driven by `IsEmpty`; `NearbyItemsPage` uses `CollectionView.EmptyView`. Both will use `CollectionView.EmptyView`, eliminating the need for `IsEmpty` entirely.
 - Card markup differs: `ItemsListPage` wraps each card in an extra `<Grid>`; `NearbyItemsPage` does not.
 - Error banner placement and margins are inconsistent between the two pages.
 - Shared ViewModel logic (category picker state, pagination fields, `_restoringCategory` flag) is duplicated across both ViewModels.
@@ -41,7 +41,6 @@ New `partial` class. Owns all state shared between the two paginated search page
 - `List<Category> FilterCategories`
 - `Category? SelectedCategoryItem`
 - `string? SelectedCategory`
-- `bool IsEmpty`
 - `int CurrentPage`
 - `bool HasMorePages`
 - `bool IsLoading` — true during initial loads and filter/refresh-triggered reloads
