@@ -190,10 +190,15 @@ public class AuthenticationServiceTests
 
         await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
 
-        await _api.Received(1).RegisterAsync(
-            Arg.Is<RegisterRequest>(r =>
-                r.FirstName == "Jane" && r.LastName == "Doe" &&
-                r.Email == "jane@example.com" && r.Password == "Password1!"));
+        await _api.Received(1)
+            .RegisterAsync(
+                Arg.Is<RegisterRequest>(r =>
+                    r.FirstName == "Jane"
+                    && r.LastName == "Doe"
+                    && r.Email == "jane@example.com"
+                    && r.Password == "Password1!"
+                )
+            );
     }
 
     [Fact]

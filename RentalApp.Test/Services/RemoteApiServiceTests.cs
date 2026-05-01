@@ -128,9 +128,7 @@ public class RemoteApiServiceTests
         var sut = CreateSut();
 
         var act = () =>
-            sut.RegisterAsync(
-                new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
-            );
+            sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
 
         await Assert.ThrowsAsync<HttpRequestException>(act);
     }
@@ -351,15 +349,7 @@ public class RemoteApiServiceTests
                                     reviewerName = "Bob",
                                     rating = 4,
                                     comment = "Good",
-                                    createdAt = new DateTime(
-                                        2026,
-                                        2,
-                                        1,
-                                        0,
-                                        0,
-                                        0,
-                                        DateTimeKind.Utc
-                                    ),
+                                    createdAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
                                 },
                             },
                         }

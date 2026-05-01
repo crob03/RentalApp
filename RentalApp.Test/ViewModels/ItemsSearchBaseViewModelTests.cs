@@ -42,20 +42,7 @@ public class ItemsSearchBaseViewModelTests
     private static CategoryResponse AllItems => new(0, "All Items", string.Empty, 0);
 
     private static ItemSummaryResponse MakeItem(int id = 1) =>
-        new(
-            id,
-            "Drill",
-            null,
-            10.0,
-            1,
-            "Tools",
-            1,
-            "Alice",
-            null,
-            true,
-            null,
-            DateTime.UtcNow
-        );
+        new(id, "Drill", null, 10.0, 1, "Tools", 1, "Alice", null, true, null, DateTime.UtcNow);
 
     // ── RunLoadAsync ───────────────────────────────────────────────────
 

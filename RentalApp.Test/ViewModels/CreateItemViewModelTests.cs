@@ -15,8 +15,11 @@ public class CreateItemViewModelTests
 
     private CreateItemViewModel CreateSut() => new(_api, _locationService, _nav);
 
-    private static CategoryResponse MakeCategory(int id = 1, string name = "Tools", string slug = "tools") =>
-        new(id, name, slug, 5);
+    private static CategoryResponse MakeCategory(
+        int id = 1,
+        string name = "Tools",
+        string slug = "tools"
+    ) => new(id, name, slug, 5);
 
     // ── LoadCategoriesCommand ──────────────────────────────────────────
 
@@ -92,9 +95,7 @@ public class CreateItemViewModelTests
         await sut.CreateItemCommand.ExecuteAsync(null);
 
         Assert.True(sut.HasError);
-        await _api
-            .DidNotReceive()
-            .CreateItemAsync(Arg.Any<CreateItemRequest>());
+        await _api.DidNotReceive().CreateItemAsync(Arg.Any<CreateItemRequest>());
     }
 
     [Fact]

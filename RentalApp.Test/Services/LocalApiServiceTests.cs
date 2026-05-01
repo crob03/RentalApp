@@ -34,9 +34,13 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         await _fixture.ResetAsync();
         var sut = CreateSut();
 
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
-        var user = await _fixture.Context.Users.FirstOrDefaultAsync(u => u.Email == "jane@example.com");
+        var user = await _fixture.Context.Users.FirstOrDefaultAsync(u =>
+            u.Email == "jane@example.com"
+        );
         Assert.NotNull(user);
         Assert.Equal("Jane", user.FirstName);
     }
@@ -46,9 +50,12 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
-        var act = () => sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        var act = () =>
+            sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
@@ -60,7 +67,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        var reg = await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        var reg = await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
         var response = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
 
@@ -73,7 +82,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
         var act = () => sut.LoginAsync(new LoginRequest("jane@example.com", "WrongPassword!"));
 
@@ -107,8 +118,12 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
-        var loginResponse = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
         _tokenState.CurrentToken = loginResponse.Token;
 
         var user = await sut.GetCurrentUserAsync();
@@ -123,10 +138,16 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
-        var loginResponse = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
         _tokenState.CurrentToken = loginResponse.Token;
-        await sut.CreateItemAsync(new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883));
+        await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883)
+        );
 
         var user = await sut.GetCurrentUserAsync();
 
@@ -138,10 +159,16 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
-        var loginResponse = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
         _tokenState.CurrentToken = loginResponse.Token;
-        await sut.CreateItemAsync(new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883));
+        await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883)
+        );
 
         var profile = await sut.GetUserProfileAsync(loginResponse.UserId);
 
@@ -177,7 +204,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var response = await sut.GetNearbyItemsAsync(new GetNearbyItemsRequest(55.9533, -3.1883, 5.0));
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
 
         Assert.Equal(2, response.Items.Count);
     }
@@ -187,7 +216,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var response = await sut.GetNearbyItemsAsync(new GetNearbyItemsRequest(55.9533, -3.1883, 5.0));
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
 
         Assert.All(response.Items, i => Assert.True(i.Distance >= 0));
     }
@@ -197,7 +228,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var response = await sut.GetNearbyItemsAsync(new GetNearbyItemsRequest(55.9533, -3.1883, 5.0));
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
 
         Assert.Equal(55.9533, response.SearchLocation.Latitude);
         Assert.Equal(-3.1883, response.SearchLocation.Longitude);
@@ -233,10 +266,14 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        var reg = await sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
+        var reg = await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
         _tokenState.CurrentToken = reg.Id.ToString();
 
-        var item = await sut.CreateItemAsync(new CreateItemRequest("My Drill", "desc", 10.0, 1, 55.9533, -3.1883));
+        var item = await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", "desc", 10.0, 1, 55.9533, -3.1883)
+        );
 
         Assert.True(item.Id > 0);
         Assert.Equal("My Drill", item.Title);
@@ -248,7 +285,8 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var act = () => sut.CreateItemAsync(new CreateItemRequest("Drill", null, 10.0, 1, 55.9533, -3.1883));
+        var act = () =>
+            sut.CreateItemAsync(new CreateItemRequest("Drill", null, 10.0, 1, 55.9533, -3.1883));
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
@@ -261,7 +299,10 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         await _fixture.ResetItemsAsync();
         var sut = CreateSut();
 
-        var item = await sut.UpdateItemAsync(1, new UpdateItemRequest("Updated Title", null, null, null));
+        var item = await sut.UpdateItemAsync(
+            1,
+            new UpdateItemRequest("Updated Title", null, null, null)
+        );
 
         Assert.Equal("Updated Title", item.Title);
     }

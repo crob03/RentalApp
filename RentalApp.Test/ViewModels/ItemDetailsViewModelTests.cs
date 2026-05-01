@@ -182,8 +182,6 @@ public class ItemDetailsViewModelTests
         sut.CancelEditCommand.Execute(null);
 
         Assert.False(sut.IsEditing);
-        await _api
-            .DidNotReceive()
-            .UpdateItemAsync(Arg.Any<int>(), Arg.Any<UpdateItemRequest>());
+        await _api.DidNotReceive().UpdateItemAsync(Arg.Any<int>(), Arg.Any<UpdateItemRequest>());
     }
 }
