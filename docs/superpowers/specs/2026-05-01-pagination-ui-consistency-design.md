@@ -56,7 +56,7 @@ New `partial` class. Owns all state shared between the two paginated search page
 
 **Methods:**
 - `RunLoadAsync(Func<Task>)` — sets `IsLoading`, clears error, restores in finally. Catches exceptions via `SetError`. Used by subclass full-load methods instead of `BaseViewModel.RunAsync`, keeping `IsBusy` unused by these ViewModels.
-- `RunLoadMoreAsync(Func<Task>)` — sets `IsLoadingMore`, clears error, restores in finally. Catches exceptions via `SetError`.
+- `RunLoadMoreAsync(Func<Task>)` — guards on `HasMorePages`, increments `CurrentPage`, sets `IsLoadingMore`, clears error. On failure rolls back `CurrentPage` and surfaces the exception via `SetError`. Restores `IsLoadingMore` in finally. Subclasses provide only the fetch logic.
 - `RestoreCategory(List<Category> all)` — the shared `_restoringCategory` block; sets `SelectedCategoryItem` from `SelectedCategory` without triggering a reload.
 - `abstract Task ReloadAsync()` — called by `OnSelectedCategoryChanged`; each subclass implements it to invoke its own load command.
 - `NavigateToCreateItemCommand` — navigates to `Routes.CreateItem`; shared so both pages get the FAB without duplication.
@@ -71,8 +71,7 @@ Retains only:
 - `string SearchText`
 - `OnSearchTextChanged` — calls `ReloadAsync()` if `_hasLoaded`
 - `LoadItemsAsync` — calls `RunLoadAsync`; resets to page 1, fetches items + categories, calls `RestoreCategory`
-- `LoadMoreItemsAsync` — calls `RunLoadMoreAsync`; rolls back `CurrentPage` on failure
-- `NavigateToItemCommand`
+- `LoadMoreItemsAsync` — calls `RunLoadMoreAsync` with only the fetch logic; page increment/rollback handled by base
 - `override Task ReloadAsync()` — executes `LoadItemsCommand`
 
 ### `NearbyItemsViewModel : ItemsSearchBaseViewModel`
@@ -82,8 +81,7 @@ Retains only:
 - `OnRadiusChanged` — calls `ReloadAsync()` if `_hasLoaded`
 - `double _cachedLat`, `double _cachedLon`, `bool _locationFetched` — GPS cache
 - `LoadNearbyItemsAsync` — calls `RunLoadAsync`; resolves GPS on first load, resets to page 1, fetches items + categories, calls `RestoreCategory`
-- `LoadMoreItemsAsync` — calls `RunLoadMoreAsync`; rolls back `CurrentPage` on failure
-- `NavigateToItemCommand`
+- `LoadMoreItemsAsync` — calls `RunLoadMoreAsync` with only the fetch logic; page increment/rollback handled by base
 - `override Task ReloadAsync()` — executes `LoadNearbyItemsCommand`
 
 ---
