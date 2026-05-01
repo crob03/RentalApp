@@ -28,26 +28,32 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
         Title = "Browse Items";
     }
 
-    partial void OnSearchTextChanged(string value) => TriggerReloadIfLoaded();
+    partial void OnSearchTextChanged(string value) => _ = TriggerReloadIfLoaded();
 
     /// <inheritdoc/>
-    protected override Task ReloadAsync() => LoadItemsCommand.ExecuteAsync(null);
+    protected override async Task ReloadAsync()
+    {
+        LoadItemsCommand.Cancel();
+        await (LoadItemsCommand.ExecutionTask ?? Task.CompletedTask);
+        await LoadItemsCommand.ExecuteAsync(null);
+    }
 
     /// <summary>
     /// Resets to page 1, fetches a page of items matching the current search and category filter,
     /// and refreshes the category list.
     /// </summary>
     [RelayCommand]
-    private Task LoadItemsAsync() =>
+    private Task LoadItemsAsync(CancellationToken ct) =>
         RunLoadAsync(async () =>
         {
             CurrentPage = 1;
-            var results = await _itemService.GetItemsAsync(
+            var results = await ItemService.GetItemsAsync(
                 SelectedCategory,
                 SearchText,
                 CurrentPage,
                 PageSize
             );
+            ct.ThrowIfCancellationRequested();
             Items = new ObservableCollection<Item>(results);
             HasMorePages = results.Count == PageSize;
             await LoadCategoriesAsync();
@@ -60,7 +66,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(async () =>
         {
-            var more = await _itemService.GetItemsAsync(
+            var more = await ItemService.GetItemsAsync(
                 SelectedCategory,
                 SearchText,
                 CurrentPage,

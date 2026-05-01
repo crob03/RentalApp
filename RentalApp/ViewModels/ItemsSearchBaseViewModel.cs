@@ -15,7 +15,10 @@ namespace RentalApp.ViewModels;
 public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
 {
     private readonly INavigationService _navigationService;
-    protected readonly IItemService _itemService;
+    private readonly IItemService _itemService;
+
+    /// <summary>Item service available to subclasses for their load operations.</summary>
+    protected IItemService ItemService => _itemService;
 
     /// <summary>Maximum number of items fetched per page.</summary>
     protected const int PageSize = 20;
@@ -92,6 +95,8 @@ public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
     /// </summary>
     protected async Task LoadCategoriesAsync()
     {
+        if (Categories.Count > 0)
+            return;
         var cats = await _itemService.GetCategoriesAsync() ?? [];
         var all = new List<Category> { AllItemsCategory };
         all.AddRange(cats);
@@ -107,16 +112,22 @@ public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
         SelectedCategory = (value is null || value.Id == 0) ? null : value.Slug;
     }
 
-    partial void OnSelectedCategoryChanged(string? value) => TriggerReloadIfLoaded();
+    partial void OnSelectedCategoryChanged(string? value) => _ = TriggerReloadIfLoaded();
 
     /// <summary>
     /// Calls <see cref="ReloadAsync"/> only after the first successful load has completed,
     /// preventing premature reloads during initialisation.
     /// </summary>
-    protected void TriggerReloadIfLoaded()
+    /// <remarks>
+    /// Returns <see cref="Task"/> so exceptions propagate to the caller rather than to the
+    /// <see cref="System.Threading.SynchronizationContext"/>. Call sites that cannot await
+    /// (e.g. <c>partial void</c> property callbacks) must discard with <c>_ =</c> to make
+    /// the intentional fire-and-forget explicit.
+    /// </remarks>
+    protected async Task TriggerReloadIfLoaded()
     {
         if (_hasLoaded)
-            _ = ReloadAsync();
+            await ReloadAsync();
     }
 
     /// <summary>
@@ -139,6 +150,10 @@ public abstract partial class ItemsSearchBaseViewModel : BaseViewModel
             ClearError();
             await operation();
             _hasLoaded = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // intentional — filter changed mid-load, don't surface as error
         }
         catch (Exception ex)
         {

@@ -8,9 +8,11 @@ namespace RentalApp.Test.ViewModels;
 
 public class ItemsSearchBaseViewModelTests
 {
+    private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private sealed class TestableViewModel(INavigationService nav) : ItemsSearchBaseViewModel(nav)
+    private sealed class TestableViewModel(IItemService items, INavigationService nav)
+        : ItemsSearchBaseViewModel(items, nav)
     {
         public int ReloadCallCount { get; private set; }
 
@@ -27,7 +29,7 @@ public class ItemsSearchBaseViewModelTests
         public void DoRestoreCategory(List<Category> all) => RestoreCategory(all);
     }
 
-    private TestableViewModel CreateSut() => new(_nav);
+    private TestableViewModel CreateSut() => new(_itemService, _nav);
 
     private static Category MakeCategory(
         int id = 1,

@@ -9,7 +9,7 @@ namespace RentalApp.ViewModels;
 /// <summary>
 /// View model for the "Nearby Items" page.
 /// Fetches all matching items from the server in a single call and paginates client-side,
-/// caching the device location so the GPS is only queried once per session.
+/// caching the device location so the GPS is only queried once per page visit.
 /// </summary>
 public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
 {
@@ -41,10 +41,15 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
         Title = "Nearby Items";
     }
 
-    partial void OnRadiusChanged(double value) => TriggerReloadIfLoaded();
+    partial void OnRadiusChanged(double value) => _ = TriggerReloadIfLoaded();
 
     /// <inheritdoc/>
-    protected override Task ReloadAsync() => LoadNearbyItemsCommand.ExecuteAsync(null);
+    protected override async Task ReloadAsync()
+    {
+        LoadNearbyItemsCommand.Cancel();
+        await (LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
+        await LoadNearbyItemsCommand.ExecuteAsync(null);
+    }
 
     /// <summary>
     /// Fetches all nearby items within <see cref="Radius"/> kilometres (using the cached device
@@ -52,7 +57,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
     /// the first page. Also refreshes the category list.
     /// </summary>
     [RelayCommand]
-    private Task LoadNearbyItemsAsync() =>
+    private Task LoadNearbyItemsAsync(CancellationToken ct) =>
         RunLoadAsync(async () =>
         {
             CurrentPage = 1;
@@ -60,12 +65,13 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
             if (!_locationFetched)
             {
                 var (lat, lon) = await _locationService.GetCurrentLocationAsync();
+                ct.ThrowIfCancellationRequested();
                 _cachedLat = lat;
                 _cachedLon = lon;
                 _locationFetched = true;
             }
 
-            _allNearbyItems = await _itemService.GetNearbyItemsAsync(
+            _allNearbyItems = await ItemService.GetNearbyItemsAsync(
                 _cachedLat,
                 _cachedLon,
                 Radius,
@@ -73,6 +79,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
                 CurrentPage,
                 PageSize
             );
+            ct.ThrowIfCancellationRequested();
             Items = new ObservableCollection<Item>(_allNearbyItems.Take(PageSize));
             HasMorePages = _allNearbyItems.Count > PageSize;
             await LoadCategoriesAsync();
@@ -86,7 +93,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(() =>
         {
-            var next = _allNearbyItems.Skip(Items.Count).Take(PageSize).ToList();
+            var next = _allNearbyItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
             foreach (var item in next)
                 Items.Add(item);
             HasMorePages = Items.Count < _allNearbyItems.Count;
