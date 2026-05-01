@@ -78,7 +78,7 @@ public class NearbyItemsViewModelTests
     }
 
     [Fact]
-    public async Task LoadNearbyItemsCommand_FullPage_SetsHasMorePagesTrue()
+    public async Task LoadNearbyItemsCommand_MoreThanOnePage_SetsHasMorePagesTrue()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
         _itemService
@@ -87,10 +87,10 @@ public class NearbyItemsViewModelTests
                 Arg.Any<double>(),
                 Arg.Any<double>(),
                 Arg.Any<string?>(),
-                1,
-                20
+                Arg.Any<int>(),
+                Arg.Any<int>()
             )
-            .Returns(Enumerable.Range(1, 20).Select(MakeItem).ToList());
+            .Returns(Enumerable.Range(1, 21).Select(MakeItem).ToList());
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
@@ -101,22 +101,37 @@ public class NearbyItemsViewModelTests
     // ── LoadMoreItemsCommand — uses cached GPS ─────────────────────────
 
     [Fact]
-    public async Task LoadMoreItemsCommand_UsesCachedGpsCoordinates()
+    public async Task LoadMoreItemsCommand_SlicesFromCacheWithoutApiCall()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
         _itemService
-            .GetNearbyItemsAsync(55.9533, -3.1883, 5.0, null, 1, 20)
-            .Returns(Enumerable.Range(1, 20).Select(MakeItem).ToList());
-        _itemService
-            .GetNearbyItemsAsync(55.9533, -3.1883, 5.0, null, 2, 20)
-            .Returns(new List<Item> { MakeItem(21) });
+            .GetNearbyItemsAsync(
+                Arg.Any<double>(),
+                Arg.Any<double>(),
+                Arg.Any<double>(),
+                Arg.Any<string?>(),
+                Arg.Any<int>(),
+                Arg.Any<int>()
+            )
+            .Returns(Enumerable.Range(1, 21).Select(MakeItem).ToList());
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
         await sut.LoadMoreItemsCommand.ExecuteAsync(null);
 
         Assert.Equal(21, sut.Items.Count);
+        Assert.False(sut.HasMorePages);
         await _locationService.Received(1).GetCurrentLocationAsync();
+        await _itemService
+            .Received(1)
+            .GetNearbyItemsAsync(
+                Arg.Any<double>(),
+                Arg.Any<double>(),
+                Arg.Any<double>(),
+                Arg.Any<string?>(),
+                Arg.Any<int>(),
+                Arg.Any<int>()
+            );
     }
 
     // ── Radius change triggers reload ──────────────────────────────────

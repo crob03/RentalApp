@@ -14,6 +14,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
     private double _cachedLat;
     private double _cachedLon;
     private bool _locationFetched;
+    private List<Item> _allNearbyItems = [];
 
     [ObservableProperty]
     private double radius = 5.0;
@@ -48,7 +49,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
                 _locationFetched = true;
             }
 
-            var result = await _itemService.GetNearbyItemsAsync(
+            _allNearbyItems = await _itemService.GetNearbyItemsAsync(
                 _cachedLat,
                 _cachedLon,
                 Radius,
@@ -58,8 +59,8 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
             );
             var cats = await _itemService.GetCategoriesAsync() ?? [];
 
-            Items = new ObservableCollection<Item>(result);
-            HasMorePages = result.Count == PageSize;
+            Items = new ObservableCollection<Item>(_allNearbyItems.Take(PageSize));
+            HasMorePages = _allNearbyItems.Count > PageSize;
             Categories = cats;
 
             var all = new List<Category> { AllItemsCategory };
@@ -70,18 +71,12 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
 
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
-        RunLoadMoreAsync(async () =>
+        RunLoadMoreAsync(() =>
         {
-            var result = await _itemService.GetNearbyItemsAsync(
-                _cachedLat,
-                _cachedLon,
-                Radius,
-                SelectedCategory,
-                CurrentPage,
-                PageSize
-            );
-            foreach (var item in result)
+            var next = _allNearbyItems.Skip(Items.Count).Take(PageSize).ToList();
+            foreach (var item in next)
                 Items.Add(item);
-            HasMorePages = result.Count == PageSize;
+            HasMorePages = Items.Count < _allNearbyItems.Count;
+            return Task.CompletedTask;
         });
 }
