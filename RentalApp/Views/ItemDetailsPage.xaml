@@ -3,10 +3,16 @@
   x:Class="RentalApp.Views.ItemDetailsPage"
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
-  Title="{Binding CurrentItem.Title, FallbackValue='Item Details'}"
+  mc:Ignorable="d"
   x:DataType="vm:ItemDetailsViewModel"
+  Title="{Binding CurrentItem.Title, FallbackValue='Item Details'}"
 >
+  <d:ContentPage.BindingContext>
+    <vm:ItemDetailsViewModel />
+  </d:ContentPage.BindingContext>
   <ScrollView>
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
       <!-- Error banner -->

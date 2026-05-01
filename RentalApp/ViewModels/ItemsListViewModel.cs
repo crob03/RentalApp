@@ -51,14 +51,6 @@ public partial class ItemsListViewModel : BaseViewModel
     private bool hasMorePages;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="ItemsListViewModel"/> for design-time support.
-    /// </summary>
-    public ItemsListViewModel()
-    {
-        Title = "Browse Items";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="ItemsListViewModel"/> with the required services.
     /// </summary>
     /// <param name="itemService">Service used to fetch items and categories.</param>

@@ -28,14 +28,6 @@ public partial class MainViewModel : BaseViewModel
     private string welcomeMessage = string.Empty;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="MainViewModel"/> for design-time support.
-    /// </summary>
-    public MainViewModel()
-    {
-        Title = "Dashboard";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="MainViewModel"/> with the required services
     /// and immediately loads the current user's data.
     /// </summary>
@@ -71,11 +63,11 @@ public partial class MainViewModel : BaseViewModel
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var result = await Application.Current.MainPage.DisplayAlert(
-            "Logout",
-            "Are you sure you want to logout?",
-            "Yes",
-            "No"
+        var result = await (
+            Application
+                .Current?.Windows[0]
+                ?.Page?.DisplayAlertAsync("Logout", "Are you sure you want to logout?", "Yes", "No")
+            ?? Task.FromResult(false)
         );
 
         if (result)

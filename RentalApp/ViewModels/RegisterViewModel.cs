@@ -52,14 +52,6 @@ public partial class RegisterViewModel : BaseViewModel
     private bool acceptTerms;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="RegisterViewModel"/> for design-time support.
-    /// </summary>
-    public RegisterViewModel()
-    {
-        Title = "Register";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="RegisterViewModel"/> with the required services.
     /// </summary>
     /// <param name="authService">The authentication service used to create the new account.</param>

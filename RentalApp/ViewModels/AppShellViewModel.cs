@@ -16,14 +16,6 @@ namespace RentalApp.ViewModels
         private readonly INavigationService _navigationService;
 
         /// <summary>
-        /// Initialises a new instance of <see cref="AppShellViewModel"/> for design-time support.
-        /// </summary>
-        public AppShellViewModel()
-        {
-            Title = "RentalApp";
-        }
-
-        /// <summary>
         /// Initialises a new instance of <see cref="AppShellViewModel"/> with the required services.
         /// Subscribes to <see cref="IAuthenticationService.AuthenticationStateChanged"/> so that
         /// command availability is refreshed whenever the user's authentication status changes.

@@ -31,14 +31,6 @@ public partial class CreateItemViewModel : BaseViewModel
     private Category? selectedCategory;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="CreateItemViewModel"/> for design-time support.
-    /// </summary>
-    public CreateItemViewModel()
-    {
-        Title = "List an Item";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="CreateItemViewModel"/> with the required services.
     /// </summary>
     /// <param name="itemService">Service used to fetch categories and submit the new listing.</param>

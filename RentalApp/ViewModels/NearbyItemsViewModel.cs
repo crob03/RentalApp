@@ -57,14 +57,6 @@ public partial class NearbyItemsViewModel : BaseViewModel
     private bool hasMorePages;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> for design-time support.
-    /// </summary>
-    public NearbyItemsViewModel()
-    {
-        Title = "Nearby Items";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> with the required services.
     /// </summary>
     /// <param name="itemService">Service used to fetch nearby items and categories.</param>

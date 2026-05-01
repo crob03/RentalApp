@@ -35,14 +35,6 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
     private bool rememberMe;
 
     /// <summary>
-    /// Initialises a new instance of <see cref="LoginViewModel"/> for design-time support.
-    /// </summary>
-    public LoginViewModel()
-    {
-        Title = "Login";
-    }
-
-    /// <summary>
     /// Initialises a new instance of <see cref="LoginViewModel"/> with the required services.
     /// </summary>
     /// <param name="authService">The authentication service used to perform login.</param>
