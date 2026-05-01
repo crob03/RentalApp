@@ -863,3 +863,193 @@ Expected: all tests pass.
 git add RentalApp/Views/ItemsListPage.xaml
 git commit -m "feat: update ItemsListPage with load more button, pull-to-refresh, and unified layout"
 ```
+
+---
+
+### Task 5: Update `NearbyItemsPage.xaml`
+
+**Files:**
+- Modify: `RentalApp/Views/NearbyItemsPage.xaml`
+
+Same structure as `ItemsListPage` with three page-specific differences: the Radius slider at Row 1 instead of a SearchBar, `LoadNearbyItemsCommand` on the `RefreshView`, and an extra Distance label in each item card.
+
+- [ ] **Step 1: Replace `NearbyItemsPage.xaml` with the unified structure**
+
+Replace the entire contents of `RentalApp/Views/NearbyItemsPage.xaml`:
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.NearbyItemsPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:models="clr-namespace:RentalApp.Models"
+  mc:Ignorable="d"
+  x:DataType="vm:NearbyItemsViewModel"
+  Title="{Binding Title}"
+>
+  <d:ContentPage.BindingContext>
+    <vm:NearbyItemsViewModel />
+  </d:ContentPage.BindingContext>
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
+
+    <!-- Error banner -->
+    <Border
+      Grid.Row="0"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
+      Margin="0,0,0,4"
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
+
+    <!-- Radius slider -->
+    <StackLayout Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,4">
+      <Label
+        Text="{Binding Radius, StringFormat='Radius: {0:F0} km'}"
+        VerticalOptions="Center"
+        MinimumWidthRequest="110"
+      />
+      <Slider Value="{Binding Radius}" Minimum="1" Maximum="50" HorizontalOptions="FillAndExpand" />
+    </StackLayout>
+
+    <!-- Category filter -->
+    <Picker
+      Grid.Row="2"
+      ItemsSource="{Binding FilterCategories}"
+      SelectedItem="{Binding SelectedCategoryItem}"
+      ItemDisplayBinding="{Binding Name}"
+      Margin="0,4"
+    />
+
+    <!-- Items list with pull-to-refresh -->
+    <RefreshView
+      Grid.Row="3"
+      IsRefreshing="{Binding IsLoading}"
+      Command="{Binding LoadNearbyItemsCommand}"
+    >
+      <CollectionView
+        ItemsSource="{Binding Items}"
+        SelectionMode="None"
+      >
+        <CollectionView.EmptyView>
+          <Label
+            Text="No items found nearby."
+            HorizontalOptions="Center"
+            Margin="0,40"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </CollectionView.EmptyView>
+        <CollectionView.Footer>
+          <StackLayout Padding="0,8" IsVisible="{Binding HasMorePages}">
+            <Button
+              Text="Load More"
+              Command="{Binding LoadMoreItemsCommand}"
+              IsVisible="{Binding IsLoadingMore, Converter={StaticResource InvertedBoolConverter}}"
+              HorizontalOptions="Center"
+            />
+            <ActivityIndicator
+              IsRunning="{Binding IsLoadingMore}"
+              IsVisible="{Binding IsLoadingMore}"
+              HorizontalOptions="Center"
+            />
+          </StackLayout>
+        </CollectionView.Footer>
+        <CollectionView.ItemTemplate>
+          <DataTemplate x:DataType="models:Item">
+            <Border
+              Margin="0,4"
+              Padding="12"
+              StrokeThickness="1"
+              Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+            >
+              <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+              </Border.StrokeShape>
+              <Border.GestureRecognizers>
+                <TapGestureRecognizer
+                  Command="{Binding Source={RelativeSource AncestorType={x:Type vm:NearbyItemsViewModel}}, Path=NavigateToItemCommand}"
+                  CommandParameter="{Binding .}"
+                />
+              </Border.GestureRecognizers>
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Title}" FontAttributes="Bold" />
+                <Label
+                  Grid.Row="1"
+                  Grid.Column="0"
+                  Text="{Binding Category}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+                <Label
+                  Grid.Row="0"
+                  Grid.Column="1"
+                  Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
+                />
+                <Label
+                  Grid.Row="1"
+                  Grid.Column="1"
+                  Text="{Binding Distance, StringFormat='{0:F1} km away'}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+    </RefreshView>
+
+    <!-- Initial load indicator (overlaid, centred) -->
+    <ActivityIndicator
+      Grid.Row="3"
+      IsRunning="{Binding IsLoading}"
+      IsVisible="{Binding IsLoading}"
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+    />
+
+    <!-- FAB: create item -->
+    <Button
+      Grid.Row="3"
+      Text="+"
+      Command="{Binding NavigateToCreateItemCommand}"
+      HorizontalOptions="End"
+      VerticalOptions="End"
+      WidthRequest="56"
+      HeightRequest="56"
+      CornerRadius="28"
+      Margin="16"
+      FontSize="24"
+    />
+
+  </Grid>
+</ContentPage>
+```
+
+- [ ] **Step 2: Run the full test suite**
+
+```bash
+dotnet test RentalApp.Test 2>&1 | tail -10
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add RentalApp/Views/NearbyItemsPage.xaml
+git commit -m "feat: update NearbyItemsPage with load more button, pull-to-refresh, and unified layout"
+```
