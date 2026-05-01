@@ -500,3 +500,185 @@ git add RentalApp/ViewModels/ItemsListViewModel.cs \
         RentalApp.Test/ViewModels/ItemsListViewModelTests.cs
 git commit -m "refactor: simplify ItemsListViewModel to extend ItemsSearchBaseViewModel"
 ```
+
+---
+
+### Task 3: Refactor `NearbyItemsViewModel`
+
+**Files:**
+- Modify: `RentalApp/ViewModels/NearbyItemsViewModel.cs`
+- Modify: `RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs`
+
+- [ ] **Step 1: Update `NearbyItemsViewModelTests` for removed and changed behaviour**
+
+In `RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs`:
+
+Delete this test entirely — `IsEmpty` property is removed:
+- `LoadNearbyItemsCommand_EmptyResult_SetsIsEmptyTrue`
+
+Update these two tests — replace `Assert.False(sut.IsBusy)` with `Assert.False(sut.IsLoading)`:
+
+```csharp
+[Fact]
+public async Task LoadNearbyItemsCommand_Success_PopulatesItems()
+{
+    _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
+    _itemService
+        .GetNearbyItemsAsync(55.9533, -3.1883, 5.0, null, 1, 20)
+        .Returns(new List<Item> { MakeItem(1), MakeItem(2) });
+    var sut = CreateSut();
+
+    await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
+
+    Assert.Equal(2, sut.Items.Count);
+    Assert.False(sut.IsLoading);
+}
+
+[Fact]
+public async Task LoadNearbyItemsCommand_GpsFails_SetsError()
+{
+    _locationService
+        .GetCurrentLocationAsync()
+        .ThrowsAsync(
+            new InvalidOperationException(
+                "Location unavailable. Please enable GPS and try again."
+            )
+        );
+    var sut = CreateSut();
+
+    await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
+
+    Assert.True(sut.HasError);
+    Assert.Contains("Location unavailable", sut.ErrorMessage);
+    Assert.False(sut.IsLoading);
+}
+```
+
+- [ ] **Step 2: Run remaining tests to confirm they still pass before touching the ViewModel**
+
+```bash
+dotnet test RentalApp.Test --filter "FullyQualifiedName~NearbyItemsViewModelTests" 2>&1 | tail -5
+```
+
+Expected: all remaining tests pass (ViewModel is unchanged at this point).
+
+- [ ] **Step 3: Replace `NearbyItemsViewModel` with the refactored version**
+
+Replace the entire contents of `RentalApp/ViewModels/NearbyItemsViewModel.cs`:
+
+```csharp
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using RentalApp.Models;
+using RentalApp.Services;
+
+namespace RentalApp.ViewModels;
+
+public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
+{
+    private readonly IItemService _itemService;
+    private readonly ILocationService _locationService;
+
+    private double _cachedLat;
+    private double _cachedLon;
+    private bool _locationFetched;
+
+    [ObservableProperty]
+    private double radius = 5.0;
+
+    public NearbyItemsViewModel(
+        IItemService itemService,
+        ILocationService locationService,
+        INavigationService navigationService
+    ) : base(navigationService)
+    {
+        _itemService = itemService;
+        _locationService = locationService;
+        Title = "Nearby Items";
+    }
+
+    partial void OnRadiusChanged(double value) => TriggerReloadIfLoaded();
+
+    protected override Task ReloadAsync()
+    {
+        LoadNearbyItemsCommand.Execute(null);
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private Task LoadNearbyItemsAsync() =>
+        RunLoadAsync(async () =>
+        {
+            CurrentPage = 1;
+
+            if (!_locationFetched)
+            {
+                var (lat, lon) = await _locationService.GetCurrentLocationAsync();
+                _cachedLat = lat;
+                _cachedLon = lon;
+                _locationFetched = true;
+            }
+
+            var result = await _itemService.GetNearbyItemsAsync(
+                _cachedLat,
+                _cachedLon,
+                Radius,
+                SelectedCategory,
+                CurrentPage,
+                PageSize
+            );
+            var cats = await _itemService.GetCategoriesAsync() ?? [];
+
+            Items = new ObservableCollection<Item>(result);
+            HasMorePages = result.Count == PageSize;
+            Categories = cats;
+
+            var all = new List<Category> { AllItemsCategory };
+            all.AddRange(cats);
+            FilterCategories = all;
+            RestoreCategory(all);
+        });
+
+    [RelayCommand]
+    private Task LoadMoreItemsAsync() =>
+        RunLoadMoreAsync(async () =>
+        {
+            var result = await _itemService.GetNearbyItemsAsync(
+                _cachedLat,
+                _cachedLon,
+                Radius,
+                SelectedCategory,
+                CurrentPage,
+                PageSize
+            );
+            foreach (var item in result)
+                Items.Add(item);
+            HasMorePages = result.Count == PageSize;
+        });
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+```bash
+dotnet test RentalApp.Test --filter "FullyQualifiedName~NearbyItemsViewModelTests" 2>&1 | tail -5
+```
+
+Expected: all remaining tests pass.
+
+- [ ] **Step 5: Run the full test suite to catch any regressions**
+
+```bash
+dotnet test RentalApp.Test 2>&1 | tail -10
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add RentalApp/ViewModels/NearbyItemsViewModel.cs \
+        RentalApp.Test/ViewModels/NearbyItemsViewModelTests.cs
+git commit -m "refactor: simplify NearbyItemsViewModel to extend ItemsSearchBaseViewModel"
+```
