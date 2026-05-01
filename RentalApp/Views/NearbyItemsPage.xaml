@@ -14,7 +14,7 @@
   <d:ContentPage.BindingContext>
     <vm:NearbyItemsViewModel />
   </d:ContentPage.BindingContext>
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
     <!-- Error banner -->
     <Border
       Grid.Row="0"
@@ -22,6 +22,7 @@
       Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
       StrokeThickness="1"
       Padding="12"
+      Margin="0,0,0,4"
       IsVisible="{Binding HasError}"
     >
       <Border.StrokeShape>
@@ -34,7 +35,7 @@
     </Border>
 
     <!-- Radius slider -->
-    <StackLayout Grid.Row="1" Orientation="Horizontal" Spacing="8">
+    <StackLayout Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,4">
       <Label
         Text="{Binding Radius, StringFormat='Radius: {0:F0} km'}"
         VerticalOptions="Center"
@@ -49,22 +50,16 @@
       ItemsSource="{Binding FilterCategories}"
       SelectedItem="{Binding SelectedCategoryItem}"
       ItemDisplayBinding="{Binding Name}"
+      Margin="0,4"
     />
 
-    <!-- Loading indicator -->
-    <ActivityIndicator Grid.Row="3" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
-
-    <!-- Items list -->
+    <!-- Items list with pull-to-refresh -->
     <RefreshView
-      Grid.Row="4"
-      IsRefreshing="{Binding IsBusy}"
+      Grid.Row="3"
+      IsRefreshing="{Binding IsLoading}"
       Command="{Binding LoadNearbyItemsCommand}"
     >
-      <CollectionView
-        ItemsSource="{Binding Items}"
-        RemainingItemsThreshold="3"
-        RemainingItemsThresholdReachedCommand="{Binding LoadMoreItemsCommand}"
-      >
+      <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
         <CollectionView.EmptyView>
           <Label
             Text="No items found nearby."
@@ -73,6 +68,21 @@
             TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
           />
         </CollectionView.EmptyView>
+        <CollectionView.Footer>
+          <StackLayout Padding="0,8" IsVisible="{Binding HasMorePages}">
+            <Button
+              Text="Load More"
+              Command="{Binding LoadMoreItemsCommand}"
+              IsVisible="{Binding IsLoadingMore, Converter={StaticResource InvertedBoolConverter}}"
+              HorizontalOptions="Center"
+            />
+            <ActivityIndicator
+              IsRunning="{Binding IsLoadingMore}"
+              IsVisible="{Binding IsLoadingMore}"
+              HorizontalOptions="Center"
+            />
+          </StackLayout>
+        </CollectionView.Footer>
         <CollectionView.ItemTemplate>
           <DataTemplate x:DataType="models:Item">
             <Border
@@ -93,13 +103,20 @@
               <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
                 <Label Grid.Row="0" Grid.Column="0" Text="{Binding Title}" FontAttributes="Bold" />
                 <Label
+                  Grid.Row="1"
+                  Grid.Column="0"
+                  Text="{Binding Category}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+                <Label
                   Grid.Row="0"
                   Grid.Column="1"
                   Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
                 />
                 <Label
                   Grid.Row="1"
-                  Grid.Column="0"
+                  Grid.Column="1"
                   Text="{Binding Distance, StringFormat='{0:F1} km away'}"
                   FontSize="12"
                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
@@ -110,5 +127,28 @@
         </CollectionView.ItemTemplate>
       </CollectionView>
     </RefreshView>
+
+    <!-- Initial load indicator (overlaid, centred) -->
+    <ActivityIndicator
+      Grid.Row="3"
+      IsRunning="{Binding IsLoading}"
+      IsVisible="{Binding IsLoading}"
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+    />
+
+    <!-- FAB: create item -->
+    <Button
+      Grid.Row="3"
+      Text="+"
+      Command="{Binding NavigateToCreateItemCommand}"
+      HorizontalOptions="End"
+      VerticalOptions="End"
+      WidthRequest="56"
+      HeightRequest="56"
+      CornerRadius="28"
+      Margin="16"
+      FontSize="24"
+    />
   </Grid>
 </ContentPage>

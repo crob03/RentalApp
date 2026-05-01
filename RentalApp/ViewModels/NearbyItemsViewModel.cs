@@ -1,122 +1,77 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RentalApp.Constants;
 using RentalApp.Models;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
 /// <summary>
-/// View model for the nearby items page. Resolves the device location on first load then
-/// re-uses the cached coordinates when the user changes radius or category, avoiding repeated GPS requests.
+/// View model for the "Nearby Items" page.
+/// Fetches all matching items from the server in a single call and paginates client-side,
+/// caching the device location so the GPS is only queried once per page visit.
 /// </summary>
-public partial class NearbyItemsViewModel : BaseViewModel
+public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
 {
-    private readonly IItemService _itemService;
     private readonly ILocationService _locationService;
-    private readonly INavigationService _navigationService;
-    private const int PageSize = 20;
 
-    /// <summary>Device coordinates captured on first load; reused by radius/category changes and pagination to avoid repeated GPS requests.</summary>
     private double _cachedLat;
     private double _cachedLon;
-
-    /// <summary>Set to true after the first successful GPS fetch so subsequent loads skip the location request.</summary>
     private bool _locationFetched;
+    private List<Item> _allNearbyItems = [];
 
-    /// <summary>Prevents property-change callbacks from firing a reload before the first <see cref="LoadNearbyItemsAsync"/> completes.</summary>
-    private bool _hasLoaded;
-    private static readonly Category AllItemsCategory = new(0, "All Items", string.Empty, 0);
-
-    /// <summary>Guards against <see cref="OnSelectedCategoryItemChanged(Category?)"/> re-triggering a load while <see cref="LoadNearbyItemsAsync"/> is restoring the picker selection.</summary>
-    private bool _restoringCategory;
-
-    [ObservableProperty]
-    private ObservableCollection<Item> items = [];
-
+    /// <summary>Search radius in kilometres; changes trigger a full reload.</summary>
     [ObservableProperty]
     private double radius = 5.0;
-
-    [ObservableProperty]
-    private List<Category> categories = [];
-
-    [ObservableProperty]
-    private List<Category> filterCategories = [AllItemsCategory];
-
-    [ObservableProperty]
-    private Category? selectedCategoryItem = AllItemsCategory;
-
-    [ObservableProperty]
-    private string? selectedCategory;
-
-    [ObservableProperty]
-    private bool isEmpty;
-
-    [ObservableProperty]
-    private int currentPage = 1;
-
-    [ObservableProperty]
-    private bool hasMorePages;
 
     /// <summary>
     /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> with the required services.
     /// </summary>
     /// <param name="itemService">Service used to fetch nearby items and categories.</param>
-    /// <param name="locationService">Service used to resolve the device's GPS position on load.</param>
-    /// <param name="navigationService">Service used to navigate to the item details page.</param>
+    /// <param name="locationService">Service used to obtain the device's current GPS coordinates.</param>
+    /// <param name="navigationService">Service used to navigate to item details and the create-item page.</param>
     public NearbyItemsViewModel(
         IItemService itemService,
         ILocationService locationService,
         INavigationService navigationService
     )
+        : base(itemService, navigationService)
     {
-        _itemService = itemService;
         _locationService = locationService;
-        _navigationService = navigationService;
         Title = "Nearby Items";
     }
 
-    partial void OnRadiusChanged(double value)
-    {
-        if (_hasLoaded)
-            LoadNearbyItemsCommand.Execute(null);
-    }
+    partial void OnRadiusChanged(double value) => _ = TriggerReloadIfLoaded();
 
-    partial void OnSelectedCategoryChanged(string? value)
+    /// <inheritdoc/>
+    protected override async Task ReloadAsync()
     {
-        if (_hasLoaded)
-            LoadNearbyItemsCommand.Execute(null);
-    }
-
-    /// <summary>Translates the UI picker selection into the slug used for API calls, skipping the synthetic "All Items" entry (Id == 0).</summary>
-    partial void OnSelectedCategoryItemChanged(Category? value)
-    {
-        if (_restoringCategory)
-            return;
-        SelectedCategory = (value is null || value.Id == 0) ? null : value.Slug;
+        LoadNearbyItemsCommand.Cancel();
+        await (LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
+        await LoadNearbyItemsCommand.ExecuteAsync(null);
     }
 
     /// <summary>
-    /// Resolves the device location, resets to page 1, and loads items within <see cref="Radius"/>
-    /// kilometres. The resolved coordinates are cached in <c>_cachedLat</c>/<c>_cachedLon</c>
-    /// for subsequent pagination and filter changes.
+    /// Fetches all nearby items within <see cref="Radius"/> kilometres (using the cached device
+    /// location, acquiring it once if not yet fetched), stores the full result set, and displays
+    /// the first page. Also refreshes the category list.
     /// </summary>
     [RelayCommand]
-    private Task LoadNearbyItemsAsync() =>
-        RunAsync(async () =>
+    private Task LoadNearbyItemsAsync(CancellationToken ct) =>
+        RunLoadAsync(async () =>
         {
             CurrentPage = 1;
 
             if (!_locationFetched)
             {
                 var (lat, lon) = await _locationService.GetCurrentLocationAsync();
+                ct.ThrowIfCancellationRequested();
                 _cachedLat = lat;
                 _cachedLon = lon;
                 _locationFetched = true;
             }
 
-            var result = await _itemService.GetNearbyItemsAsync(
+            _allNearbyItems = await ItemService.GetNearbyItemsAsync(
                 _cachedLat,
                 _cachedLon,
                 Radius,
@@ -124,64 +79,24 @@ public partial class NearbyItemsViewModel : BaseViewModel
                 CurrentPage,
                 PageSize
             );
-            var cats = await _itemService.GetCategoriesAsync() ?? [];
-
-            Items = new ObservableCollection<Item>(result);
-            HasMorePages = result.Count == PageSize;
-            IsEmpty = Items.Count == 0;
-            Categories = cats;
-            _hasLoaded = true;
-
-            var all = new List<Category> { AllItemsCategory };
-            all.AddRange(cats);
-            FilterCategories = all;
-
-            _restoringCategory = true;
-            SelectedCategoryItem = string.IsNullOrEmpty(SelectedCategory)
-                ? AllItemsCategory
-                : all.FirstOrDefault(c => c.Slug == SelectedCategory) ?? AllItemsCategory;
-            _restoringCategory = false;
+            ct.ThrowIfCancellationRequested();
+            Items = new ObservableCollection<Item>(_allNearbyItems.Take(PageSize));
+            HasMorePages = _allNearbyItems.Count > PageSize;
+            await LoadCategoriesAsync();
         });
 
     /// <summary>
-    /// Appends the next page of nearby results using the cached coordinates from the most recent
-    /// full load. Rolls back <see cref="CurrentPage"/> if the request fails.
+    /// Slices the next page from the cached <c>_allNearbyItems</c> result set and appends it to
+    /// <see cref="ItemsSearchBaseViewModel.Items"/> without making a new network request.
     /// </summary>
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
-        RunAsync(async () =>
+        RunLoadMoreAsync(() =>
         {
-            if (!HasMorePages)
-                return;
-            CurrentPage++;
-            try
-            {
-                var result = await _itemService.GetNearbyItemsAsync(
-                    _cachedLat,
-                    _cachedLon,
-                    Radius,
-                    SelectedCategory,
-                    CurrentPage,
-                    PageSize
-                );
-                foreach (var item in result)
-                    Items.Add(item);
-                HasMorePages = result.Count == PageSize;
-            }
-            catch
-            {
-                CurrentPage--;
-                throw;
-            }
+            var next = _allNearbyItems.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+            foreach (var item in next)
+                Items.Add(item);
+            HasMorePages = Items.Count < _allNearbyItems.Count;
+            return Task.CompletedTask;
         });
-
-    /// <summary>
-    /// Navigates to the item details page, passing <paramref name="item"/>'s ID as a query parameter.
-    /// </summary>
-    [RelayCommand]
-    private async Task NavigateToItemAsync(Item item) =>
-        await _navigationService.NavigateToAsync(
-            Routes.ItemDetails,
-            new Dictionary<string, object> { ["itemId"] = item.Id }
-        );
 }

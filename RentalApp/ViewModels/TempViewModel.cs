@@ -21,5 +21,4 @@ public class TempViewModel
     /// Gets a message indicating that this page is a placeholder.
     /// </summary>
     public string Message => "This is a placeholder page.";
-
 }
