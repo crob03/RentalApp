@@ -1,36 +1,31 @@
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 
 namespace RentalApp.Services;
 
-/// <summary>
-/// Manages authentication state on top of <see cref="IApiService"/>.
-/// Handles the current user, authentication events, and credential persistence.
-/// </summary>
 public class AuthenticationService : IAuthenticationService
 {
     private readonly IApiService _api;
     private readonly ICredentialStore _credentialStore;
-    private User? _currentUser;
+    private readonly AuthTokenState _tokenState;
+    private CurrentUserResponse? _currentUser;
 
-    /// <inheritdoc/>
     public event EventHandler<bool>? AuthenticationStateChanged;
-
-    /// <inheritdoc/>
     public bool IsAuthenticated => _currentUser != null;
+    public CurrentUserResponse? CurrentUser => _currentUser;
 
-    /// <inheritdoc/>
-    public User? CurrentUser => _currentUser;
-
-    /// <summary>Initialises a new instance of <see cref="AuthenticationService"/>.</summary>
-    /// <param name="api">Data-transport service used to authenticate and fetch user data.</param>
-    /// <param name="credentialStore">Store used to persist credentials when Remember Me is enabled.</param>
-    public AuthenticationService(IApiService api, ICredentialStore credentialStore)
+    public AuthenticationService(
+        IApiService api,
+        ICredentialStore credentialStore,
+        AuthTokenState tokenState
+    )
     {
         _api = api;
         _credentialStore = credentialStore;
+        _tokenState = tokenState;
     }
 
-    /// <inheritdoc/>
     public async Task<AuthenticationResult> LoginAsync(
         string email,
         string password,
@@ -39,7 +34,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            await _api.LoginAsync(email, password);
+            var response = await _api.LoginAsync(new LoginRequest(email, password));
+            _tokenState.CurrentToken = response.Token;
 
             if (rememberMe)
                 await _credentialStore.SaveAsync(email, password);
@@ -54,7 +50,6 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
-    /// <inheritdoc/>
     public async Task<AuthenticationResult> RegisterAsync(
         string firstName,
         string lastName,
@@ -64,7 +59,7 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            await _api.RegisterAsync(firstName, lastName, email, password);
+            await _api.RegisterAsync(new RegisterRequest(firstName, lastName, email, password));
             return AuthenticationResult.Success();
         }
         catch (Exception ex)
@@ -73,11 +68,10 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
-    /// <inheritdoc/>
     public async Task LogoutAsync()
     {
         _currentUser = null;
-        await _api.LogoutAsync();
+        _tokenState.CurrentToken = null;
         await _credentialStore.ClearAsync();
         AuthenticationStateChanged?.Invoke(this, false);
     }
