@@ -16,9 +16,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
 
     private LocalApiService CreateSut() =>
         new(
-            _fixture.Context,
-            new ItemRepository(_fixture.Context),
-            new CategoryRepository(_fixture.Context)
+            _fixture.ContextFactory,
+            new ItemRepository(_fixture.ContextFactory),
+            new CategoryRepository(_fixture.ContextFactory)
         );
 
     // ── Register ───────────────────────────────────────────────────────

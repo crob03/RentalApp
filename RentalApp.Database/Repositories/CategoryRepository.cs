@@ -10,20 +10,21 @@ namespace RentalApp.Database.Repositories;
 /// </summary>
 public class CategoryRepository : ICategoryRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public CategoryRepository(AppDbContext context)
+    public CategoryRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     /// <inheritdoc/>
     public async Task<IEnumerable<(DbCategory Category, int ItemCount)>> GetAllAsync()
     {
-        var rows = await _context
+        await using var context = _contextFactory.CreateDbContext();
+        var rows = await context
             .Categories.OrderBy(c => c.Name)
             .GroupJoin(
-                _context.Items,
+                context.Items,
                 c => c.Id,
                 i => i.CategoryId,
                 (c, items) => new { Category = c, Count = items.Count() }

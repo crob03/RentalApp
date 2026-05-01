@@ -23,7 +23,7 @@ public class ItemRepositoryTests
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    private ItemRepository CreateSut() => new(_fixture.Context);
+    private ItemRepository CreateSut() => new(_fixture.ContextFactory);
 
     // ── GetItemsAsync ──────────────────────────────────────────────────
 

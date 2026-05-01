@@ -12,7 +12,7 @@ public class CategoryRepositoryTests : IClassFixture<DatabaseFixture<CategoryRep
         _fixture = fixture;
     }
 
-    private CategoryRepository CreateSut() => new(_fixture.Context);
+    private CategoryRepository CreateSut() => new(_fixture.ContextFactory);
 
     [Fact]
     public async Task GetAllAsync_ReturnsAllCategories()

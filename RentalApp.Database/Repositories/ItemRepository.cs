@@ -12,11 +12,11 @@ namespace RentalApp.Database.Repositories;
 /// </summary>
 public class ItemRepository : IItemRepository
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
-    public ItemRepository(AppDbContext context)
+    public ItemRepository(IDbContextFactory<AppDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     /// <inheritdoc/>
@@ -27,7 +27,8 @@ public class ItemRepository : IItemRepository
         int pageSize
     )
     {
-        var query = _context.Items.Include(i => i.Category).Include(i => i.Owner).AsQueryable();
+        await using var context = _contextFactory.CreateDbContext();
+        var query = context.Items.Include(i => i.Category).Include(i => i.Owner).AsQueryable();
 
         if (category != null)
             query = query.Where(i => i.Category.Slug == category);
@@ -51,7 +52,8 @@ public class ItemRepository : IItemRepository
         int pageSize
     )
     {
-        var query = _context
+        await using var context = _contextFactory.CreateDbContext();
+        var query = context
             .Items.Include(i => i.Category)
             .Include(i => i.Owner)
             .Where(i => i.Location.IsWithinDistance(origin, radiusMeters))
@@ -70,7 +72,8 @@ public class ItemRepository : IItemRepository
     /// <inheritdoc/>
     public async Task<DbItem?> GetItemAsync(int id)
     {
-        return await _context
+        await using var context = _contextFactory.CreateDbContext();
+        return await context
             .Items.Include(i => i.Category)
             .Include(i => i.Owner)
             .FirstOrDefaultAsync(i => i.Id == id);
@@ -87,6 +90,7 @@ public class ItemRepository : IItemRepository
         Point location
     )
     {
+        await using var context = _contextFactory.CreateDbContext();
         var item = new DbItem
         {
             Title = title,
@@ -100,10 +104,13 @@ public class ItemRepository : IItemRepository
             UpdatedAt = DateTime.UtcNow,
         };
 
-        _context.Items.Add(item);
-        await _context.SaveChangesAsync();
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
 
-        return await GetItemAsync(item.Id)
+        return await context
+            .Items.Include(i => i.Category)
+            .Include(i => i.Owner)
+            .FirstOrDefaultAsync(i => i.Id == item.Id)
             ?? throw new InvalidOperationException("Failed to retrieve created item.");
     }
 
@@ -116,8 +123,9 @@ public class ItemRepository : IItemRepository
         bool? isAvailable
     )
     {
+        await using var context = _contextFactory.CreateDbContext();
         var item =
-            await _context
+            await context
                 .Items.Include(i => i.Category)
                 .Include(i => i.Owner)
                 .FirstOrDefaultAsync(i => i.Id == id)
@@ -134,7 +142,7 @@ public class ItemRepository : IItemRepository
 
         item.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return item;
     }
 }
