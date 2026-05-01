@@ -1,6 +1,6 @@
 using NSubstitute;
 using RentalApp.Constants;
-using RentalApp.Models;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -11,8 +11,10 @@ public class MainViewModelTests
     private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private static User MakeUser(string firstName = "Jane", string lastName = "Doe") =>
-        new(1, firstName, lastName, null, 0, 0, "jane@example.com", null, null);
+    private static CurrentUserResponse MakeUser(
+        string firstName = "Jane",
+        string lastName = "Doe"
+    ) => new(1, "jane@example.com", firstName, lastName, null, 0, 0, DateTime.UtcNow);
 
     private MainViewModel CreateSut() => new(_authService, _navigationService);
 
@@ -42,7 +44,7 @@ public class MainViewModelTests
     [Fact]
     public void Constructor_WithNoCurrentUser_WelcomeMessageIsEmpty()
     {
-        _authService.CurrentUser.Returns((User?)null);
+        _authService.CurrentUser.Returns((CurrentUserResponse?)null);
 
         var sut = CreateSut();
 
@@ -54,7 +56,7 @@ public class MainViewModelTests
     [Fact]
     public async Task RefreshDataAsync_UpdatesCurrentUserAndWelcomeMessage()
     {
-        _authService.CurrentUser.Returns((User?)null);
+        _authService.CurrentUser.Returns((CurrentUserResponse?)null);
         var sut = CreateSut();
         _authService.CurrentUser.Returns(MakeUser("Alice", "Smith"));
 

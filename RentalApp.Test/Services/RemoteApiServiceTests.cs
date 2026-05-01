@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using NSubstitute;
+using RentalApp.Contracts.Requests;
 using RentalApp.Http;
 using RentalApp.Services;
 
@@ -9,14 +10,13 @@ namespace RentalApp.Test.Services;
 public class RemoteApiServiceTests
 {
     private readonly IApiClient _apiClient = Substitute.For<IApiClient>();
-    private readonly AuthTokenState _tokenState = new();
 
-    private RemoteApiService CreateSut() => new(_apiClient, _tokenState);
+    private RemoteApiService CreateSut() => new(_apiClient);
 
     // ── Login ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LoginAsync_SuccessResponse_SetsTokenOnState()
+    public async Task LoginAsync_SuccessResponse_ReturnsTokenResponse()
     {
         _apiClient
             .PostAsJsonAsync("auth/token", Arg.Any<object>())
@@ -35,13 +35,13 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        await sut.LoginAsync("jane@example.com", "Password1!");
+        var result = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
 
-        Assert.Equal("abc123", _tokenState.CurrentToken);
+        Assert.Equal("abc123", result.Token);
     }
 
     [Fact]
-    public async Task LoginAsync_ErrorResponse_ThrowsUnauthorizedAccessException()
+    public async Task LoginAsync_ErrorResponse_ThrowsHttpRequestException()
     {
         _apiClient
             .PostAsJsonAsync("auth/token", Arg.Any<object>())
@@ -55,9 +55,9 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var act = () => sut.LoginAsync("jane@example.com", "wrong");
+        var act = () => sut.LoginAsync(new LoginRequest("jane@example.com", "wrong"));
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(act);
+        await Assert.ThrowsAsync<HttpRequestException>(act);
     }
 
     [Fact]
@@ -75,9 +75,9 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var act = () => sut.LoginAsync("jane@example.com", "wrong");
+        var act = () => sut.LoginAsync(new LoginRequest("jane@example.com", "wrong"));
 
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(act);
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(act);
         Assert.Equal("Invalid credentials", ex.Message);
     }
 
@@ -88,16 +88,32 @@ public class RemoteApiServiceTests
     {
         _apiClient
             .PostAsJsonAsync("auth/register", Arg.Any<object>())
-            .Returns(new HttpResponseMessage(HttpStatusCode.Created));
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 1,
+                            email = "jane@example.com",
+                            firstName = "Jane",
+                            lastName = "Doe",
+                            createdAt = DateTime.UtcNow,
+                        }
+                    ),
+                }
+            );
         var sut = CreateSut();
 
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
         await _apiClient.Received(1).PostAsJsonAsync("auth/register", Arg.Any<object>());
     }
 
     [Fact]
-    public async Task RegisterAsync_ErrorResponse_ThrowsInvalidOperationException()
+    public async Task RegisterAsync_ErrorResponse_ThrowsHttpRequestException()
     {
         _apiClient
             .PostAsJsonAsync("auth/register", Arg.Any<object>())
@@ -111,9 +127,12 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var act = () => sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        var act = () =>
+            sut.RegisterAsync(
+                new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+            );
 
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<HttpRequestException>(act);
     }
 
     // ── GetCurrentUser ─────────────────────────────────────────────────
@@ -154,10 +173,10 @@ public class RemoteApiServiceTests
         Assert.Equal(7, user.RentalsCompleted);
     }
 
-    // ── GetUser ────────────────────────────────────────────────────────
+    // ── GetUserProfile ─────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetUserAsync_SuccessResponse_ReturnsMappedUserWithReviews()
+    public async Task GetUserProfileAsync_SuccessResponse_ReturnsMappedUserWithReviews()
     {
         _apiClient
             .GetAsync("users/1/profile")
@@ -190,26 +209,13 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var user = await sut.GetUserAsync(1);
+        var user = await sut.GetUserProfileAsync(1);
 
         Assert.Equal(1, user.Id);
         Assert.Equal("Jane", user.FirstName);
-        Assert.Single(user.Reviews!);
-        Assert.Equal(5, user.Reviews![0].Rating);
+        Assert.Single(user.Reviews);
+        Assert.Equal(5, user.Reviews[0].Rating);
         Assert.Equal("Great!", user.Reviews[0].Comment);
-    }
-
-    // ── Logout ─────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task LogoutAsync_ClearsTokenState()
-    {
-        _tokenState.CurrentToken = "abc123";
-        var sut = CreateSut();
-
-        await sut.LogoutAsync();
-
-        Assert.Null(_tokenState.CurrentToken);
     }
 
     // ── GetItemsAsync ──────────────────────────────────────────────────
@@ -253,12 +259,11 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var items = await sut.GetItemsAsync();
+        var response = await sut.GetItemsAsync(new GetItemsRequest());
 
-        Assert.Single(items);
-        Assert.Equal("Drill", items[0].Title);
-        Assert.Equal("Tools", items[0].Category);
-        Assert.Null(items[0].Latitude);
+        Assert.Single(response.Items);
+        Assert.Equal("Drill", response.Items[0].Title);
+        Assert.Equal("Tools", response.Items[0].Category);
     }
 
     // ── GetNearbyItemsAsync ────────────────────────────────────────────
@@ -302,11 +307,11 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var items = await sut.GetNearbyItemsAsync(55.95, -3.19);
+        var response = await sut.GetNearbyItemsAsync(new GetNearbyItemsRequest(55.95, -3.19));
 
-        Assert.Single(items);
-        Assert.Equal(0.4, items[0].Distance);
-        Assert.Equal(55.9533, items[0].Latitude);
+        Assert.Single(response.Items);
+        Assert.Equal(0.4, response.Items[0].Distance);
+        Assert.Equal(55.9533, response.Items[0].Latitude);
     }
 
     // ── GetItemAsync ───────────────────────────────────────────────────
@@ -346,7 +351,15 @@ public class RemoteApiServiceTests
                                     reviewerName = "Bob",
                                     rating = 4,
                                     comment = "Good",
-                                    createdAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+                                    createdAt = new DateTime(
+                                        2026,
+                                        2,
+                                        1,
+                                        0,
+                                        0,
+                                        0,
+                                        DateTimeKind.Utc
+                                    ),
                                 },
                             },
                         }
@@ -359,8 +372,8 @@ public class RemoteApiServiceTests
 
         Assert.Equal(1, item.Id);
         Assert.Equal(4.5, item.OwnerRating);
-        Assert.Single(item.Reviews!);
-        Assert.Equal(4, item.Reviews![0].Rating);
+        Assert.Single(item.Reviews);
+        Assert.Equal(4, item.Reviews[0].Rating);
     }
 
     // ── CreateItemAsync ────────────────────────────────────────────────
@@ -394,7 +407,9 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var item = await sut.CreateItemAsync("New Drill", null, 12.0, 1, 55.9533, -3.1883);
+        var item = await sut.CreateItemAsync(
+            new CreateItemRequest("New Drill", null, 12.0, 1, 55.9533, -3.1883)
+        );
 
         Assert.Equal(5, item.Id);
         Assert.Equal("New Drill", item.Title);
@@ -403,7 +418,7 @@ public class RemoteApiServiceTests
     // ── UpdateItemAsync ────────────────────────────────────────────────
 
     [Fact]
-    public async Task UpdateItemAsync_SuccessResponse_FetchesAndReturnsFullItem()
+    public async Task UpdateItemAsync_SuccessResponse_ReturnsMappedItem()
     {
         _apiClient
             .PutAsJsonAsync("items/1", Arg.Any<object>())
@@ -422,37 +437,12 @@ public class RemoteApiServiceTests
                     ),
                 }
             );
-        _apiClient
-            .GetAsync("items/1")
-            .Returns(
-                new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(
-                        new
-                        {
-                            id = 1,
-                            title = "Updated",
-                            description = (string?)null,
-                            dailyRate = 10.0,
-                            categoryId = 1,
-                            category = "Tools",
-                            ownerId = 1,
-                            ownerName = "Jane Doe",
-                            ownerRating = (double?)null,
-                            latitude = (double?)55.9533,
-                            longitude = (double?)-3.1883,
-                            isAvailable = false,
-                            averageRating = (double?)null,
-                            totalReviews = 0,
-                            createdAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-                            reviews = Array.Empty<object>(),
-                        }
-                    ),
-                }
-            );
         var sut = CreateSut();
 
-        var item = await sut.UpdateItemAsync(1, "Updated", null, null, false);
+        var item = await sut.UpdateItemAsync(
+            1,
+            new UpdateItemRequest("Updated", null, null, false)
+        );
 
         Assert.Equal("Updated", item.Title);
         Assert.False(item.IsAvailable);
@@ -487,9 +477,9 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var categories = await sut.GetCategoriesAsync();
+        var response = await sut.GetCategoriesAsync();
 
-        Assert.Single(categories);
-        Assert.Equal("Tools", categories[0].Name);
+        Assert.Single(response.Categories);
+        Assert.Equal("Tools", response.Categories[0].Name);
     }
 }

@@ -1,6 +1,8 @@
 using NSubstitute;
 using RentalApp.Constants;
-using RentalApp.Models;
+using RentalApp.Contracts;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -8,11 +10,11 @@ namespace RentalApp.Test.ViewModels;
 
 public class ItemsSearchBaseViewModelTests
 {
-    private readonly IItemService _itemService = Substitute.For<IItemService>();
+    private readonly IApiService _api = Substitute.For<IApiService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private sealed class TestableViewModel(IItemService items, INavigationService nav)
-        : ItemsSearchBaseViewModel(items, nav)
+    private sealed class TestableViewModel(IApiService api, INavigationService nav)
+        : ItemsSearchBaseViewModel<ItemSummaryResponse>(api, nav)
     {
         public int ReloadCallCount { get; private set; }
 
@@ -26,20 +28,20 @@ public class ItemsSearchBaseViewModelTests
 
         public Task DoLoadMoreAsync(Func<Task> op) => RunLoadMoreAsync(op);
 
-        public void DoRestoreCategory(List<Category> all) => RestoreCategory(all);
+        public void DoRestoreCategory(List<CategoryResponse> all) => RestoreCategory(all);
     }
 
-    private TestableViewModel CreateSut() => new(_itemService, _nav);
+    private TestableViewModel CreateSut() => new(_api, _nav);
 
-    private static Category MakeCategory(
+    private static CategoryResponse MakeCategory(
         int id = 1,
         string name = "Tools",
         string slug = "tools"
     ) => new(id, name, slug, 5);
 
-    private static Category AllItems => new(0, "All Items", string.Empty, 0);
+    private static CategoryResponse AllItems => new(0, "All Items", string.Empty, 0);
 
-    private static Item MakeItem(int id = 1) =>
+    private static ItemSummaryResponse MakeItem(int id = 1) =>
         new(
             id,
             "Drill",
@@ -50,14 +52,9 @@ public class ItemsSearchBaseViewModelTests
             1,
             "Alice",
             null,
-            null,
-            null,
-            null,
             true,
             null,
-            null,
-            DateTime.UtcNow,
-            null
+            DateTime.UtcNow
         );
 
     // ── RunLoadAsync ───────────────────────────────────────────────────
@@ -180,7 +177,7 @@ public class ItemsSearchBaseViewModelTests
         var sut = CreateSut();
         sut.SelectedCategory = "tools"; // before first load — _hasLoaded still false
         await sut.DoLoadAsync(async () => { });
-        var all = new List<Category> { AllItems, MakeCategory() };
+        var all = new List<CategoryResponse> { AllItems, MakeCategory() };
 
         sut.DoRestoreCategory(all);
 

@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Constants;
-using RentalApp.Models;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -19,7 +19,7 @@ public partial class MainViewModel : BaseViewModel
     /// The currently authenticated user.
     /// </summary>
     [ObservableProperty]
-    private User? currentUser;
+    private CurrentUserResponse? currentUser;
 
     /// <summary>
     /// Personalised welcome message derived from the current user's name.

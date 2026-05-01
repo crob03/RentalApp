@@ -1,6 +1,8 @@
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 
 namespace RentalApp.Test.Services;
@@ -9,11 +11,12 @@ public class AuthenticationServiceTests
 {
     private readonly IApiService _api = Substitute.For<IApiService>();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
+    private readonly AuthTokenState _tokenState = new();
 
-    private AuthenticationService CreateSut() => new(_api, _credentialStore);
+    private AuthenticationService CreateSut() => new(_api, _credentialStore, _tokenState);
 
-    private static User FakeUser() =>
-        new(1, "Jane", "Doe", null, 0, 0, "jane@example.com", DateTime.UtcNow, null);
+    private static CurrentUserResponse FakeUser() =>
+        new(1, "jane@example.com", "Jane", "Doe", null, 0, 0, DateTime.UtcNow);
 
     // ── Initial state ──────────────────────────────────────────────────
 
@@ -111,7 +114,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ApiThrows_ReturnsFailureWithMessage()
     {
-        _api.LoginAsync(Arg.Any<string>(), Arg.Any<string>())
+        _api.LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
         var sut = CreateSut();
 
@@ -124,7 +127,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ApiThrows_DoesNotSetCurrentUser()
     {
-        _api.LoginAsync(Arg.Any<string>(), Arg.Any<string>())
+        _api.LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
         var sut = CreateSut();
 
@@ -137,7 +140,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ApiThrows_DoesNotRaiseAuthenticationStateChanged()
     {
-        _api.LoginAsync(Arg.Any<string>(), Arg.Any<string>())
+        _api.LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
         var sut = CreateSut();
         bool eventRaised = false;
@@ -151,7 +154,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_ApiThrows_DoesNotSaveCredentials()
     {
-        _api.LoginAsync(Arg.Any<string>(), Arg.Any<string>())
+        _api.LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
         var sut = CreateSut();
 
@@ -179,7 +182,15 @@ public class AuthenticationServiceTests
 
         await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
 
-        await _api.Received(1).RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await _api.Received(1)
+            .RegisterAsync(
+                Arg.Is<RegisterRequest>(r =>
+                    r.FirstName == "Jane"
+                    && r.LastName == "Doe"
+                    && r.Email == "jane@example.com"
+                    && r.Password == "Password1!"
+                )
+            );
     }
 
     // ── RegisterAsync — failure ────────────────────────────────────────
@@ -187,12 +198,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task RegisterAsync_ApiThrows_ReturnsFailureWithMessage()
     {
-        _api.RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            )
+        _api.RegisterAsync(Arg.Any<RegisterRequest>())
             .ThrowsAsync(new InvalidOperationException("Email already registered"));
         var sut = CreateSut();
 
@@ -244,14 +250,16 @@ public class AuthenticationServiceTests
     }
 
     [Fact]
-    public async Task LogoutAsync_DelegatesToApi()
+    public async Task LogoutAsync_ClearsToken()
     {
         _api.GetCurrentUserAsync().Returns(FakeUser());
+        _api.LoginAsync(Arg.Any<LoginRequest>())
+            .Returns(new LoginResponse("fake-token", DateTime.UtcNow.AddHours(1), 1));
         var sut = CreateSut();
         await sut.LoginAsync("jane@example.com", "Password1!");
 
         await sut.LogoutAsync();
 
-        await _api.Received(1).LogoutAsync();
+        Assert.Null(_tokenState.CurrentToken);
     }
 }
