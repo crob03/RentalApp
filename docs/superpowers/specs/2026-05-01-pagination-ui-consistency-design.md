@@ -26,12 +26,12 @@
 
 ```
 BaseViewModel                    ← unchanged
-  └── SearchBaseViewModel        ← new
+  └── ItemsSearchBaseViewModel        ← new
         ├── ItemsListViewModel   ← simplified
         └── NearbyItemsViewModel ← simplified
 ```
 
-### `SearchBaseViewModel : BaseViewModel`
+### `ItemsSearchBaseViewModel : BaseViewModel`
 
 New `partial` class. Owns all state shared between the two paginated search pages. Receives `INavigationService` via constructor so it can own `NavigateToCreateItemCommand` directly.
 
@@ -65,7 +65,7 @@ New `partial` class. Owns all state shared between the two paginated search page
 - `OnSelectedCategoryItemChanged(Category? value)` — translates picker selection to `SelectedCategory` slug; skips synthetic "All Items" (Id == 0); respects `_restoringCategory`.
 - `OnSelectedCategoryChanged(string? value)` — calls `ReloadAsync()` if `_hasLoaded`.
 
-### `ItemsListViewModel : SearchBaseViewModel`
+### `ItemsListViewModel : ItemsSearchBaseViewModel`
 
 Retains only:
 - `string SearchText`
@@ -75,7 +75,7 @@ Retains only:
 - `NavigateToItemCommand`
 - `override Task ReloadAsync()` — executes `LoadItemsCommand`
 
-### `NearbyItemsViewModel : SearchBaseViewModel`
+### `NearbyItemsViewModel : ItemsSearchBaseViewModel`
 
 Retains only:
 - `double Radius`
@@ -140,13 +140,13 @@ Both pages render item cards directly as `<Border>` with no outer wrapper `<Grid
 
 ### FAB (both pages)
 
-Both pages show a "+" FAB at `Grid.Row="3"`, `HorizontalOptions="End"`, `VerticalOptions="End"`, overlaid on the `RefreshView`. Bound to `NavigateToCreateItemCommand` from `SearchBaseViewModel`.
+Both pages show a "+" FAB at `Grid.Row="3"`, `HorizontalOptions="End"`, `VerticalOptions="End"`, overlaid on the `RefreshView`. Bound to `NavigateToCreateItemCommand` from `ItemsSearchBaseViewModel`.
 
 ---
 
 ## Testing
 
-### New: `SearchBaseViewModelTests`
+### New: `ItemsSearchBaseViewModelTests`
 
 A concrete `TestableSearchViewModel` subclass is created inside the test project. It implements `ReloadAsync()` as a no-op (or records invocation count), allowing the base class to be tested in isolation:
 
