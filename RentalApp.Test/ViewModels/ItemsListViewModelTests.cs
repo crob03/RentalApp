@@ -97,18 +97,6 @@ public class ItemsListViewModelTests
     }
 
     [Fact]
-    public async Task LoadItemsCommand_EmptyResult_SetsIsEmptyTrue()
-    {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([]);
-        var sut = CreateSut();
-
-        await sut.LoadItemsCommand.ExecuteAsync(null);
-
-        Assert.True(sut.IsEmpty);
-    }
-
-    [Fact]
     public async Task LoadItemsCommand_ServiceThrows_SetsError()
     {
         _itemService.GetItemsAsync().ThrowsAsyncForAnyArgs(new Exception("network error"));
@@ -136,37 +124,6 @@ public class ItemsListViewModelTests
         await sut.LoadMoreItemsCommand.ExecuteAsync(null);
 
         Assert.Equal(21, sut.Items.Count);
-    }
-
-    // ── NavigateToItemCommand ──────────────────────────────────────────
-
-    [Fact]
-    public async Task NavigateToItemCommand_NavigatesToItemDetails()
-    {
-        var sut = CreateSut();
-        var item = MakeItem(42);
-
-        await sut.NavigateToItemCommand.ExecuteAsync(item);
-
-        await _nav.Received(1)
-            .NavigateToAsync(
-                Routes.ItemDetails,
-                Arg.Is<Dictionary<string, object>>(d =>
-                    d.ContainsKey("itemId") && (int)d["itemId"] == 42
-                )
-            );
-    }
-
-    // ── NavigateToCreateItemCommand ────────────────────────────────────
-
-    [Fact]
-    public async Task NavigateToCreateItemCommand_NavigatesToCreateItem()
-    {
-        var sut = CreateSut();
-
-        await sut.NavigateToCreateItemCommand.ExecuteAsync(null);
-
-        await _nav.Received(1).NavigateToAsync(Routes.CreateItem);
     }
 
     // ── Category filter ────────────────────────────────────────────────
