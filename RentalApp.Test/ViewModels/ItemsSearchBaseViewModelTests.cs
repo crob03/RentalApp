@@ -10,11 +10,11 @@ namespace RentalApp.Test.ViewModels;
 
 public class ItemsSearchBaseViewModelTests
 {
-    private readonly IApiService _api = Substitute.For<IApiService>();
+    private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private sealed class TestableViewModel(IApiService api, INavigationService nav)
-        : ItemsSearchBaseViewModel<ItemSummaryResponse>(api, nav)
+    private sealed class TestableViewModel(IItemService itemService, INavigationService nav)
+        : ItemsSearchBaseViewModel<ItemSummaryResponse>(itemService, nav)
     {
         public int ReloadCallCount { get; private set; }
 
@@ -31,7 +31,7 @@ public class ItemsSearchBaseViewModelTests
         public void DoRestoreCategory(List<CategoryResponse> all) => RestoreCategory(all);
     }
 
-    private TestableViewModel CreateSut() => new(_api, _nav);
+    private TestableViewModel CreateSut() => new(_itemService, _nav);
 
     private static CategoryResponse MakeCategory(
         int id = 1,

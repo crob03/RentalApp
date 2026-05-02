@@ -8,7 +8,7 @@ namespace RentalApp.Test.ViewModels;
 
 public class MainViewModelTests
 {
-    private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
+    private readonly IAuthService _authService = Substitute.For<IAuthService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
     private static CurrentUserResponse MakeUser(
@@ -18,47 +18,38 @@ public class MainViewModelTests
 
     private MainViewModel CreateSut() => new(_authService, _navigationService);
 
-    // ── Constructor — data loading ─────────────────────────────────────
+    // ── InitializeAsync ────────────────────────────────────────────────
 
     [Fact]
-    public void Constructor_WithCurrentUser_SetsWelcomeMessage()
+    public async Task InitializeAsync_LoadsUserAndSetsWelcomeMessage()
     {
-        _authService.CurrentUser.Returns(MakeUser());
-
+        _authService.GetCurrentUserAsync().Returns(MakeUser());
         var sut = CreateSut();
+
+        await sut.InitializeAsync();
 
         Assert.Equal("Welcome, Jane Doe!", sut.WelcomeMessage);
     }
 
     [Fact]
-    public void Constructor_WithCurrentUser_SetsCurrentUser()
+    public async Task InitializeAsync_SetsCurrentUser()
     {
         var user = MakeUser();
-        _authService.CurrentUser.Returns(user);
-
+        _authService.GetCurrentUserAsync().Returns(user);
         var sut = CreateSut();
+
+        await sut.InitializeAsync();
 
         Assert.Equal(user, sut.CurrentUser);
-    }
-
-    [Fact]
-    public void Constructor_WithNoCurrentUser_WelcomeMessageIsEmpty()
-    {
-        _authService.CurrentUser.Returns((CurrentUserResponse?)null);
-
-        var sut = CreateSut();
-
-        Assert.Equal(string.Empty, sut.WelcomeMessage);
     }
 
     // ── RefreshDataAsync ───────────────────────────────────────────────
 
     [Fact]
-    public async Task RefreshDataAsync_UpdatesCurrentUserAndWelcomeMessage()
+    public async Task RefreshDataAsync_ReloadsUser()
     {
-        _authService.CurrentUser.Returns((CurrentUserResponse?)null);
+        _authService.GetCurrentUserAsync().Returns(MakeUser("Alice", "Smith"));
         var sut = CreateSut();
-        _authService.CurrentUser.Returns(MakeUser("Alice", "Smith"));
 
         await sut.RefreshDataCommand.ExecuteAsync(null);
 
@@ -68,6 +59,7 @@ public class MainViewModelTests
     [Fact]
     public async Task RefreshDataAsync_IsBusyFalseAfterCompletion()
     {
+        _authService.GetCurrentUserAsync().Returns(MakeUser());
         var sut = CreateSut();
 
         await sut.RefreshDataCommand.ExecuteAsync(null);
@@ -80,21 +72,15 @@ public class MainViewModelTests
     [Fact]
     public async Task NavigateToProfileCommand_NavigatesToTemp()
     {
-        var sut = CreateSut();
-
-        await sut.NavigateToProfileCommand.ExecuteAsync(null);
+        await CreateSut().NavigateToProfileCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
     }
 
-    // ── Item navigation ────────────────────────────────────────────────
-
     [Fact]
     public async Task NavigateToItemsListCommand_NavigatesToItemsList()
     {
-        var sut = CreateSut();
-
-        await sut.NavigateToItemsListCommand.ExecuteAsync(null);
+        await CreateSut().NavigateToItemsListCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateToAsync(Routes.ItemsList);
     }
@@ -102,9 +88,7 @@ public class MainViewModelTests
     [Fact]
     public async Task NavigateToNearbyItemsCommand_NavigatesToNearbyItems()
     {
-        var sut = CreateSut();
-
-        await sut.NavigateToNearbyItemsCommand.ExecuteAsync(null);
+        await CreateSut().NavigateToNearbyItemsCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateToAsync(Routes.NearbyItems);
     }
@@ -112,9 +96,7 @@ public class MainViewModelTests
     [Fact]
     public async Task NavigateToCreateItemCommand_NavigatesToCreateItem()
     {
-        var sut = CreateSut();
-
-        await sut.NavigateToCreateItemCommand.ExecuteAsync(null);
+        await CreateSut().NavigateToCreateItemCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateToAsync(Routes.CreateItem);
     }

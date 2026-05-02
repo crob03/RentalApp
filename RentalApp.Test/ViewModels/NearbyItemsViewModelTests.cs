@@ -9,11 +9,11 @@ namespace RentalApp.Test.ViewModels;
 
 public class NearbyItemsViewModelTests
 {
-    private readonly IApiService _api = Substitute.For<IApiService>();
+    private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly ILocationService _locationService = Substitute.For<ILocationService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private NearbyItemsViewModel CreateSut() => new(_api, _locationService, _nav);
+    private NearbyItemsViewModel CreateSut() => new(_itemService, _locationService, _nav);
 
     private static NearbyItemResponse MakeItem(int id) =>
         new(id, $"Item {id}", null, 10.0, 1, "Tools", 1, "Owner", 55.9, -3.2, 0.5, true, null);
@@ -33,9 +33,10 @@ public class NearbyItemsViewModelTests
     public async Task LoadNearbyItemsCommand_Success_PopulatesItems()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
             .Returns(MakeNearbyResponse([MakeItem(1), MakeItem(2)]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
@@ -67,9 +68,10 @@ public class NearbyItemsViewModelTests
     public async Task LoadNearbyItemsCommand_MoreThanOnePage_SetsHasMorePagesTrue()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
             .Returns(MakeNearbyResponse(Enumerable.Range(1, 21).Select(MakeItem).ToList()));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
@@ -83,9 +85,10 @@ public class NearbyItemsViewModelTests
     public async Task LoadMoreItemsCommand_SlicesFromCacheWithoutApiCall()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
             .Returns(MakeNearbyResponse(Enumerable.Range(1, 21).Select(MakeItem).ToList()));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
@@ -94,7 +97,7 @@ public class NearbyItemsViewModelTests
         Assert.Equal(21, sut.Items.Count);
         Assert.False(sut.HasMorePages);
         await _locationService.Received(1).GetCurrentLocationAsync();
-        await _api.Received(1).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
+        await _itemService.Received(1).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
     }
 
     // ── Radius change triggers reload ──────────────────────────────────
@@ -103,15 +106,17 @@ public class NearbyItemsViewModelTests
     public async Task RadiusChange_AfterFirstLoad_TriggersReload()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
         sut.Radius = 10.0;
 
         await (sut.LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
-        await _api.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
+        await _itemService.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
     }
 
     // ── Category filter ────────────────────────────────────────────────
@@ -120,8 +125,10 @@ public class NearbyItemsViewModelTests
     public async Task LoadNearbyItemsCommand_PopulatesFilterCategoriesWithAllItemsSentinel()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
@@ -136,8 +143,10 @@ public class NearbyItemsViewModelTests
     public async Task LoadNearbyItemsCommand_SelectedCategoryItemDefaultsToAllItems()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
@@ -150,8 +159,10 @@ public class NearbyItemsViewModelTests
     public async Task SelectingCategory_UpdatesSelectedCategorySlug()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
@@ -164,8 +175,10 @@ public class NearbyItemsViewModelTests
     public async Task SelectingAllItems_ClearsSelectedCategory()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
         sut.SelectedCategoryItem = MakeCategory();
@@ -179,28 +192,32 @@ public class NearbyItemsViewModelTests
     public async Task CategoryChange_AfterLoad_TriggersReload()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
         sut.SelectedCategoryItem = MakeCategory();
         await (sut.LoadNearbyItemsCommand.ExecutionTask ?? Task.CompletedTask);
 
-        await _api.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
+        await _itemService.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
     }
 
     [Fact]
     public async Task LoadNearbyItems_DoesNotTriggerExtraReload_WhenRestoringCategory()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>()).Returns(MakeNearbyResponse([]));
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
+        _itemService
+            .GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>())
+            .Returns(MakeNearbyResponse([]));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
         await sut.LoadNearbyItemsCommand.ExecuteAsync(null);
 
-        await _api.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
+        await _itemService.Received(2).GetNearbyItemsAsync(Arg.Any<GetNearbyItemsRequest>());
     }
 }

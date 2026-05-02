@@ -32,24 +32,7 @@ public class CategoryRepositoryTests : IClassFixture<DatabaseFixture<CategoryRep
         var results = (await sut.GetAllAsync()).ToList();
 
         Assert.True(
-            string.Compare(
-                results[0].Category.Name,
-                results[1].Category.Name,
-                StringComparison.Ordinal
-            ) <= 0
+            string.Compare(results[0].Name, results[1].Name, StringComparison.Ordinal) <= 0
         );
-    }
-
-    [Fact]
-    public async Task GetAllAsync_ItemCountMatchesSeededItems()
-    {
-        var sut = CreateSut();
-
-        var results = (await sut.GetAllAsync()).ToList();
-
-        var tools = results.Single(r => r.Category.Slug == "tools");
-        var electronics = results.Single(r => r.Category.Slug == "electronics");
-        Assert.Equal(2, tools.ItemCount);
-        Assert.Equal(1, electronics.ItemCount);
     }
 }

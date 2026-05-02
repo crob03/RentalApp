@@ -65,12 +65,10 @@ public class ItemRepository : IItemRepository
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<DbItem>> GetNearbyItemsAsync(
+    public async Task<IEnumerable<NearbyItemResult>> GetNearbyItemsAsync(
         Point origin,
         double radiusMeters,
-        string? category,
-        int page,
-        int pageSize
+        string? category
     )
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -83,11 +81,12 @@ public class ItemRepository : IItemRepository
         if (category != null)
             query = query.Where(i => i.Category.Slug == category);
 
-        return await query
+        var results = await query
             .OrderBy(i => i.Location.Distance(origin))
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Select(i => new { Item = i, DistanceMeters = i.Location.Distance(origin) })
             .ToListAsync();
+
+        return results.Select(r => new NearbyItemResult(r.Item, r.DistanceMeters));
     }
 
     /// <inheritdoc/>
@@ -133,6 +132,23 @@ public class ItemRepository : IItemRepository
                 .Include(i => i.Owner)
                 .FirstOrDefaultAsync(i => i.Id == item.Id)
             ?? throw new InvalidOperationException("Failed to retrieve created item.");
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CountItemsByOwnerAsync(int ownerId)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context.Items.CountAsync(i => i.OwnerId == ownerId);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Dictionary<int, int>> CountItemsByCategoryAsync()
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context
+            .Items.GroupBy(i => i.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(r => r.CategoryId, r => r.Count);
     }
 
     /// <inheritdoc/>

@@ -25,6 +25,8 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 14 | 2026-05-01 | Architecture | `RentalApp.Contracts` project as the exclusive source of `IApiService` request/response record types *(supersedes Decision 12; superseded by Decision 16)* |
 | 15 | 2026-05-01 | Architecture / MVVM | ViewModels may call `IApiService` directly for non-auth operations; `IItemService` is retired |
 | 16 | 2026-05-02 | Architecture | Contracts folder collapsed into `RentalApp`; `RentalApp.Contracts` class library retired *(supersedes Decision 14)* |
+| 17 | 2026-05-02 | Tooling / Dev Workflow | Release builds always use the remote API; SharedPreferences switching is debug-only |
+| 18 | 2026-05-02 | Architecture | `IApiService` split into four domain service interfaces; `IAuthenticationService` removed with its orchestration logic distributed into ViewModels *(supersedes Decisions 10, 11, 15)* |
 
 ---
 
@@ -257,3 +259,60 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Retain `RentalApp.Contracts` as a separate class library** — the prior approach (Decision 14). Rejected because the separate project added cognitive overhead (an extra entry in the solution, an extra project reference to manage) without delivering meaningful architectural benefit at the current scale of three projects and a single consumer.
 
 **Rationale**: The original motivation for a dedicated contracts project was to enforce a compile-time boundary ensuring both `RemoteApiService` and `LocalApiService` used the same record shapes. That boundary still exists — both implementations are in `RentalApp` and must satisfy the same `IApiService` signatures — but it no longer requires a separate assembly to enforce it. A `Contracts/` folder in `RentalApp` provides the same organisational clarity with less structural overhead. The namespace (`RentalApp.Contracts`) is preserved so call sites read identically to the separate-project approach.
+
+---
+
+### Decision 17: Release Builds Always Use the Remote API; SharedPreferences Switching is Debug-Only
+**Date**: 2026-05-02
+**Area**: Tooling / Dev Workflow
+
+**Decision**: In `MauiProgram.cs`, the `useSharedApi` flag is wrapped in a `#if DEBUG` / `#else` preprocessor block. Debug builds read the flag from Android SharedPreferences (as established in Decision 9), allowing `make use-local-api` / `make use-remote-api` to switch at runtime without a rebuild. Release builds use `const bool useSharedApi = true`, hardcoding the remote API path at compile time.
+
+**Alternatives considered**:
+- **Single runtime flag for all configurations** — the prior state. Rejected because a release build could ship with the flag set to `false` (e.g. from a developer's local SharedPreferences state), routing production traffic to a local database.
+- **Separate build configurations (e.g. Release-Local)** — unnecessary complexity; the `DEBUG` symbol already cleanly separates the two cases with no extra configuration overhead.
+
+**Rationale**: Release builds must always target the remote API. Using `const bool useSharedApi = true` in the `#else` branch means the compiler dead-code-eliminates the entire local-API registration block from the release binary — `LocalApiService` and its dependencies are not referenced, not compiled in, and cannot be reached at runtime, even via `adb` or SharedPreferences manipulation. The debug path is unchanged, so the `make use-local-api` workflow (Decision 9) continues to work normally during development.
+
+---
+
+### Decision 18: `IApiService` Split into Domain Services; `IAuthenticationService` Removed *(Supersedes Decisions 10, 11, 15)*
+**Date**: 2026-05-02
+**Area**: Architecture
+
+**Decision**: The monolithic `IApiService` interface (20+ methods across auth, items, rentals, and reviews) is retired and replaced by four domain-scoped service interfaces: `IAuthService`, `IItemService`, `IRentalService`, and `IReviewService`. Each interface has symmetric `Remote*` and `Local*` implementations; a shared `RemoteServiceBase` provides the common `IApiClient` dependency for all remote implementations. `IAuthenticationService` and `AuthenticationService` are deleted entirely. The orchestration logic they previously owned — writing the bearer token on login, persisting credentials when Remember Me is set, clearing credentials and token on logout, and re-authenticating on startup — is distributed into the ViewModels that own those flows: `LoginViewModel`, `AppShellViewModel`, and `LoadingViewModel`. These ViewModels now inject `AuthTokenState` and `ICredentialStore` directly alongside their respective domain service. ViewModels for items, rentals, and reviews inject the appropriate domain service interface directly, consistent with the direction established in Decision 15.
+
+**Alternatives considered**:
+- **Retain `IAuthenticationService` as an orchestrator above `IAuthService`** — `IAuthenticationService` would delegate transport to `IAuthService` while continuing to own token writing, credential persistence, and the `OnLoginChanged` event. Rejected because `AuthenticationService` had become a thin pass-through with no logic of its own beyond wiring three collaborators (`IApiService`, `AuthTokenState`, `ICredentialStore`) — logic that is equally expressible in the two or three ViewModels that need it. Keeping the orchestrator added an indirection layer and a fourth constructor dependency with no encapsulation benefit.
+- **Retain `IApiService` and decompose via sub-interfaces** — introduce `IAuthApi`, `IItemApi`, etc. as sub-interfaces of a master `IApiService`. Rejected because it still requires both `RemoteApiService` and `LocalApiService` to implement the full combined interface; the seam between domain groups in a single class creates friction as each group grows.
+- **Push auth orchestration into a dedicated `AuthOrchestrator` service (not a transport service)** — a non-transport service owning token/credential lifecycle, injected by the three ViewModels. Rejected as over-engineering: the orchestration logic is five to ten lines spread across three already-existing ViewModels, not a complex domain concern that warrants its own abstraction.
+- **Keep the monolithic `IApiService` with ViewModels calling it directly** — the state after Decision 15. Rejected because the interface had become a grab-bag of unrelated operations, making it impossible to register different implementations per domain group and difficult to isolate tests to a specific domain.
+
+**Rationale**: A single `IApiService` interface spanning all domains violated the Interface Segregation Principle — every consumer that needed one group of methods was forced to depend on the full interface. Splitting by domain means each ViewModel declares exactly which concerns it has, constructor signatures become self-documenting, and tests inject only the fakes they need. Auth orchestration (token writing, credential persistence, session observation) moving into ViewModels makes the flow explicit and traceable: `LoginViewModel.LoginAsync` sets the token and optionally saves credentials in the same method that calls `IAuthService.LoginAsync`, so there is no hidden side-effect in a service layer. `AppShellViewModel` subscribes to `AuthTokenState.AuthenticationStateChanged` directly, removing the `OnLoginChanged` indirection that `IAuthenticationService` previously provided. The symmetric `Local*` / `Remote*` pair pattern from Decision 10 is preserved — only the granularity of the interface boundary changes.
+
+### Decision 19: Services Must Use Repositories; Direct `AppDbContext` Access is Prohibited
+**Date**: 2026-05-02
+**Area**: Architecture / Data Access
+
+**Decision**: Local service implementations (`Local*`) must interact with the database exclusively through repository interfaces (`IItemRepository`, `IUserRepository`, `ICategoryRepository`, etc.). Direct injection of `IDbContextFactory<AppDbContext>` or `AppDbContext` into services is prohibited. `AppDbContext` is an implementation detail of the `RentalApp.Database` project and must not leak into the service layer. Every entity that requires data access from a service must have a corresponding `I*Repository` / `*Repository` pair in `RentalApp.Database/Repositories/`. Repositories own `AppDbContext` lifetime management (`await using var context = _contextFactory.CreateDbContext()`) and are the sole location where EF Core LINQ queries are written.
+
+**Alternatives considered**:
+- **Allow services to inject `IDbContextFactory<AppDbContext>` directly** — the pre-existing approach in `LocalAuthService`, which injected the context factory and queried `context.Users` inline. Rejected because it exposes the ORM abstraction to the service layer, tightly couples services to EF Core, and makes service-layer unit testing dependent on a real database or complex context mocking.
+- **Use a generic repository (`IRepository<T>`)** — a single interface parameterised by entity type, exposing `GetByIdAsync`, `AddAsync`, etc. Rejected because it forces all callers to work with raw entities and cannot express entity-specific query patterns (e.g. `GetNearbyItemsAsync`, `CountItemsByOwnerAsync`) without either leaking `IQueryable<T>` or adding a parallel set of extension points.
+- **Use a Unit of Work pattern wrapping all repositories** — a `IUnitOfWork` interface exposing each repository as a property and managing a shared `AppDbContext` across them. Rejected as over-engineering for the current scale: each repository manages its own short-lived context, which is correct for the Singleton registration lifetime and avoids cross-repository transaction complexity that is not yet needed.
+
+**Rationale**: Confining `AppDbContext` to the repository layer enforces a stable abstraction boundary: services describe *what* data they need through repository interfaces, and repositories describe *how* to fetch it using EF Core. This separation means service tests (e.g. `LocalAuthServiceTests`) can construct real repository instances against a test database without any mocking, while still being isolated from EF Core query internals. It also ensures that data-access concerns — query optimisation, eager loading, PostGIS function calls — are consolidated in one place rather than scattered across service implementations. The `IUserRepository` introduction in this session closed the last remaining violation, where `LocalAuthService` was querying `context.Users` and `context.Items` directly.
+
+---
+
+### Decision 20: Repositories Must Not Cross Aggregate Boundaries
+**Date**: 2026-05-02
+**Area**: Architecture / Data Access
+
+**Decision**: Each repository interface and implementation may only query or mutate data belonging to its own aggregate. A repository must never reference another aggregate's `DbSet` — including read-only joins, sub-selects, or counts — to produce enriched return types. Cross-aggregate data assembly is the responsibility of the service layer, which may call multiple repositories and join their results in memory or via separate queries.
+
+**Alternatives considered**:
+- **Allow read-only cross-aggregate joins for efficiency** — `CategoryRepository.GetAllAsync()` used a `GroupJoin` against `context.Items` to return a per-category item count in a single SQL query. Rejected because the count query is now tightly coupled to the `Item` aggregate: any filtering applied in `ItemRepository` (e.g. soft deletes, availability flags) would also need to be duplicated in `CategoryRepository`. The two repositories would silently diverge as the `Item` aggregate evolves.
+- **Introduce a dedicated read-model / query service for cross-aggregate projections** — a `CategoryQueryService` producing a `CategorySummary` view model, bypassing repository interfaces entirely. Rejected as over-engineering at the current scale; the service layer already plays this role and calling two repositories from `LocalItemService` is sufficient.
+
+**Rationale**: Repositories are the authoritative boundary around a single aggregate. Allowing them to reach into other aggregates — even read-only — means that a change to one aggregate's query logic (filters, soft deletes, feature flags) must be replicated in every repository that joins against it. The practical cost of a second round-trip (two queries instead of one `GROUP BY` + `JOIN`) is negligible at the category-list scale; the correctness benefit of a single source of truth for item filtering is not. Services are the correct layer for coordinating across aggregates: they call multiple repositories and own the in-memory assembly of enriched response types.

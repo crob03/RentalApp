@@ -23,9 +23,9 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     where TItem : IItemListable
 {
     private readonly INavigationService _navigationService;
-    private readonly IApiService _api;
+    private readonly IItemService _itemService;
 
-    protected IApiService ApiService => _api;
+    protected IItemService ItemService => _itemService;
     protected const int PageSize = 20;
 
     private bool _restoringCategory;
@@ -58,9 +58,12 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     [ObservableProperty]
     private bool isLoadingMore;
 
-    protected ItemsSearchBaseViewModel(IApiService api, INavigationService navigationService)
+    protected ItemsSearchBaseViewModel(
+        IItemService itemService,
+        INavigationService navigationService
+    )
     {
-        _api = api;
+        _itemService = itemService;
         _navigationService = navigationService;
     }
 
@@ -68,7 +71,7 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     {
         if (Categories.Count > 0)
             return;
-        var response = await _api.GetCategoriesAsync();
+        var response = await _itemService.GetCategoriesAsync();
         var cats = response.Categories;
         var all = new List<CategoryResponse> { ItemsSearchDefaults.AllItemsCategory };
         all.AddRange(cats);

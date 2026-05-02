@@ -1,4 +1,7 @@
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -6,7 +9,7 @@ namespace RentalApp.Test.ViewModels;
 
 public class RegisterViewModelTests
 {
-    private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
+    private readonly IAuthService _authService = Substitute.For<IAuthService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
     private RegisterViewModel CreateSut() => new(_authService, _navigationService);
@@ -22,19 +25,15 @@ public class RegisterViewModelTests
         return sut;
     }
 
+    private static RegisterResponse FakeRegister() =>
+        new(1, "jane@example.com", "Jane", "Doe", DateTime.UtcNow);
+
     // ── RegisterAsync — navigation ─────────────────────────────────────
 
     [Fact]
-    public async Task RegisterAsync_SuccessfulRegistration_NavigatesBack()
+    public async Task RegisterAsync_Success_NavigatesBack()
     {
-        _authService
-            .RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            )
-            .Returns(AuthenticationResult.Success());
+        _authService.RegisterAsync(Arg.Any<RegisterRequest>()).Returns(FakeRegister());
         var sut = WithValidForm(CreateSut());
 
         await sut.RegisterCommand.ExecuteAsync(null);
@@ -43,16 +42,11 @@ public class RegisterViewModelTests
     }
 
     [Fact]
-    public async Task RegisterAsync_FailedRegistration_DoesNotNavigate()
+    public async Task RegisterAsync_ServiceThrows_DoesNotNavigate()
     {
         _authService
-            .RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            )
-            .Returns(AuthenticationResult.Failure("Email already registered"));
+            .RegisterAsync(Arg.Any<RegisterRequest>())
+            .ThrowsAsync(new HttpRequestException("Email already registered"));
         var sut = WithValidForm(CreateSut());
 
         await sut.RegisterCommand.ExecuteAsync(null);
@@ -61,37 +55,23 @@ public class RegisterViewModelTests
     }
 
     [Fact]
-    public async Task RegisterAsync_InvalidForm_DoesNotNavigate()
+    public async Task RegisterAsync_InvalidForm_DoesNotCallService()
     {
         var sut = CreateSut();
-        // All fields left empty — form validation will fail before the service is called
 
         await sut.RegisterCommand.ExecuteAsync(null);
 
-        await _navigationService.DidNotReceive().NavigateBackAsync();
-        await _authService
-            .DidNotReceive()
-            .RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            );
+        await _authService.DidNotReceive().RegisterAsync(Arg.Any<RegisterRequest>());
     }
 
     // ── RegisterAsync — error state ────────────────────────────────────
 
     [Fact]
-    public async Task RegisterAsync_FailedRegistration_SetsErrorFromService()
+    public async Task RegisterAsync_ServiceThrows_SetsError()
     {
         _authService
-            .RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            )
-            .Returns(AuthenticationResult.Failure("Email already registered"));
+            .RegisterAsync(Arg.Any<RegisterRequest>())
+            .ThrowsAsync(new HttpRequestException("Email already registered"));
         var sut = WithValidForm(CreateSut());
 
         await sut.RegisterCommand.ExecuteAsync(null);
@@ -112,16 +92,9 @@ public class RegisterViewModelTests
     }
 
     [Fact]
-    public async Task RegisterAsync_SuccessfulRegistration_ClearsError()
+    public async Task RegisterAsync_Success_ClearsError()
     {
-        _authService
-            .RegisterAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<string>()
-            )
-            .Returns(AuthenticationResult.Success());
+        _authService.RegisterAsync(Arg.Any<RegisterRequest>()).Returns(FakeRegister());
         var sut = WithValidForm(CreateSut());
 
         await sut.RegisterCommand.ExecuteAsync(null);
@@ -134,9 +107,7 @@ public class RegisterViewModelTests
     [Fact]
     public async Task NavigateBackToLoginCommand_NavigatesBack()
     {
-        var sut = CreateSut();
-
-        await sut.NavigateBackToLoginCommand.ExecuteAsync(null);
+        await CreateSut().NavigateBackToLoginCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateBackAsync();
     }
@@ -146,9 +117,7 @@ public class RegisterViewModelTests
     [Fact]
     public void RegisterCommand_WhenNotBusy_CanExecute()
     {
-        var sut = CreateSut();
-
-        Assert.True(sut.RegisterCommand.CanExecute(null));
+        Assert.True(CreateSut().RegisterCommand.CanExecute(null));
     }
 
     [Fact]

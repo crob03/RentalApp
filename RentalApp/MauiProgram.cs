@@ -1,4 +1,3 @@
-// RentalApp/MauiProgram.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RentalApp.Database.Data;
@@ -26,33 +25,41 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICredentialStore, CredentialStore>();
         builder.Services.AddSingleton<AuthTokenState>();
 
+#if DEBUG
         bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
+#else
+        const bool useSharedApi = true;
+#endif
 
         if (useSharedApi)
         {
             var baseAddress = new Uri("https://set09102-api.b-davison.workers.dev/");
             builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = baseAddress });
             builder.Services.AddSingleton<IApiClient, ApiClient>();
-            builder.Services.AddSingleton<IApiService, RemoteApiService>();
+            builder.Services.AddSingleton<IAuthService, RemoteAuthService>();
+            builder.Services.AddSingleton<IItemService, RemoteItemService>();
+            builder.Services.AddSingleton<IRentalService, RemoteRentalService>();
+            builder.Services.AddSingleton<IReviewService, RemoteReviewService>();
         }
         else
         {
             builder.Services.AddDbContextFactory<AppDbContext>();
+            builder.Services.AddSingleton<IUserRepository, UserRepository>();
             builder.Services.AddSingleton<IItemRepository, ItemRepository>();
             builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
-            builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
-                sp.GetRequiredService<IDbContextFactory<AppDbContext>>(),
+            builder.Services.AddSingleton<IAuthService>(sp => new LocalAuthService(
+                sp.GetRequiredService<IUserRepository>(),
+                sp.GetRequiredService<IItemRepository>(),
+                sp.GetRequiredService<AuthTokenState>()
+            ));
+            builder.Services.AddSingleton<IItemService>(sp => new LocalItemService(
                 sp.GetRequiredService<IItemRepository>(),
                 sp.GetRequiredService<ICategoryRepository>(),
                 sp.GetRequiredService<AuthTokenState>()
             ));
+            builder.Services.AddSingleton<IRentalService, LocalRentalService>();
+            builder.Services.AddSingleton<IReviewService, LocalReviewService>();
         }
-
-        builder.Services.AddSingleton<IAuthenticationService>(sp => new AuthenticationService(
-            sp.GetRequiredService<IApiService>(),
-            sp.GetRequiredService<ICredentialStore>(),
-            sp.GetRequiredService<AuthTokenState>()
-        ));
 
         builder.Services.AddSingleton<IGeolocation>(Geolocation.Default);
         builder.Services.AddSingleton<ILocationService, LocationService>();

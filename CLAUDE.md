@@ -42,7 +42,7 @@ dotnet ef migrations add <MigrationName> --project RentalApp.Migrations
 ### Switch API target (Android device/emulator)
 ```bash
 make use-remote-api   # Point app at remote API (default)
-make use-local-api    # Point app at LocalAuthenticationService
+make use-local-api    # Point app at Local* services (LocalAuthService, LocalItemService, …)
 ```
 Writes Android SharedPreferences via `adb` and restarts the app — no rebuild required.
 
@@ -51,15 +51,15 @@ Writes Android SharedPreferences via `adb` and restarts the app — no rebuild r
 Four projects in the solution:
 
 ### RentalApp (MAUI UI)
-MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bound to ViewModels in `ViewModels/`. `BaseViewModel` provides `IsBusy`, `Title`, and `SetError(msg)`/`ClearError()` helpers — always use these for error state in ViewModels. Services in `Services/` handle authentication (`IAuthenticationService`), navigation (`INavigationService`), and credential persistence (`ICredentialStore`/`CredentialStore`). Dependency injection is configured in `MauiProgram.cs`. Static helpers (e.g. `RegistrationValidator`, `ItemValidator`) live in `Helpers/` — pure, stateless utilities with no DI dependency.
+MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bound to ViewModels in `ViewModels/`. `BaseViewModel` provides `IsBusy`, `Title`, and `SetError(msg)`/`ClearError()` helpers — always use these for error state in ViewModels. Services in `Services/` handle authentication (`IAuthService`), navigation (`INavigationService`), and credential persistence (`ICredentialStore`/`CredentialStore`). Dependency injection is configured in `MauiProgram.cs`. Static helpers (e.g. `RegistrationValidator`, `ItemValidator`) live in `Helpers/` — pure, stateless utilities with no DI dependency.
 
 **Contracts**: Request/response records live in `Contracts/` within this project (namespace `RentalApp.Contracts`). Requests under `Contracts/Requests/`, responses under `Contracts/Responses/`. `IItemListable` is the shared interface for item-listing types. `RentalApp.Database` does **not** reference these — only `RentalApp` and `RentalApp.Test` (via project reference to `RentalApp`) use them.
 
-**Service hierarchy**: `IApiService` is the low-level abstraction (raw HTTP via `RemoteApiService` targeting `https://set09102-api.b-davison.workers.dev/`, or local DB via `LocalApiService`). `IAuthenticationService` wraps it with auth domain logic. Item-related ViewModels inject `IApiService` directly — auth ViewModels must never call `IApiService.LoginAsync`/`RegisterAsync` directly, always via `IAuthenticationService`.
+**Service hierarchy**: Four domain-specific service interfaces replace the retired `IApiService`: `IAuthService`, `IItemService`, `IRentalService`, and `IReviewService`. Each has a `Remote*` implementation (HTTP via `RemoteServiceBase`) and a `Local*` implementation (repository-backed). Auth ViewModels (`LoginViewModel`, `RegisterViewModel`) inject `IAuthService` directly. Item-related ViewModels inject `IItemService` directly. `LoginViewModel` owns token state and credential persistence — it injects `AuthTokenState` and `ICredentialStore` and sets the token itself after a successful login.
 
-**Http layer**: `Http/` contains `IApiClient`/`ApiClient` (typed `HttpClient` wrapper) and `AuthTokenState` (singleton bearer token holder). `RemoteApiService` uses both. Switch to `LocalApiService` via `make use-local-api` for offline dev.
+**Http layer**: `Http/` contains `IApiClient`/`ApiClient` (typed `HttpClient` wrapper) and `AuthTokenState` (singleton bearer token holder). All `Remote*` services extend `RemoteServiceBase` (shared error-handling helper). Switch to local services via `make use-local-api` for offline dev.
 
-**Domain services**: `ILocationService`/`LocationService` wraps `IGeolocation` (device GPS) and is registered in DI. There is no item service layer — item CRUD ViewModels call `IApiService` directly with validation via `ItemValidator`. `LocalApiService` throws `NotImplementedException` for Rental and Review methods (DB entities not yet implemented).
+**Domain services**: `ILocationService`/`LocationService` wraps `IGeolocation` (device GPS) and is registered in DI. `LocalRentalService` and `LocalReviewService` throw `NotImplementedException` — Rental and Review DB entities are not yet implemented.
 
 **Item listing ViewModels**: `ItemsSearchBaseViewModel` (abstract, extends `BaseViewModel`) is the required base for all item-listing pages. It provides shared pagination state (`IsLoading`/`IsLoadingMore`/`CurrentPage`/`HasMorePages`), category filtering, and `RunLoadAsync`/`RunLoadMoreAsync` lifecycle helpers. Subclasses implement `ReloadAsync()` — triggered automatically after first load when filters change. Use `_ = TriggerReloadIfLoaded()` in `partial void` property callbacks (which cannot be async) to make fire-and-forget explicit.
 
@@ -67,7 +67,7 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 
 **TempPage**: Legacy post-login placeholder — still registered but superseded by `MainPage` as the authenticated landing screen. `LoadingPage` handles initial app startup before routing.
 
-**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). `IAuthenticationService`, `ILocationService`, and `INavigationService` are also Singleton. All other ViewModels and Pages are Transient.
+**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). `IAuthService`, `ILocationService`, and `INavigationService` are also Singleton. All other ViewModels and Pages are Transient.
 
 **Shell navigation**: Root route is `//login` (`Routes.Login`). AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`: `Login`, `Main`, `Temp`, `ItemsList`, `ItemDetails`, `CreateItem`, `NearbyItems`.
 
@@ -76,7 +76,7 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 ### RentalApp.Database (Data Access Layer)
 EntityFrameworkCore with Npgsql (PostgreSQL) and **NetTopologySuite** for PostGIS geography support. `AppDbContext` manages three entities: `User`, `Category`, and `Item`. `Item.Location` is stored as a PostGIS `geography(Point, 4326)` column — `UseNetTopologySuite()` must be present on the EF options (it is; don't remove it). Connection string is read from the `CONNECTION_STRING` environment variable, falling back to embedded `appsettings.json` in the assembly. Passwords are hashed with BCrypt.
 
-**Repositories**: `IItemRepository`/`ItemRepository` and `ICategoryRepository`/`CategoryRepository` sit between `AppDbContext` and `LocalApiService`. They are registered as Singleton and injected into `LocalApiService` only — `RemoteApiService` has no dependency on them.
+**Repositories**: `IItemRepository`/`ItemRepository`, `ICategoryRepository`/`CategoryRepository`, and `IUserRepository`/`UserRepository` sit between `AppDbContext` and the `Local*` services. They are registered as Singleton and injected into `LocalAuthService` and `LocalItemService` only — Remote services have no dependency on them.
 
 ### RentalApp.Migrations (Migrations Library)
 Class library housing EF Core migration files under `Migrations/`. Implements `IDesignTimeDbContextFactory<AppDbContext>` so `dotnet ef` can target this project directly without a separate startup project. Applied via `dotnet ef database update --project RentalApp.Migrations` (handled by docker-compose service ordering).

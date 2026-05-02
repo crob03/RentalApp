@@ -35,21 +35,13 @@ public class ApiClient : IApiClient
     }
 
     /// <inheritdoc/>
-    public async Task<HttpResponseMessage> GetAsync(
+    public Task<HttpResponseMessage> GetAsync(
         string requestUri,
         CancellationToken cancellationToken = default
-    )
-    {
-        var request = CreateRequest(HttpMethod.Get, requestUri);
-        var sentWithToken = request.Headers.Authorization != null;
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized
-            ? await HandleSessionExpiredAsync(response)
-            : response;
-    }
+    ) => SendAsync(CreateRequest(HttpMethod.Get, requestUri), cancellationToken);
 
     /// <inheritdoc/>
-    public async Task<HttpResponseMessage> PostAsJsonAsync<T>(
+    public Task<HttpResponseMessage> PostAsJsonAsync<T>(
         string requestUri,
         T value,
         CancellationToken cancellationToken = default
@@ -57,15 +49,11 @@ public class ApiClient : IApiClient
     {
         var request = CreateRequest(HttpMethod.Post, requestUri);
         request.Content = JsonContent.Create(value);
-        var sentWithToken = request.Headers.Authorization != null;
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized
-            ? await HandleSessionExpiredAsync(response)
-            : response;
+        return SendAsync(request, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task<HttpResponseMessage> PutAsJsonAsync<T>(
+    public Task<HttpResponseMessage> PutAsJsonAsync<T>(
         string requestUri,
         T value,
         CancellationToken cancellationToken = default
@@ -73,6 +61,26 @@ public class ApiClient : IApiClient
     {
         var request = CreateRequest(HttpMethod.Put, requestUri);
         request.Content = JsonContent.Create(value);
+        return SendAsync(request, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task<HttpResponseMessage> PatchAsJsonAsync<T>(
+        string requestUri,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var request = CreateRequest(HttpMethod.Patch, requestUri);
+        request.Content = JsonContent.Create(value);
+        return SendAsync(request, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
+    {
         var sentWithToken = request.Headers.Authorization != null;
         var response = await _httpClient.SendAsync(request, cancellationToken);
         return sentWithToken && response.StatusCode == HttpStatusCode.Unauthorized

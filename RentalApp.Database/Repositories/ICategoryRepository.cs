@@ -7,8 +7,6 @@ namespace RentalApp.Database.Repositories;
 /// </summary>
 public interface ICategoryRepository
 {
-    /// <summary>
-    /// Returns all categories ordered by name, each paired with the total number of items in that category.
-    /// </summary>
-    Task<IEnumerable<(DbCategory Category, int ItemCount)>> GetAllAsync();
+    /// <summary>Returns all categories ordered by name.</summary>
+    Task<IEnumerable<DbCategory>> GetAllAsync();
 }
