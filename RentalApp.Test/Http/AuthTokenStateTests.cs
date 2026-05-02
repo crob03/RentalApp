@@ -25,4 +25,48 @@ public class AuthTokenStateTests
         sut.CurrentToken = null;
         Assert.False(sut.HasSession);
     }
+
+    [Fact]
+    public void AuthenticationStateChanged_WhenTokenSet_RaisesWithTrue()
+    {
+        var sut = new AuthTokenState();
+        bool? raised = null;
+        sut.AuthenticationStateChanged += (_, v) => raised = v;
+
+        sut.CurrentToken = "eyJ...";
+
+        Assert.True(raised);
+    }
+
+    [Fact]
+    public void AuthenticationStateChanged_WhenTokenCleared_RaisesWithFalse()
+    {
+        var sut = new AuthTokenState { CurrentToken = "eyJ..." };
+        bool? raised = null;
+        sut.AuthenticationStateChanged += (_, v) => raised = v;
+
+        sut.ClearToken();
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public void ClearToken_SetsCurrentTokenToNull()
+    {
+        var sut = new AuthTokenState { CurrentToken = "eyJ..." };
+
+        sut.ClearToken();
+
+        Assert.Null(sut.CurrentToken);
+    }
+
+    [Fact]
+    public void HasSession_AfterClearToken_ReturnsFalse()
+    {
+        var sut = new AuthTokenState { CurrentToken = "eyJ..." };
+
+        sut.ClearToken();
+
+        Assert.False(sut.HasSession);
+    }
 }
