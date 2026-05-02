@@ -140,9 +140,8 @@ public class LocalApiService : IApiService
             request.PageSize
         );
         var items = dbItems.Select(ToItemSummary).ToList();
-        var totalPages = request.PageSize > 0
-            ? (int)Math.Ceiling((double)totalItems / request.PageSize)
-            : 0;
+        var totalPages =
+            request.PageSize > 0 ? (int)Math.Ceiling((double)totalItems / request.PageSize) : 0;
         return new ItemsResponse(
             items,
             TotalItems: totalItems,
