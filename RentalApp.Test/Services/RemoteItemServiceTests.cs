@@ -63,6 +63,8 @@ public class RemoteItemServiceTests
 
         await CreateSut().GetItemsAsync(new GetItemsRequest(1, 20, "tools", "drill"));
 
+        Assert.Contains("page=1", capturedUrl);
+        Assert.Contains("pageSize=20", capturedUrl);
         Assert.Contains("category=tools", capturedUrl);
         Assert.Contains("search=drill", capturedUrl);
     }
