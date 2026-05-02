@@ -55,10 +55,10 @@ public class LocalAuthServiceTests : IClassFixture<DatabaseFixture<LocalAuthServ
     [Fact]
     public async Task LoginAsync_WrongPassword_ThrowsUnauthorizedAccessException()
     {
-        await SeedUserAsync();
+        await SeedUserAsync("wrongpass@example.com");
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            CreateSut().LoginAsync(new LoginRequest("jane@example.com", "wrong"))
+            CreateSut().LoginAsync(new LoginRequest("wrongpass@example.com", "wrong"))
         );
     }
 
