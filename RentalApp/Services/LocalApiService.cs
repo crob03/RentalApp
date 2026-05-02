@@ -13,6 +13,10 @@ using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Implements <see cref="IApiService"/> against a local PostgreSQL database for offline development.
+/// Rental and review methods throw <see cref="NotImplementedException"/> until the corresponding DB entities are added.
+/// </summary>
 public class LocalApiService : IApiService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
@@ -37,6 +41,7 @@ public class LocalApiService : IApiService
 
     // ── Auth ──────────────────────────────────────────────────────────
 
+    /// <inheritdoc/>
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -53,6 +58,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -83,6 +89,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
         if (!_tokenState.HasSession)
@@ -108,6 +115,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -130,6 +138,7 @@ public class LocalApiService : IApiService
 
     // ── Items ─────────────────────────────────────────────────────────
 
+    /// <inheritdoc/>
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
         var totalItems = await _itemRepository.CountItemsAsync(request.Category, request.Search);
@@ -151,6 +160,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
     {
         var origin = _geoFactory.CreatePoint(new NtsCoordinate(request.Lon, request.Lat));
@@ -173,6 +183,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
         var dbItem =
@@ -181,6 +192,7 @@ public class LocalApiService : IApiService
         return ToItemDetail(dbItem);
     }
 
+    /// <inheritdoc/>
     public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
     {
         if (!_tokenState.HasSession)
@@ -215,6 +227,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
         var dbItem = await _itemRepository.UpdateItemAsync(
@@ -233,6 +246,7 @@ public class LocalApiService : IApiService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var results = await _categoryRepository.GetAllAsync();
@@ -249,29 +263,37 @@ public class LocalApiService : IApiService
 
     // ── Rentals / Reviews — not yet supported locally ─────────────────
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
         throw new NotImplementedException("Rental support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
         throw new NotImplementedException("Rental support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<RentalDetailResponse> GetRentalAsync(int id) =>
         throw new NotImplementedException("Rental support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request) =>
         throw new NotImplementedException("Rental support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<UpdateRentalStatusResponse> UpdateRentalStatusAsync(
         int id,
         UpdateRentalStatusRequest request
     ) => throw new NotImplementedException("Rental support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<ReviewsResponse> GetItemReviewsAsync(int itemId, GetReviewsRequest request) =>
         throw new NotImplementedException("Review support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<ReviewsResponse> GetUserReviewsAsync(int userId, GetReviewsRequest request) =>
         throw new NotImplementedException("Review support requires local DB entities");
 
+    /// <inheritdoc/>
     public Task<CreateReviewResponse> CreateReviewAsync(CreateReviewRequest request) =>
         throw new NotImplementedException("Review support requires local DB entities");
 

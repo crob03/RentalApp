@@ -1,8 +1,22 @@
 // RentalApp/Helpers/ItemValidator.cs
 namespace RentalApp.Helpers;
 
+/// <summary>
+/// Validates item create and update form inputs.
+/// </summary>
+/// <remarks>
+/// Returns <see langword="null"/> when all inputs are valid.
+/// Returns the first failing error message otherwise.
+/// </remarks>
 public static class ItemValidator
 {
+    /// <summary>
+    /// Validates all required fields for a new item listing.
+    /// </summary>
+    /// <returns>
+    /// <see langword="null"/> if all fields are valid;
+    /// otherwise the first validation error message.
+    /// </returns>
     public static string? ValidateCreate(
         string? title,
         string? description,
@@ -25,6 +39,13 @@ public static class ItemValidator
         return null;
     }
 
+    /// <summary>
+    /// Validates the fields supplied for an item update; only non-<see langword="null"/> fields are validated.
+    /// </summary>
+    /// <returns>
+    /// <see langword="null"/> if all supplied fields are valid;
+    /// otherwise the first validation error message.
+    /// </returns>
     public static string? ValidateUpdate(
         string? title,
         string? description,

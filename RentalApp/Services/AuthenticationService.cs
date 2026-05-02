@@ -4,6 +4,11 @@ using RentalApp.Http;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Implements <see cref="IAuthenticationService"/>, orchestrating token management via
+/// <see cref="AuthTokenState"/>, credential persistence via <see cref="ICredentialStore"/>,
+/// and authentication state changes.
+/// </summary>
 public class AuthenticationService : IAuthenticationService
 {
     private readonly IApiService _api;
@@ -11,8 +16,13 @@ public class AuthenticationService : IAuthenticationService
     private readonly AuthTokenState _tokenState;
     private CurrentUserResponse? _currentUser;
 
+    /// <inheritdoc/>
     public event EventHandler<bool>? AuthenticationStateChanged;
+
+    /// <inheritdoc/>
     public bool IsAuthenticated => _currentUser != null;
+
+    /// <inheritdoc/>
     public CurrentUserResponse? CurrentUser => _currentUser;
 
     public AuthenticationService(
@@ -26,6 +36,7 @@ public class AuthenticationService : IAuthenticationService
         _tokenState = tokenState;
     }
 
+    /// <inheritdoc/>
     public async Task<AuthenticationResult> LoginAsync(
         string email,
         string password,
@@ -53,6 +64,7 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
+    /// <inheritdoc/>
     public async Task<AuthenticationResult> RegisterAsync(
         string firstName,
         string lastName,
@@ -71,6 +83,7 @@ public class AuthenticationService : IAuthenticationService
         }
     }
 
+    /// <inheritdoc/>
     public async Task LogoutAsync()
     {
         await _credentialStore.ClearAsync();

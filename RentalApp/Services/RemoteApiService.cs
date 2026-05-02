@@ -7,12 +7,17 @@ using static System.FormattableString;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Implements <see cref="IApiService"/> by forwarding all calls to the remote API via
+/// <see cref="IApiClient"/>.
+/// </summary>
 public class RemoteApiService : IApiService
 {
     private readonly IApiClient _apiClient;
 
     public RemoteApiService(IApiClient apiClient) => _apiClient = apiClient;
 
+    /// <inheritdoc/>
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -24,6 +29,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty token response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -41,6 +47,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty register response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
         var response = await _apiClient.GetAsync("users/me");
@@ -49,6 +56,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty profile response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
         var response = await _apiClient.GetAsync($"users/{userId}/profile");
@@ -57,6 +65,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty profile response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
         var query = Invariant($"items?page={request.Page}&pageSize={request.PageSize}");
@@ -71,6 +80,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty items response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
     {
         var query = Invariant(
@@ -85,6 +95,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty nearby items response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
         var response = await _apiClient.GetAsync($"items/{id}");
@@ -93,6 +104,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -112,6 +124,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty create item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
         var response = await _apiClient.PutAsJsonAsync(
@@ -129,6 +142,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty update item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var response = await _apiClient.GetAsync("categories");
@@ -137,12 +151,15 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty categories response from API");
     }
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
         GetRentalsAsync("rentals/incoming", request.Status);
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
         GetRentalsAsync("rentals/outgoing", request.Status);
 
+    /// <inheritdoc/>
     public async Task<RentalDetailResponse> GetRentalAsync(int id)
     {
         var response = await _apiClient.GetAsync($"rentals/{id}");
@@ -151,6 +168,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty rental response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -173,6 +191,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty create rental response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateRentalStatusResponse> UpdateRentalStatusAsync(
         int id,
         UpdateRentalStatusRequest request
@@ -187,6 +206,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty update status response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ReviewsResponse> GetItemReviewsAsync(int itemId, GetReviewsRequest request)
     {
         var response = await _apiClient.GetAsync(
@@ -197,6 +217,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty reviews response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ReviewsResponse> GetUserReviewsAsync(int userId, GetReviewsRequest request)
     {
         var response = await _apiClient.GetAsync(
@@ -207,6 +228,7 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty reviews response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CreateReviewResponse> CreateReviewAsync(CreateReviewRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
