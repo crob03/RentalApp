@@ -25,7 +25,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICredentialStore, CredentialStore>();
         builder.Services.AddSingleton<AuthTokenState>();
 
+#if DEBUG
         bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
+#else
+        const bool useSharedApi = true;
+#endif
 
         if (useSharedApi)
         {
