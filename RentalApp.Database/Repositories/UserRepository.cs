@@ -19,8 +19,9 @@ public class UserRepository : IUserRepository
     /// <inheritdoc/>
     public async Task<DbUser?> GetByEmailAsync(string email)
     {
+        var normalized = email.ToLowerInvariant();
         await using var context = _contextFactory.CreateDbContext();
-        return await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await context.Users.FirstOrDefaultAsync(u => u.Email == normalized);
     }
 
     /// <inheritdoc/>
@@ -44,7 +45,7 @@ public class UserRepository : IUserRepository
         {
             FirstName = firstName,
             LastName = lastName,
-            Email = email,
+            Email = email.ToLowerInvariant(),
             PasswordHash = passwordHash,
             PasswordSalt = passwordSalt,
             CreatedAt = DateTime.UtcNow,

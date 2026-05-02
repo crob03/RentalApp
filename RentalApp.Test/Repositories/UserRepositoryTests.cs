@@ -59,6 +59,28 @@ public class UserRepositoryTests
         Assert.Null(user);
     }
 
+    [Fact]
+    public async Task GetByEmailAsync_MixedCaseInput_ReturnsUser()
+    {
+        var sut = CreateSut();
+        await sut.CreateAsync("Bob", "Jones", "bob@example.com", "hash", "salt");
+
+        var user = await sut.GetByEmailAsync("BOB@EXAMPLE.COM");
+
+        Assert.NotNull(user);
+        Assert.Equal("bob@example.com", user!.Email);
+    }
+
+    [Fact]
+    public async Task CreateAsync_MixedCaseEmail_StoresLowercase()
+    {
+        var sut = CreateSut();
+
+        var user = await sut.CreateAsync("Dave", "Hill", "Dave@Example.COM", "hash", "salt");
+
+        Assert.Equal("dave@example.com", user.Email);
+    }
+
     // ── GetByIdAsync ───────────────────────────────────────────────────
 
     [Fact]

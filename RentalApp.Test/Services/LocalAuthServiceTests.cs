@@ -129,4 +129,27 @@ public class LocalAuthServiceTests
             CreateSut().GetCurrentUserAsync()
         );
     }
+
+    [Fact]
+    public async Task RegisterAsync_DuplicateEmailDifferentCase_ThrowsInvalidOperationException()
+    {
+        await CreateSut()
+            .RegisterAsync(new RegisterRequest("Alice", "Smith", "Alice@example.com", "Password1!"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut()
+                .RegisterAsync(new RegisterRequest("Alice", "Smith", "alice@example.com", "Password1!"))
+        );
+    }
+
+    [Fact]
+    public async Task LoginAsync_MixedCaseEmail_SucceedsWithCorrectPassword()
+    {
+        await SeedUserAsync("jane@example.com");
+
+        var result = await CreateSut()
+            .LoginAsync(new LoginRequest("JANE@EXAMPLE.COM", "Password1!"));
+
+        Assert.NotNull(result.Token);
+    }
 }
