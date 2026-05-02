@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a .NET MAUI cross-platform rental application targeting Android, built with C# and .NET 10. It uses a four-project architecture with PostgreSQL as the database.
+This is a .NET MAUI cross-platform rental application targeting Android, built with C# and .NET 10. It uses a four-project solution (UI, Database, Migrations, Tests) with PostgreSQL as the database.
 
 ## Common Commands
 
@@ -48,10 +48,12 @@ Writes Android SharedPreferences via `adb` and restarts the app — no rebuild r
 
 ## Architecture
 
-Three projects in the solution:
+Four projects in the solution:
 
 ### RentalApp (MAUI UI)
 MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bound to ViewModels in `ViewModels/`. `BaseViewModel` provides `IsBusy`, `Title`, and `SetError(msg)`/`ClearError()` helpers — always use these for error state in ViewModels. Services in `Services/` handle authentication (`IAuthenticationService`), navigation (`INavigationService`), and credential persistence (`ICredentialStore`/`CredentialStore`). Dependency injection is configured in `MauiProgram.cs`. Static helpers (e.g. `RegistrationValidator`, `ItemValidator`) live in `Helpers/` — pure, stateless utilities with no DI dependency.
+
+**Contracts**: Request/response records live in `Contracts/` within this project (namespace `RentalApp.Contracts`). Requests under `Contracts/Requests/`, responses under `Contracts/Responses/`. `IItemListable` is the shared interface for item-listing types. `RentalApp.Database` does **not** reference these — only `RentalApp` and `RentalApp.Test` (via project reference to `RentalApp`) use them.
 
 **Service hierarchy**: `IApiService` is the low-level abstraction (raw HTTP via `RemoteApiService` targeting `https://set09102-api.b-davison.workers.dev/`, or local DB via `LocalApiService`). `IAuthenticationService` wraps it with auth domain logic. Item-related ViewModels inject `IApiService` directly — auth ViewModels must never call `IApiService.LoginAsync`/`RegisterAsync` directly, always via `IAuthenticationService`.
 
@@ -71,9 +73,6 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 
 **Dual Item model gotcha**: Two `Item` classes exist — do not confuse them. `RentalApp.Contracts.Responses.ItemDetailResponse`/`ItemSummary` are the DTO records used by ViewModels. `RentalApp.Database.Models.Item` is an EF entity with a PostGIS `Point Location` column. The UI project never references the Database models directly.
 
-### RentalApp.Contracts (Shared Contracts)
-Plain .NET class library containing all `IApiService` request and response records. Requests live under `Requests/`; responses under `Responses/`. Referenced by `RentalApp`, `RentalApp.Database`, and `RentalApp.Test` — it must never reference any of them. `IItemListable` is a shared interface for types that can appear in item listings.
-
 ### RentalApp.Database (Data Access Layer)
 EntityFrameworkCore with Npgsql (PostgreSQL) and **NetTopologySuite** for PostGIS geography support. `AppDbContext` manages three entities: `User`, `Category`, and `Item`. `Item.Location` is stored as a PostGIS `geography(Point, 4326)` column — `UseNetTopologySuite()` must be present on the EF options (it is; don't remove it). Connection string is read from the `CONNECTION_STRING` environment variable, falling back to embedded `appsettings.json` in the assembly. Passwords are hashed with BCrypt.
 
@@ -84,7 +83,7 @@ Class library housing EF Core migration files under `Migrations/`. Implements `I
 
 ## Testing
 
-- Tests live in `RentalApp.Test/`, mirroring the source structure: `ViewModels/`, `Services/`, `Http/`
+- Tests live in `RentalApp.Test/`, mirroring the source structure: `ViewModels/`, `Services/`, `Http/`, `Repositories/`
 - Integration tests use a **real PostgreSQL database** via `Fixtures/DatabaseFixture` — no mocking of `AppDbContext`
 - To test abstract ViewModels, create a `private sealed TestableViewModel` inner class that exposes protected methods — see `ItemsSearchBaseViewModelTests` for the pattern.
 - `DatabaseFixture` implements xUnit's `IClassFixture<T>`: one DB per test class, torn down after
