@@ -39,6 +39,13 @@ public interface IItemRepository
         int pageSize
     );
 
+    /// <summary>
+    /// Returns the total number of items matching the given filters, for use in pagination metadata.
+    /// </summary>
+    /// <param name="category">Category slug to filter by; <see langword="null"/> returns all categories.</param>
+    /// <param name="search">Case-insensitive title substring match; <see langword="null"/> skips text filtering.</param>
+    Task<int> CountItemsAsync(string? category, string? search);
+
     /// <summary>Returns the item with the given <paramref name="id"/>, including its category and owner, or <see langword="null"/> if not found.</summary>
     Task<DbItem?> GetItemAsync(int id);
 

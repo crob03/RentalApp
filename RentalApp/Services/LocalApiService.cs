@@ -132,6 +132,7 @@ public class LocalApiService : IApiService
 
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
+        var totalItems = await _itemRepository.CountItemsAsync(request.Category, request.Search);
         var dbItems = await _itemRepository.GetItemsAsync(
             request.Category,
             request.Search,
@@ -139,13 +140,15 @@ public class LocalApiService : IApiService
             request.PageSize
         );
         var items = dbItems.Select(ToItemSummary).ToList();
-        var hasMore = items.Count == request.PageSize;
+        var totalPages = request.PageSize > 0
+            ? (int)Math.Ceiling((double)totalItems / request.PageSize)
+            : 0;
         return new ItemsResponse(
             items,
-            TotalItems: (request.Page - 1) * request.PageSize + items.Count + (hasMore ? 1 : 0),
+            TotalItems: totalItems,
             Page: request.Page,
             PageSize: request.PageSize,
-            TotalPages: hasMore ? request.Page + 1 : request.Page
+            TotalPages: totalPages
         );
     }
 

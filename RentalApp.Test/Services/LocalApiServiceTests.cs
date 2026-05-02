@@ -197,6 +197,19 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         Assert.All(response.Items, i => Assert.Equal("Tools", i.Category));
     }
 
+    [Fact]
+    public async Task GetItemsAsync_Pagination_ReturnsTrueCountAndTotalPages()
+    {
+        var sut = CreateSut();
+
+        // 3 seeded items, page size 2 → page 1 returns 2 items; TotalItems=3, TotalPages=2
+        var response = await sut.GetItemsAsync(new GetItemsRequest(Page: 1, PageSize: 2));
+
+        Assert.Equal(3, response.TotalItems);
+        Assert.Equal(2, response.TotalPages);
+        Assert.Equal(2, response.Items.Count);
+    }
+
     // ── GetNearbyItems ─────────────────────────────────────────────────
 
     [Fact]
