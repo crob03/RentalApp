@@ -1,22 +1,20 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Helpers;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// <summary>
-/// View model for the item details page. Receives the target item ID via Shell query parameters
-/// and supports inline editing for the item owner.
-/// </summary>
 public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
 {
-    private readonly IItemService _itemService;
+    private readonly IApiService _api;
     private readonly IAuthenticationService _authService;
     private int _itemId;
 
     [ObservableProperty]
-    private Item? currentItem;
+    private ItemDetailResponse? currentItem;
 
     [ObservableProperty]
     private bool isOwner;
@@ -36,41 +34,27 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     [ObservableProperty]
     private bool editIsAvailable;
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="ItemDetailsViewModel"/> with the required services.
-    /// </summary>
-    /// <param name="itemService">Service used to fetch and update the item.</param>
-    /// <param name="authService">Authentication service used to determine whether the current user owns the item.</param>
-    public ItemDetailsViewModel(IItemService itemService, IAuthenticationService authService)
+    public ItemDetailsViewModel(IApiService api, IAuthenticationService authService)
     {
-        _itemService = itemService;
+        _api = api;
         _authService = authService;
         Title = "Item Details";
     }
 
-    /// <summary>
-    /// Receives Shell navigation query parameters. Extracts <c>itemId</c> so
-    /// <see cref="LoadItemAsync"/> can fetch the correct item on page load.
-    /// </summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("itemId", out var id))
             _itemId = Convert.ToInt32(id);
     }
 
-    /// <summary>
-    /// Fetches the item identified by <c>_itemId</c> and sets <see cref="IsOwner"/> based on
-    /// whether the authenticated user's ID matches the item's owner.
-    /// </summary>
     [RelayCommand]
     private Task LoadItemAsync() =>
         RunAsync(async () =>
         {
-            CurrentItem = await _itemService.GetItemAsync(_itemId);
+            CurrentItem = await _api.GetItemAsync(_itemId);
             IsOwner = CurrentItem?.OwnerId == _authService.CurrentUser?.Id;
         });
 
-    /// <summary>Enters edit mode, pre-populating the edit fields from <see cref="CurrentItem"/>. Toggling again exits edit mode without saving.</summary>
     [RelayCommand]
     private void ToggleEdit()
     {
@@ -84,38 +68,32 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
         IsEditing = !IsEditing;
     }
 
-    /// <summary>
-    /// Validates the edited daily rate, persists the changes via <see cref="IItemService.UpdateItemAsync"/>,
-    /// and exits edit mode on success.
-    /// </summary>
     [RelayCommand]
     private async Task SaveChangesAsync()
     {
         if (CurrentItem == null)
             return;
 
-        if (!double.TryParse(EditDailyRate, out var rate))
+        var error = ItemValidator.ValidateUpdate(EditTitle, EditDescription, EditDailyRate);
+        if (error is not null)
         {
-            SetError("Please enter a valid daily rate.");
+            SetError(error);
             return;
         }
 
+        double? rate = EditDailyRate is not null ? double.Parse(EditDailyRate) : null;
+
         await RunAsync(async () =>
         {
-            CurrentItem = await _itemService.UpdateItemAsync(
+            await _api.UpdateItemAsync(
                 CurrentItem.Id,
-                EditTitle,
-                EditDescription,
-                rate,
-                EditIsAvailable
+                new UpdateItemRequest(EditTitle, EditDescription, rate, EditIsAvailable)
             );
+            CurrentItem = await _api.GetItemAsync(CurrentItem.Id);
             IsEditing = false;
         });
     }
 
-    /// <summary>
-    /// Exits edit mode and clears any error message without persisting changes.
-    /// </summary>
     [RelayCommand]
     private void CancelEdit()
     {

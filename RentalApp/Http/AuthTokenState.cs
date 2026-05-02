@@ -15,4 +15,9 @@ public class AuthTokenState
     /// Gets or sets the current bearer token, or <see langword="null"/> when no session is active.
     /// </summary>
     public string? CurrentToken { get; set; }
+
+    /// <summary>
+    /// Gets a value indicating whether an authenticated session is currently active.
+    /// </summary>
+    public bool HasSession => CurrentToken is not null;
 }

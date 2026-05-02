@@ -1,5 +1,8 @@
+// RentalApp.Test/Services/LocalApiServiceTests.cs
 using Microsoft.EntityFrameworkCore;
+using RentalApp.Contracts.Requests;
 using RentalApp.Database.Repositories;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.Test.Fixtures;
 
@@ -8,6 +11,7 @@ namespace RentalApp.Test.Services;
 public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServiceTests>>
 {
     private readonly DatabaseFixture<LocalApiServiceTests> _fixture;
+    private readonly AuthTokenState _tokenState = new();
 
     public LocalApiServiceTests(DatabaseFixture<LocalApiServiceTests> fixture)
     {
@@ -18,7 +22,8 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         new(
             _fixture.ContextFactory,
             new ItemRepository(_fixture.ContextFactory),
-            new CategoryRepository(_fixture.ContextFactory)
+            new CategoryRepository(_fixture.ContextFactory),
+            _tokenState
         );
 
     // ── Register ───────────────────────────────────────────────────────
@@ -29,7 +34,9 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         await _fixture.ResetAsync();
         var sut = CreateSut();
 
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
         var user = await _fixture.Context.Users.FirstOrDefaultAsync(u =>
             u.Email == "jane@example.com"
@@ -44,9 +51,12 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
-        var act = () => sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        var act = () =>
+            sut.RegisterAsync(new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
@@ -54,16 +64,18 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     // ── Login ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LoginAsync_ValidCredentials_SetsCurrentUser()
+    public async Task LoginAsync_ValidCredentials_ReturnsUserIdAsToken()
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        var reg = await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
-        await sut.LoginAsync("jane@example.com", "Password1!");
+        var response = await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
 
-        var user = await sut.GetCurrentUserAsync();
-        Assert.Equal("jane@example.com", user.Email);
+        Assert.Equal(reg.Id.ToString(), response.Token);
+        Assert.Equal(reg.Id, response.UserId);
     }
 
     [Fact]
@@ -71,9 +83,11 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
 
-        var act = () => sut.LoginAsync("jane@example.com", "WrongPassword!");
+        var act = () => sut.LoginAsync(new LoginRequest("jane@example.com", "WrongPassword!"));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(act);
     }
@@ -83,7 +97,7 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var act = () => sut.LoginAsync("nobody@example.com", "Password1!");
+        var act = () => sut.LoginAsync(new LoginRequest("nobody@example.com", "Password1!"));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(act);
     }
@@ -91,7 +105,7 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     // ── GetCurrentUser ─────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetCurrentUserAsync_BeforeLogin_ThrowsInvalidOperationException()
+    public async Task GetCurrentUserAsync_NoSession_ThrowsInvalidOperationException()
     {
         var sut = CreateSut();
 
@@ -105,65 +119,73 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
-        await sut.LoginAsync("jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
+        _tokenState.CurrentToken = loginResponse.Token;
 
         var user = await sut.GetCurrentUserAsync();
 
         Assert.Equal("jane@example.com", user.Email);
         Assert.Equal("Jane", user.FirstName);
-    }
-
-    // ── GetUser ────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetUserAsync_ExistingUser_ReturnsProfile()
-    {
-        var sut = CreateSut();
-
-        var user = await sut.GetUserAsync(1);
-
-        Assert.Equal(1, user.Id);
-        Assert.Equal("test@example.com", user.Email);
+        Assert.Equal(0, user.ItemsListed);
     }
 
     [Fact]
-    public async Task GetUserAsync_NonExistentUser_ThrowsInvalidOperationException()
-    {
-        var sut = CreateSut();
-
-        var act = () => sut.GetUserAsync(999);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
-    }
-
-    // ── Logout ─────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task LogoutAsync_AfterLogin_ClearsCurrentUser()
+    public async Task GetCurrentUserAsync_WithItems_ReturnsCorrectItemsListedCount()
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
-        await sut.LoginAsync("jane@example.com", "Password1!");
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
+        _tokenState.CurrentToken = loginResponse.Token;
+        await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883)
+        );
 
-        await sut.LogoutAsync();
+        var user = await sut.GetCurrentUserAsync();
 
-        var act = () => sut.GetCurrentUserAsync();
-
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Equal(1, user.ItemsListed);
     }
 
-    // ── GetItemsAsync ──────────────────────────────────────────────────
+    [Fact]
+    public async Task GetUserProfileAsync_WithItems_ReturnsCorrectItemsListedCount()
+    {
+        await _fixture.ResetAsync();
+        var sut = CreateSut();
+        await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        var loginResponse = await sut.LoginAsync(
+            new LoginRequest("jane@example.com", "Password1!")
+        );
+        _tokenState.CurrentToken = loginResponse.Token;
+        await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", null, 5.0, CategoryId: 1, 55.9533, -3.1883)
+        );
+
+        var profile = await sut.GetUserProfileAsync(loginResponse.UserId);
+
+        Assert.Equal(1, profile.ItemsListed);
+    }
+
+    // ── GetItems ───────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetItemsAsync_NoFilter_ReturnsItems()
     {
         var sut = CreateSut();
 
-        var items = await sut.GetItemsAsync();
+        var response = await sut.GetItemsAsync(new GetItemsRequest());
 
-        Assert.NotEmpty(items);
+        Assert.NotEmpty(response.Items);
     }
 
     [Fact]
@@ -171,38 +193,36 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var items = await sut.GetItemsAsync(category: "tools");
+        var response = await sut.GetItemsAsync(new GetItemsRequest(Category: "tools"));
 
-        Assert.All(items, i => Assert.Equal("Tools", i.Category));
+        Assert.All(response.Items, i => Assert.Equal("Tools", i.Category));
     }
 
     [Fact]
-    public async Task GetItemsAsync_MapsLocationToLatLon()
+    public async Task GetItemsAsync_Pagination_ReturnsTrueCountAndTotalPages()
     {
         var sut = CreateSut();
 
-        var items = await sut.GetItemsAsync();
+        // 3 seeded items, page size 2 → page 1 returns 2 items; TotalItems=3, TotalPages=2
+        var response = await sut.GetItemsAsync(new GetItemsRequest(Page: 1, PageSize: 2));
 
-        Assert.All(
-            items,
-            i =>
-            {
-                Assert.NotNull(i.Latitude);
-                Assert.NotNull(i.Longitude);
-            }
-        );
+        Assert.Equal(3, response.TotalItems);
+        Assert.Equal(2, response.TotalPages);
+        Assert.Equal(2, response.Items.Count);
     }
 
-    // ── GetNearbyItemsAsync ────────────────────────────────────────────
+    // ── GetNearbyItems ─────────────────────────────────────────────────
 
     [Fact]
     public async Task GetNearbyItemsAsync_WithinRadius_ReturnsNearbyItems()
     {
         var sut = CreateSut();
 
-        var items = await sut.GetNearbyItemsAsync(55.9533, -3.1883, 5.0);
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
 
-        Assert.Equal(2, items.Count);
+        Assert.Equal(2, response.Items.Count);
     }
 
     [Fact]
@@ -210,12 +230,27 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var items = await sut.GetNearbyItemsAsync(55.9533, -3.1883, 5.0);
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
 
-        Assert.All(items, i => Assert.NotNull(i.Distance));
+        Assert.All(response.Items, i => Assert.True(i.Distance >= 0));
     }
 
-    // ── GetItemAsync ───────────────────────────────────────────────────
+    [Fact]
+    public async Task GetNearbyItemsAsync_PopulatesSearchLocation()
+    {
+        var sut = CreateSut();
+
+        var response = await sut.GetNearbyItemsAsync(
+            new GetNearbyItemsRequest(55.9533, -3.1883, 5.0)
+        );
+
+        Assert.Equal(55.9533, response.SearchLocation.Latitude);
+        Assert.Equal(-3.1883, response.SearchLocation.Longitude);
+    }
+
+    // ── GetItem ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetItemAsync_ExistingId_ReturnsMappedItem()
@@ -238,17 +273,21 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
 
-    // ── CreateItemAsync ────────────────────────────────────────────────
+    // ── CreateItem ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task CreateItemAsync_AuthenticatedUser_CreatesAndReturnsItem()
     {
         await _fixture.ResetAsync();
         var sut = CreateSut();
-        await sut.RegisterAsync("Jane", "Doe", "jane@example.com", "Password1!");
-        await sut.LoginAsync("jane@example.com", "Password1!");
+        var reg = await sut.RegisterAsync(
+            new RegisterRequest("Jane", "Doe", "jane@example.com", "Password1!")
+        );
+        _tokenState.CurrentToken = reg.Id.ToString();
 
-        var item = await sut.CreateItemAsync("My Drill", "desc", 10.0, 1, 55.9533, -3.1883);
+        var item = await sut.CreateItemAsync(
+            new CreateItemRequest("My Drill", "desc", 10.0, 1, 55.9533, -3.1883)
+        );
 
         Assert.True(item.Id > 0);
         Assert.Equal("My Drill", item.Title);
@@ -260,12 +299,13 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
     {
         var sut = CreateSut();
 
-        var act = () => sut.CreateItemAsync("Drill", null, 10.0, 1, 55.9533, -3.1883);
+        var act = () =>
+            sut.CreateItemAsync(new CreateItemRequest("Drill", null, 10.0, 1, 55.9533, -3.1883));
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
 
-    // ── UpdateItemAsync ────────────────────────────────────────────────
+    // ── UpdateItem ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task UpdateItemAsync_ValidUpdate_ReturnsUpdatedItem()
@@ -273,20 +313,23 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         await _fixture.ResetItemsAsync();
         var sut = CreateSut();
 
-        var item = await sut.UpdateItemAsync(1, "Updated Title", null, null, null);
+        var item = await sut.UpdateItemAsync(
+            1,
+            new UpdateItemRequest("Updated Title", null, null, null)
+        );
 
         Assert.Equal("Updated Title", item.Title);
     }
 
-    // ── GetCategoriesAsync ─────────────────────────────────────────────
+    // ── GetCategories ──────────────────────────────────────────────────
 
     [Fact]
     public async Task GetCategoriesAsync_ReturnsAllCategories()
     {
         var sut = CreateSut();
 
-        var categories = await sut.GetCategoriesAsync();
+        var response = await sut.GetCategoriesAsync();
 
-        Assert.Equal(2, categories.Count);
+        Assert.Equal(2, response.Categories.Count);
     }
 }

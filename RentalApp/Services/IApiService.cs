@@ -1,107 +1,135 @@
-using RentalApp.Models;
+// RentalApp/Services/IApiService.cs
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 
 namespace RentalApp.Services;
 
 /// <summary>
-/// Data-transport interface for the rental API. Implementations switch between
-/// the remote HTTP backend (<see cref="RemoteApiService"/>) and the local
-/// database backend (<see cref="LocalApiService"/>).
+/// Low-level API abstraction covering auth, item, category, rental, and review operations.
+/// Implemented by <see cref="RemoteApiService"/> (HTTP) and <see cref="LocalApiService"/> (local DB).
 /// </summary>
-/// <remarks>All methods return <see cref="RentalApp.Models"/> DTOs — never EF entities.</remarks>
 public interface IApiService
 {
-    // ── Authentication ─────────────────────────────────────────────
+    // Auth
 
-    /// <summary>Authenticates the user and establishes a session.</summary>
-    /// <param name="email">User's email address.</param>
-    /// <param name="password">User's password.</param>
-    /// <exception cref="UnauthorizedAccessException">Thrown when credentials are invalid.</exception>
-    Task LoginAsync(string email, string password);
+    /// <summary>
+    /// Authenticates a user and returns a bearer token.
+    /// </summary>
+    /// <param name="request">The login credentials.</param>
+    Task<LoginResponse> LoginAsync(LoginRequest request);
 
-    /// <summary>Registers a new user account.</summary>
-    /// <param name="firstName">First name.</param>
-    /// <param name="lastName">Last name.</param>
-    /// <param name="email">Email address.</param>
-    /// <param name="password">Password (minimum 8 characters, must include uppercase, lowercase, digit, and special character).</param>
-    /// <exception cref="InvalidOperationException">Thrown when the email is already registered.</exception>
-    Task RegisterAsync(string firstName, string lastName, string email, string password);
+    /// <summary>
+    /// Registers a new user account.
+    /// </summary>
+    /// <param name="request">The registration details.</param>
+    Task<RegisterResponse> RegisterAsync(RegisterRequest request);
 
-    /// <summary>Returns the full profile of the currently authenticated user.</summary>
-    Task<User> GetCurrentUserAsync();
+    /// <summary>
+    /// Returns profile information for the currently authenticated user.
+    /// </summary>
+    Task<CurrentUserResponse> GetCurrentUserAsync();
 
-    /// <summary>Returns the public profile of the specified user.</summary>
-    /// <param name="userId">Identifier of the user to retrieve.</param>
-    Task<User> GetUserAsync(int userId);
+    /// <summary>
+    /// Returns the public profile for the specified user.
+    /// </summary>
+    /// <param name="userId">The ID of the user to retrieve.</param>
+    Task<UserProfileResponse> GetUserProfileAsync(int userId);
 
-    /// <summary>Ends the current session and clears any stored session state.</summary>
-    Task LogoutAsync();
+    // Items
 
-    // ── Items ───────────────────────────────────────────────────────
+    /// <summary>
+    /// Returns a paginated list of items, optionally filtered by category and search text.
+    /// </summary>
+    /// <param name="request">Pagination, category, and search parameters.</param>
+    Task<ItemsResponse> GetItemsAsync(GetItemsRequest request);
 
-    /// <summary>Returns a paginated list of available items, optionally filtered.</summary>
-    /// <param name="category">Category slug to filter by.</param>
-    /// <param name="search">Free-text search term.</param>
-    /// <param name="page">Page number (1-based).</param>
-    /// <param name="pageSize">Number of items per page.</param>
-    Task<List<Item>> GetItemsAsync(
-        string? category = null,
-        string? search = null,
-        int page = 1,
-        int pageSize = 20
-    );
+    /// <summary>
+    /// Returns items within the specified radius of a geographic coordinate.
+    /// </summary>
+    /// <param name="request">Location, radius, and optional category filter.</param>
+    Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request);
 
-    /// <summary>Returns items within a given radius of a geographic location.</summary>
-    /// <param name="lat">Latitude of the search origin.</param>
-    /// <param name="lon">Longitude of the search origin.</param>
-    /// <param name="radius">Search radius in kilometres (default 5, max 50).</param>
-    /// <param name="category">Category slug to filter by.</param>
-    /// <param name="page">Page number (1-based).</param>
-    /// <param name="pageSize">Number of items per page.</param>
-    Task<List<Item>> GetNearbyItemsAsync(
-        double lat,
-        double lon,
-        double radius = 5.0,
-        string? category = null,
-        int page = 1,
-        int pageSize = 20
-    );
+    /// <summary>
+    /// Returns detailed information for a single item.
+    /// </summary>
+    /// <param name="id">The item ID.</param>
+    Task<ItemDetailResponse> GetItemAsync(int id);
 
-    /// <summary>Returns full details for the specified item, including reviews.</summary>
-    /// <param name="id">Item identifier.</param>
-    Task<Item> GetItemAsync(int id);
+    /// <summary>
+    /// Creates a new rental item owned by the currently authenticated user.
+    /// </summary>
+    /// <param name="request">The item details.</param>
+    Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request);
 
-    /// <summary>Creates a new item listing owned by the authenticated user.</summary>
-    /// <param name="title">Listing title (5–100 characters).</param>
-    /// <param name="description">Optional description (max 1000 characters).</param>
-    /// <param name="dailyRate">Daily rental rate (must be positive, max 1000).</param>
-    /// <param name="categoryId">Category identifier.</param>
-    /// <param name="latitude">Latitude of the item's location.</param>
-    /// <param name="longitude">Longitude of the item's location.</param>
-    Task<Item> CreateItemAsync(
-        string title,
-        string? description,
-        double dailyRate,
-        int categoryId,
-        double latitude,
-        double longitude
-    );
+    /// <summary>
+    /// Updates the mutable fields of an existing item.
+    /// </summary>
+    /// <param name="id">The item ID.</param>
+    /// <param name="request">The updated field values.</param>
+    Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request);
 
-    /// <summary>Updates mutable fields on an item owned by the authenticated user.</summary>
-    /// <param name="id">Item identifier.</param>
-    /// <param name="title">New title; <see langword="null"/> leaves the field unchanged.</param>
-    /// <param name="description">New description; <see langword="null"/> leaves the field unchanged.</param>
-    /// <param name="dailyRate">New daily rate; <see langword="null"/> leaves the field unchanged.</param>
-    /// <param name="isAvailable">New availability flag; <see langword="null"/> leaves the field unchanged.</param>
-    Task<Item> UpdateItemAsync(
+    // Categories
+
+    /// <summary>
+    /// Returns all available item categories with their item counts.
+    /// </summary>
+    Task<CategoriesResponse> GetCategoriesAsync();
+
+    // Rentals — LocalApiService throws NotImplementedException until DB entities land
+
+    /// <summary>
+    /// Returns a paginated list of incoming rentals (where the current user is the owner).
+    /// </summary>
+    /// <param name="request">Pagination and optional status filter.</param>
+    Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request);
+
+    /// <summary>
+    /// Returns a paginated list of outgoing rentals (where the current user is the renter).
+    /// </summary>
+    /// <param name="request">Pagination and optional status filter.</param>
+    Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request);
+
+    /// <summary>
+    /// Returns detailed information for a single rental.
+    /// </summary>
+    /// <param name="id">The rental ID.</param>
+    Task<RentalDetailResponse> GetRentalAsync(int id);
+
+    /// <summary>
+    /// Creates a new rental request for an item.
+    /// </summary>
+    /// <param name="request">The rental details including item, start date, and end date.</param>
+    Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request);
+
+    /// <summary>
+    /// Updates the status of an existing rental (e.g., approve, reject, complete).
+    /// </summary>
+    /// <param name="id">The rental ID.</param>
+    /// <param name="request">The new status value.</param>
+    Task<UpdateRentalStatusResponse> UpdateRentalStatusAsync(
         int id,
-        string? title,
-        string? description,
-        double? dailyRate,
-        bool? isAvailable
+        UpdateRentalStatusRequest request
     );
 
-    // ── Categories ──────────────────────────────────────────────────
+    // Reviews — LocalApiService throws NotImplementedException until DB entities land
 
-    /// <summary>Returns all available item categories.</summary>
-    Task<List<Category>> GetCategoriesAsync();
+    /// <summary>
+    /// Returns paginated reviews for the specified item.
+    /// </summary>
+    /// <param name="itemId">The item ID.</param>
+    /// <param name="request">Pagination parameters.</param>
+    Task<ReviewsResponse> GetItemReviewsAsync(int itemId, GetReviewsRequest request);
+
+    /// <summary>
+    /// Returns paginated reviews written about the specified user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="request">Pagination parameters.</param>
+    Task<ReviewsResponse> GetUserReviewsAsync(int userId, GetReviewsRequest request);
+
+    /// <summary>
+    /// Submits a review for a completed rental.
+    /// </summary>
+    /// <param name="request">The review details including rental ID, rating, and comment.</param>
+    Task<CreateReviewResponse> CreateReviewAsync(CreateReviewRequest request);
 }

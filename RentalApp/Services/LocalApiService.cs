@@ -1,8 +1,10 @@
-using BCrypt.Net;
+// RentalApp/Services/LocalApiService.cs
 using Microsoft.EntityFrameworkCore;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
-using RentalApp.Models;
+using RentalApp.Http;
 using DbUser = RentalApp.Database.Models.User;
 using GeoFactory = NetTopologySuite.Geometries.GeometryFactory;
 using GeoPoint = NetTopologySuite.Geometries.Point;
@@ -12,230 +14,292 @@ using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 namespace RentalApp.Services;
 
 /// <summary>
-/// <see cref="IApiService"/> implementation that operates directly against the local PostgreSQL
-/// database via EF Core repositories. Used for offline development and integration testing in
-/// place of the remote HTTP API.
+/// Implements <see cref="IApiService"/> against a local PostgreSQL database for offline development.
+/// Rental and review methods throw <see cref="NotImplementedException"/> until the corresponding DB entities are added.
 /// </summary>
 public class LocalApiService : IApiService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
-    private User? _currentUser;
+    private readonly AuthTokenState _tokenState;
 
-    /// <summary>Shared NTS geometry factory configured for SRID 4326 (WGS 84). Reused across all point creation calls to avoid repeated allocation.</summary>
     private static readonly GeoFactory _geoFactory = new GeoFactory(new NtsPrecisionModel(), 4326);
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="LocalApiService"/> with the required data-access dependencies.
-    /// </summary>
-    /// <param name="contextFactory">EF Core context factory, used directly for user operations not covered by repositories.</param>
-    /// <param name="itemRepository">Repository for item queries and mutations.</param>
-    /// <param name="categoryRepository">Repository for category queries.</param>
     public LocalApiService(
         IDbContextFactory<AppDbContext> contextFactory,
         IItemRepository itemRepository,
-        ICategoryRepository categoryRepository
+        ICategoryRepository categoryRepository,
+        AuthTokenState tokenState
     )
     {
         _contextFactory = contextFactory;
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
+        _tokenState = tokenState;
     }
 
+    // ── Auth ──────────────────────────────────────────────────────────
+
     /// <inheritdoc/>
-    /// <remarks>Verifies the BCrypt password hash and stores the authenticated user in <c>_currentUser</c> for the lifetime of this service instance.</remarks>
-    public async Task LoginAsync(string email, string password)
+    public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         await using var context = _contextFactory.CreateDbContext();
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password");
 
-        _currentUser = ToUser(user);
+        // AuthenticationService writes this to AuthTokenState after login
+        return new LoginResponse(
+            Token: user.Id.ToString(),
+            ExpiresAt: DateTime.MaxValue,
+            UserId: user.Id
+        );
     }
 
     /// <inheritdoc/>
-    /// <remarks>Generates a fresh BCrypt salt per registration so no two users share a hash even with the same password.</remarks>
-    public async Task RegisterAsync(
-        string firstName,
-        string lastName,
-        string email,
-        string password
-    )
+    public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         await using var context = _contextFactory.CreateDbContext();
-        var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (existing != null)
             throw new InvalidOperationException("User with this email already exists");
 
         var salt = BCrypt.Net.BCrypt.GenerateSalt();
-        context.Users.Add(
-            new DbUser
-            {
-                FirstName = firstName,
-                LastName = lastName,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, salt),
-                PasswordSalt = salt,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            }
-        );
+        var newUser = new DbUser
+        {
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            Email = request.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, salt),
+            PasswordSalt = salt,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        context.Users.Add(newUser);
         await context.SaveChangesAsync();
+
+        return new RegisterResponse(
+            newUser.Id,
+            newUser.Email,
+            newUser.FirstName,
+            newUser.LastName,
+            newUser.CreatedAt ?? DateTime.UtcNow
+        );
     }
 
     /// <inheritdoc/>
-    /// <remarks>Returns the in-memory <c>_currentUser</c> set during <see cref="LoginAsync"/>; no database call is made.</remarks>
-    public Task<User> GetCurrentUserAsync()
+    public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
-        if (_currentUser == null)
+        if (!_tokenState.HasSession)
             throw new InvalidOperationException("No user is currently authenticated");
 
-        return Task.FromResult(_currentUser);
+        var userId = int.Parse(_tokenState.CurrentToken!);
+        await using var context = _contextFactory.CreateDbContext();
+        var user =
+            await context.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException("Authenticated user not found");
+
+        var itemsListed = await context.Items.CountAsync(i => i.OwnerId == userId);
+
+        return new CurrentUserResponse(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            AverageRating: null,
+            ItemsListed: itemsListed,
+            RentalsCompleted: 0,
+            user.CreatedAt ?? DateTime.UtcNow
+        );
     }
 
     /// <inheritdoc/>
-    public async Task<User> GetUserAsync(int userId)
+    public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
         await using var context = _contextFactory.CreateDbContext();
         var user =
             await context.Users.FindAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        return ToUser(user);
+        var itemsListed = await context.Items.CountAsync(i => i.OwnerId == userId);
+
+        return new UserProfileResponse(
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            AverageRating: null,
+            ItemsListed: itemsListed,
+            RentalsCompleted: 0,
+            Reviews: []
+        );
+    }
+
+    // ── Items ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
+    {
+        var totalItems = await _itemRepository.CountItemsAsync(request.Category, request.Search);
+        var dbItems = await _itemRepository.GetItemsAsync(
+            request.Category,
+            request.Search,
+            request.Page,
+            request.PageSize
+        );
+        var items = dbItems.Select(ToItemSummary).ToList();
+        var totalPages =
+            request.PageSize > 0 ? (int)Math.Ceiling((double)totalItems / request.PageSize) : 0;
+        return new ItemsResponse(
+            items,
+            TotalItems: totalItems,
+            Page: request.Page,
+            PageSize: request.PageSize,
+            TotalPages: totalPages
+        );
     }
 
     /// <inheritdoc/>
-    /// <remarks>Clears the in-memory <c>_currentUser</c>. No database call is made.</remarks>
-    public Task LogoutAsync()
+    public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
     {
-        _currentUser = null;
-        return Task.CompletedTask;
-    }
-
-    /// <inheritdoc/>
-    public async Task<List<Item>> GetItemsAsync(
-        string? category = null,
-        string? search = null,
-        int page = 1,
-        int pageSize = 20
-    )
-    {
-        var dbItems = await _itemRepository.GetItemsAsync(category, search, page, pageSize);
-        return dbItems.Select(ToItem).ToList();
-    }
-
-    /// <inheritdoc/>
-    /// <remarks>
-    /// Converts <paramref name="radius"/> from kilometres to metres before passing it to the repository,
-    /// as PostGIS geography distance functions operate in metres.
-    /// The NTS <c>Point</c> is constructed as <c>(X=longitude, Y=latitude)</c> — NTS coordinate order is (lon, lat).
-    /// </remarks>
-    public async Task<List<Item>> GetNearbyItemsAsync(
-        double lat,
-        double lon,
-        double radius = 5.0,
-        string? category = null,
-        int page = 1,
-        int pageSize = 20
-    )
-    {
-        var origin = _geoFactory.CreatePoint(new NtsCoordinate(lon, lat));
-        var radiusMeters = radius * 1000;
+        var origin = _geoFactory.CreatePoint(new NtsCoordinate(request.Lon, request.Lat));
+        var radiusMeters = request.Radius * 1000; // km → metres
 
         var dbItems = await _itemRepository.GetNearbyItemsAsync(
             origin,
             radiusMeters,
-            category,
-            page,
-            pageSize
+            request.Category,
+            1,
+            int.MaxValue
         );
+        var items = dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
 
-        return dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
+        return new NearbyItemsResponse(
+            items,
+            new SearchLocationResponse(request.Lat, request.Lon),
+            request.Radius,
+            items.Count
+        );
     }
 
     /// <inheritdoc/>
-    public async Task<Item> GetItemAsync(int id)
+    public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
         var dbItem =
             await _itemRepository.GetItemAsync(id)
             ?? throw new InvalidOperationException($"Item {id} not found.");
-
-        return ToItem(dbItem);
+        return ToItemDetail(dbItem);
     }
 
     /// <inheritdoc/>
-    /// <remarks>Uses <c>_currentUser.Id</c> as the owner ID; throws if no user is logged in.</remarks>
-    public async Task<Item> CreateItemAsync(
-        string title,
-        string? description,
-        double dailyRate,
-        int categoryId,
-        double latitude,
-        double longitude
-    )
+    public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
     {
-        if (_currentUser == null)
+        if (!_tokenState.HasSession)
             throw new InvalidOperationException("No user is currently authenticated");
 
-        var location = _geoFactory.CreatePoint(new NtsCoordinate(longitude, latitude));
+        var ownerId = int.Parse(_tokenState.CurrentToken!);
+        var location = _geoFactory.CreatePoint(
+            new NtsCoordinate(request.Longitude, request.Latitude)
+        );
         var dbItem = await _itemRepository.CreateItemAsync(
-            title,
-            description,
-            dailyRate,
-            categoryId,
-            _currentUser.Id,
+            request.Title,
+            request.Description,
+            request.DailyRate,
+            request.CategoryId,
+            ownerId,
             location
         );
 
-        return ToItem(dbItem);
+        return new CreateItemResponse(
+            dbItem.Id,
+            dbItem.Title,
+            dbItem.Description,
+            dbItem.DailyRate,
+            dbItem.CategoryId,
+            dbItem.Category.Name,
+            dbItem.OwnerId,
+            $"{dbItem.Owner.FirstName} {dbItem.Owner.LastName}",
+            request.Latitude,
+            request.Longitude,
+            dbItem.IsAvailable,
+            dbItem.CreatedAt ?? DateTime.UtcNow
+        );
     }
 
     /// <inheritdoc/>
-    public async Task<Item> UpdateItemAsync(
-        int id,
-        string? title,
-        string? description,
-        double? dailyRate,
-        bool? isAvailable
-    )
+    public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
         var dbItem = await _itemRepository.UpdateItemAsync(
             id,
-            title,
-            description,
-            dailyRate,
-            isAvailable
+            request.Title,
+            request.Description,
+            request.DailyRate,
+            request.IsAvailable
         );
-
-        return ToItem(dbItem);
+        return new UpdateItemResponse(
+            dbItem.Id,
+            dbItem.Title,
+            dbItem.Description ?? string.Empty,
+            dbItem.DailyRate,
+            dbItem.IsAvailable
+        );
     }
 
     /// <inheritdoc/>
-    public async Task<List<Category>> GetCategoriesAsync()
+    public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var results = await _categoryRepository.GetAllAsync();
-        return results
-            .Select(r => new Category(
+        var categories = results
+            .Select(r => new CategoryResponse(
                 r.Category.Id,
                 r.Category.Name,
                 r.Category.Slug,
-                ItemCount: r.ItemCount
+                r.ItemCount
             ))
             .ToList();
+        return new CategoriesResponse(categories);
     }
 
-    /// <summary>Maps a database <see cref="DbUser"/> to the application <see cref="User"/> model. Rating and rental stats are zeroed as they are not stored on the user entity.</summary>
-    private static User ToUser(DbUser user) =>
-        new(user.Id, user.FirstName, user.LastName, 0.0, 0, 0, user.Email, user.CreatedAt, null);
+    // ── Rentals / Reviews — not yet supported locally ─────────────────
 
-    /// <summary>
-    /// Maps a database item to the application <see cref="Item"/> model.
-    /// NTS stores coordinates as <c>(X=longitude, Y=latitude)</c>, so <c>Location.Y</c> is latitude and <c>Location.X</c> is longitude.
-    /// </summary>
-    private static Item ToItem(Database.Models.Item i) =>
+    /// <inheritdoc/>
+    public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
+        throw new NotImplementedException("Rental support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
+        throw new NotImplementedException("Rental support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<RentalDetailResponse> GetRentalAsync(int id) =>
+        throw new NotImplementedException("Rental support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request) =>
+        throw new NotImplementedException("Rental support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<UpdateRentalStatusResponse> UpdateRentalStatusAsync(
+        int id,
+        UpdateRentalStatusRequest request
+    ) => throw new NotImplementedException("Rental support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<ReviewsResponse> GetItemReviewsAsync(int itemId, GetReviewsRequest request) =>
+        throw new NotImplementedException("Review support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<ReviewsResponse> GetUserReviewsAsync(int userId, GetReviewsRequest request) =>
+        throw new NotImplementedException("Review support requires local DB entities");
+
+    /// <inheritdoc/>
+    public Task<CreateReviewResponse> CreateReviewAsync(CreateReviewRequest request) =>
+        throw new NotImplementedException("Review support requires local DB entities");
+
+    // ── Mapping helpers ───────────────────────────────────────────────
+
+    private static ItemSummaryResponse ToItemSummary(Database.Models.Item i) =>
         new(
             i.Id,
             i.Title,
@@ -246,21 +310,12 @@ public class LocalApiService : IApiService
             i.OwnerId,
             $"{i.Owner.FirstName} {i.Owner.LastName}",
             OwnerRating: null,
-            Latitude: i.Location.Y,
-            Longitude: i.Location.X,
-            Distance: null,
             i.IsAvailable,
             AverageRating: null,
-            TotalReviews: null,
-            i.CreatedAt,
-            Reviews: null
+            i.CreatedAt ?? DateTime.UtcNow
         );
 
-    /// <summary>
-    /// Maps a database item to the application <see cref="Item"/> model with the distance from <paramref name="origin"/> populated.
-    /// Distance is converted from metres (returned by NTS) to kilometres by dividing by 1000.
-    /// </summary>
-    private static Item ToNearbyItem(Database.Models.Item i, GeoPoint origin) =>
+    private static NearbyItemResponse ToNearbyItem(Database.Models.Item i, GeoPoint origin) =>
         new(
             i.Id,
             i.Title,
@@ -270,14 +325,30 @@ public class LocalApiService : IApiService
             i.Category.Name,
             i.OwnerId,
             $"{i.Owner.FirstName} {i.Owner.LastName}",
-            OwnerRating: null,
             Latitude: i.Location.Y,
             Longitude: i.Location.X,
             Distance: i.Location.Distance(origin) / 1000.0,
             i.IsAvailable,
+            AverageRating: null
+        );
+
+    private static ItemDetailResponse ToItemDetail(Database.Models.Item i) =>
+        new(
+            i.Id,
+            i.Title,
+            i.Description,
+            i.DailyRate,
+            i.CategoryId,
+            i.Category.Name,
+            i.OwnerId,
+            $"{i.Owner.FirstName} {i.Owner.LastName}",
+            OwnerRating: null,
+            Latitude: i.Location.Y,
+            Longitude: i.Location.X,
+            i.IsAvailable,
             AverageRating: null,
-            TotalReviews: null,
-            CreatedAt: null,
-            Reviews: null
+            TotalReviews: 0,
+            i.CreatedAt ?? DateTime.UtcNow,
+            Reviews: []
         );
 }

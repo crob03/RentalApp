@@ -1,41 +1,30 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// <summary>
-/// View model for the "Nearby Items" page.
-/// Fetches all matching items from the server in a single call and paginates client-side,
-/// caching the device location so the GPS is only queried once per page visit.
-/// </summary>
-public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
+public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemResponse>
 {
     private readonly ILocationService _locationService;
 
     private double _cachedLat;
     private double _cachedLon;
     private bool _locationFetched;
-    private List<Item> _allNearbyItems = [];
+    private List<NearbyItemResponse> _allNearbyItems = [];
 
-    /// <summary>Search radius in kilometres; changes trigger a full reload.</summary>
     [ObservableProperty]
     private double radius = 5.0;
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="NearbyItemsViewModel"/> with the required services.
-    /// </summary>
-    /// <param name="itemService">Service used to fetch nearby items and categories.</param>
-    /// <param name="locationService">Service used to obtain the device's current GPS coordinates.</param>
-    /// <param name="navigationService">Service used to navigate to item details and the create-item page.</param>
     public NearbyItemsViewModel(
-        IItemService itemService,
+        IApiService api,
         ILocationService locationService,
         INavigationService navigationService
     )
-        : base(itemService, navigationService)
+        : base(api, navigationService)
     {
         _locationService = locationService;
         Title = "Nearby Items";
@@ -43,7 +32,6 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
 
     partial void OnRadiusChanged(double value) => _ = TriggerReloadIfLoaded();
 
-    /// <inheritdoc/>
     protected override async Task ReloadAsync()
     {
         LoadNearbyItemsCommand.Cancel();
@@ -51,11 +39,6 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
         await LoadNearbyItemsCommand.ExecuteAsync(null);
     }
 
-    /// <summary>
-    /// Fetches all nearby items within <see cref="Radius"/> kilometres (using the cached device
-    /// location, acquiring it once if not yet fetched), stores the full result set, and displays
-    /// the first page. Also refreshes the category list.
-    /// </summary>
     [RelayCommand]
     private Task LoadNearbyItemsAsync(CancellationToken ct) =>
         RunLoadAsync(async () =>
@@ -71,24 +54,16 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel
                 _locationFetched = true;
             }
 
-            _allNearbyItems = await ItemService.GetNearbyItemsAsync(
-                _cachedLat,
-                _cachedLon,
-                Radius,
-                SelectedCategory,
-                CurrentPage,
-                PageSize
+            var response = await ApiService.GetNearbyItemsAsync(
+                new GetNearbyItemsRequest(_cachedLat, _cachedLon, Radius, SelectedCategory)
             );
             ct.ThrowIfCancellationRequested();
-            Items = new ObservableCollection<Item>(_allNearbyItems.Take(PageSize));
+            _allNearbyItems = response.Items;
+            Items = new ObservableCollection<NearbyItemResponse>(_allNearbyItems.Take(PageSize));
             HasMorePages = _allNearbyItems.Count > PageSize;
             await LoadCategoriesAsync();
         });
 
-    /// <summary>
-    /// Slices the next page from the cached <c>_allNearbyItems</c> result set and appends it to
-    /// <see cref="ItemsSearchBaseViewModel.Items"/> without making a new network request.
-    /// </summary>
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(() =>

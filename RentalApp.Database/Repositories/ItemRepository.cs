@@ -19,6 +19,21 @@ public class ItemRepository : IItemRepository
         _contextFactory = contextFactory;
     }
 
+    private static IQueryable<DbItem> ApplyItemFilters(
+        IQueryable<DbItem> query,
+        string? category,
+        string? search
+    )
+    {
+        if (category != null)
+            query = query.Where(i => i.Category.Slug == category);
+
+        if (search != null)
+            query = query.Where(i => EF.Functions.ILike(i.Title, $"%{search}%"));
+
+        return query;
+    }
+
     /// <inheritdoc/>
     public async Task<IEnumerable<DbItem>> GetItemsAsync(
         string? category,
@@ -28,19 +43,25 @@ public class ItemRepository : IItemRepository
     )
     {
         await using var context = _contextFactory.CreateDbContext();
-        var query = context.Items.Include(i => i.Category).Include(i => i.Owner).AsQueryable();
-
-        if (category != null)
-            query = query.Where(i => i.Category.Slug == category);
-
-        if (search != null)
-            query = query.Where(i => EF.Functions.ILike(i.Title, $"%{search}%"));
+        var query = ApplyItemFilters(
+            context.Items.Include(i => i.Category).Include(i => i.Owner).AsQueryable(),
+            category,
+            search
+        );
 
         return await query
             .OrderBy(i => i.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CountItemsAsync(string? category, string? search)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        var query = ApplyItemFilters(context.Items.AsQueryable(), category, search);
+        return await query.CountAsync();
     }
 
     /// <inheritdoc/>

@@ -1,17 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Helpers;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// <summary>
-/// View model for the "List an Item" page. Captures item details from the user, resolves the
-/// device's current location at submission time, and delegates creation to <see cref="IItemService"/>.
-/// </summary>
 public partial class CreateItemViewModel : BaseViewModel
 {
-    private readonly IItemService _itemService;
+    private readonly IApiService _api;
     private readonly ILocationService _locationService;
     private readonly INavigationService _navigationService;
 
@@ -25,75 +23,69 @@ public partial class CreateItemViewModel : BaseViewModel
     private string dailyRate = string.Empty;
 
     [ObservableProperty]
-    private List<Category> categories = [];
+    private List<CategoryResponse> categories = [];
 
     [ObservableProperty]
-    private Category? selectedCategory;
+    private CategoryResponse? selectedCategory;
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="CreateItemViewModel"/> with the required services.
-    /// </summary>
-    /// <param name="itemService">Service used to fetch categories and submit the new listing.</param>
-    /// <param name="locationService">Service used to capture the device's current location at submission time.</param>
-    /// <param name="navigationService">Service used to navigate back after a successful creation.</param>
     public CreateItemViewModel(
-        IItemService itemService,
+        IApiService api,
         ILocationService locationService,
         INavigationService navigationService
     )
     {
-        _itemService = itemService;
+        _api = api;
         _locationService = locationService;
         _navigationService = navigationService;
         Title = "List an Item";
     }
 
-    /// <summary>
-    /// Populates <see cref="Categories"/> from the item service.
-    /// Intended to be called when the page first appears.
-    /// </summary>
     [RelayCommand]
     private Task LoadCategoriesAsync() =>
         RunAsync(async () =>
         {
-            Categories = await _itemService.GetCategoriesAsync();
+            var response = await _api.GetCategoriesAsync();
+            Categories = response.Categories;
         });
 
-    /// <summary>
-    /// Validates the form, resolves the device location, submits the new listing, and navigates
-    /// back on success. Surfaces validation errors via <see cref="BaseViewModel.SetError"/>.
-    /// </summary>
     [RelayCommand]
     private async Task CreateItemAsync()
     {
-        ClearError();
-
-        if (SelectedCategory == null)
-        {
-            SetError("Please select a category.");
+        if (!ValidateForm())
             return;
-        }
 
-        if (!double.TryParse(DailyRate, out var rate))
-        {
-            SetError("Please enter a valid daily rate.");
-            return;
-        }
+        var rate = double.Parse(DailyRate);
 
         await RunAsync(async () =>
         {
             var (lat, lon) = await _locationService.GetCurrentLocationAsync();
-
-            await _itemService.CreateItemAsync(
-                ItemTitle,
-                Description.Length > 0 ? Description : null,
-                rate,
-                SelectedCategory.Id,
-                lat,
-                lon
+            await _api.CreateItemAsync(
+                new CreateItemRequest(
+                    ItemTitle,
+                    Description.Length > 0 ? Description : null,
+                    rate,
+                    SelectedCategory!.Id,
+                    lat,
+                    lon
+                )
             );
-
             await _navigationService.NavigateBackAsync();
         });
+    }
+
+    private bool ValidateForm()
+    {
+        var error = ItemValidator.ValidateCreate(
+            ItemTitle,
+            Description.Length > 0 ? Description : null,
+            DailyRate,
+            SelectedCategory?.Id ?? 0
+        );
+        if (error is not null)
+        {
+            SetError(error);
+            return false;
+        }
+        return true;
     }
 }

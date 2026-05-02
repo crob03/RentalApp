@@ -1,16 +1,20 @@
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 
 namespace RentalApp.Services;
 
 /// <summary>
-/// Manages authentication state on top of <see cref="IApiService"/>.
-/// Handles the current user, authentication events, and credential persistence.
+/// Implements <see cref="IAuthenticationService"/>, orchestrating token management via
+/// <see cref="AuthTokenState"/>, credential persistence via <see cref="ICredentialStore"/>,
+/// and authentication state changes.
 /// </summary>
 public class AuthenticationService : IAuthenticationService
 {
     private readonly IApiService _api;
     private readonly ICredentialStore _credentialStore;
-    private User? _currentUser;
+    private readonly AuthTokenState _tokenState;
+    private CurrentUserResponse? _currentUser;
 
     /// <inheritdoc/>
     public event EventHandler<bool>? AuthenticationStateChanged;
@@ -19,15 +23,17 @@ public class AuthenticationService : IAuthenticationService
     public bool IsAuthenticated => _currentUser != null;
 
     /// <inheritdoc/>
-    public User? CurrentUser => _currentUser;
+    public CurrentUserResponse? CurrentUser => _currentUser;
 
-    /// <summary>Initialises a new instance of <see cref="AuthenticationService"/>.</summary>
-    /// <param name="api">Data-transport service used to authenticate and fetch user data.</param>
-    /// <param name="credentialStore">Store used to persist credentials when Remember Me is enabled.</param>
-    public AuthenticationService(IApiService api, ICredentialStore credentialStore)
+    public AuthenticationService(
+        IApiService api,
+        ICredentialStore credentialStore,
+        AuthTokenState tokenState
+    )
     {
         _api = api;
         _credentialStore = credentialStore;
+        _tokenState = tokenState;
     }
 
     /// <inheritdoc/>
@@ -39,17 +45,21 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            await _api.LoginAsync(email, password);
+            var response = await _api.LoginAsync(new LoginRequest(email, password));
+            _tokenState.CurrentToken = response.Token;
+
+            _currentUser = await _api.GetCurrentUserAsync();
 
             if (rememberMe)
                 await _credentialStore.SaveAsync(email, password);
 
-            _currentUser = await _api.GetCurrentUserAsync();
             AuthenticationStateChanged?.Invoke(this, true);
             return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
+            _tokenState.CurrentToken = null;
+            await _credentialStore.ClearAsync();
             return AuthenticationResult.Failure(ex.Message);
         }
     }
@@ -64,7 +74,7 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            await _api.RegisterAsync(firstName, lastName, email, password);
+            await _api.RegisterAsync(new RegisterRequest(firstName, lastName, email, password));
             return AuthenticationResult.Success();
         }
         catch (Exception ex)
@@ -76,9 +86,9 @@ public class AuthenticationService : IAuthenticationService
     /// <inheritdoc/>
     public async Task LogoutAsync()
     {
-        _currentUser = null;
-        await _api.LogoutAsync();
         await _credentialStore.ClearAsync();
+        _tokenState.CurrentToken = null;
+        _currentUser = null;
         AuthenticationStateChanged?.Invoke(this, false);
     }
 }

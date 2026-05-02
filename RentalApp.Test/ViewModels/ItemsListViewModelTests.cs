@@ -2,7 +2,8 @@ using System.Collections.ObjectModel;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RentalApp.Constants;
-using RentalApp.Models;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -10,45 +11,34 @@ namespace RentalApp.Test.ViewModels;
 
 public class ItemsListViewModelTests
 {
-    private readonly IItemService _itemService = Substitute.For<IItemService>();
+    private readonly IApiService _api = Substitute.For<IApiService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private static Item MakeItem(int id = 1, string title = "Drill") =>
-        new(
-            id,
-            title,
-            null,
-            10.0,
-            1,
-            "Tools",
-            1,
-            "Alice",
-            null,
-            null,
-            null,
-            null,
-            true,
-            null,
-            null,
-            DateTime.UtcNow,
-            null
-        );
+    private static ItemSummaryResponse MakeItem(int id = 1, string title = "Drill") =>
+        new(id, title, null, 10.0, 1, "Tools", 1, "Alice", null, true, null, DateTime.UtcNow);
 
-    private static Category MakeCategory(
+    private static CategoryResponse MakeCategory(
         int id = 1,
         string name = "Tools",
         string slug = "tools"
     ) => new(id, name, slug, 5);
 
-    private ItemsListViewModel CreateSut() => new(_itemService, _nav);
+    private static ItemsResponse MakeItemsResponse(
+        List<ItemSummaryResponse> items,
+        int page = 1,
+        int totalPages = 1
+    ) => new(items, items.Count, page, 20, totalPages);
+
+    private ItemsListViewModel CreateSut() => new(_api, _nav);
 
     // ── LoadItemsCommand ───────────────────────────────────────────────
 
     [Fact]
     public async Task LoadItemsCommand_Success_PopulatesItems()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem(1), MakeItem(2, "Ladder")]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>())
+            .Returns(MakeItemsResponse([MakeItem(1), MakeItem(2, "Ladder")]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -59,12 +49,13 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task LoadItemsCommand_Success_ClearsExistingItems()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem()]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([MakeItem()]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem(2, "Ladder")]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>())
+            .Returns(MakeItemsResponse([MakeItem(2, "Ladder")]));
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
         var item = Assert.Single(sut.Items);
@@ -75,8 +66,9 @@ public class ItemsListViewModelTests
     public async Task LoadItemsCommand_FullPage_SetsHasMorePagesTrue()
     {
         var fullPage = Enumerable.Range(1, 20).Select(i => MakeItem(i)).ToList();
-        _itemService.GetItemsAsync().ReturnsForAnyArgs(fullPage);
-        _itemService.GetCategoriesAsync().Returns([]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>())
+            .Returns(MakeItemsResponse(fullPage, totalPages: 2));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -87,8 +79,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task LoadItemsCommand_PartialPage_SetsHasMorePagesFalse()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem()]);
-        _itemService.GetCategoriesAsync().Returns([]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([MakeItem()]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -99,8 +91,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task LoadItemsCommand_ServiceThrows_SetsError()
     {
-        _itemService.GetItemsAsync().ThrowsAsyncForAnyArgs(new Exception("network error"));
-        _itemService.GetCategoriesAsync().Returns([]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).ThrowsAsync(new Exception("network error"));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -115,12 +107,14 @@ public class ItemsListViewModelTests
     public async Task LoadMoreItemsCommand_AppendsToExistingItems()
     {
         var fullPage = Enumerable.Range(1, 20).Select(i => MakeItem(i)).ToList();
-        _itemService.GetItemsAsync().ReturnsForAnyArgs(fullPage);
-        _itemService.GetCategoriesAsync().Returns([]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>())
+            .Returns(MakeItemsResponse(fullPage, totalPages: 2));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([]));
         var sut = CreateSut();
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([MakeItem(21, "Ladder")]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>())
+            .Returns(MakeItemsResponse([MakeItem(21, "Ladder")]));
         await sut.LoadMoreItemsCommand.ExecuteAsync(null);
 
         Assert.Equal(21, sut.Items.Count);
@@ -131,8 +125,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task LoadItemsCommand_PopulatesFilterCategoriesWithAllItemsSentinel()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -146,8 +140,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task LoadItemsCommand_SelectedCategoryItemDefaultsToAllItems()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
@@ -159,8 +153,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task SelectingCategory_UpdatesSelectedCategorySlug()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
@@ -172,8 +166,8 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task SelectingAllItems_ClearsSelectedCategory()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadItemsCommand.ExecuteAsync(null);
         sut.SelectedCategoryItem = MakeCategory();
@@ -186,31 +180,27 @@ public class ItemsListViewModelTests
     [Fact]
     public async Task CategoryChange_AfterLoad_TriggersReload()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
         sut.SelectedCategoryItem = MakeCategory();
         await (sut.LoadItemsCommand.ExecutionTask ?? Task.CompletedTask);
 
-        await _itemService
-            .Received(2)
-            .GetItemsAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>());
+        await _api.Received(2).GetItemsAsync(Arg.Any<GetItemsRequest>());
     }
 
     [Fact]
     public async Task LoadItems_DoesNotTriggerExtraReload_WhenRestoringCategory()
     {
-        _itemService.GetItemsAsync().ReturnsForAnyArgs([]);
-        _itemService.GetCategoriesAsync().Returns([MakeCategory()]);
+        _api.GetItemsAsync(Arg.Any<GetItemsRequest>()).Returns(MakeItemsResponse([]));
+        _api.GetCategoriesAsync().Returns(new CategoriesResponse([MakeCategory()]));
         var sut = CreateSut();
 
         await sut.LoadItemsCommand.ExecuteAsync(null);
         await sut.LoadItemsCommand.ExecuteAsync(null);
 
-        await _itemService
-            .Received(2)
-            .GetItemsAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>());
+        await _api.Received(2).GetItemsAsync(Arg.Any<GetItemsRequest>());
     }
 }

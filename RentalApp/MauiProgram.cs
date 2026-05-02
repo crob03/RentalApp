@@ -1,6 +1,6 @@
+// RentalApp/MauiProgram.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Devices.Sensors;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
 using RentalApp.Http;
@@ -10,18 +10,8 @@ using RentalApp.Views;
 
 namespace RentalApp;
 
-/// <summary>
-/// Entry point for the MAUI application. Configures the dependency injection container,
-/// registers all services, view models, and pages, and builds the <see cref="MauiApp"/>.
-/// </summary>
 public static class MauiProgram
 {
-    /// <summary>
-    /// Creates and configures the <see cref="MauiApp"/> instance.
-    /// Toggles between <see cref="RemoteApiService"/> and
-    /// <see cref="LocalApiService"/> via the <c>useSharedApi</c> flag.
-    /// </summary>
-    /// <returns>The configured <see cref="MauiApp"/>.</returns>
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
@@ -34,20 +24,16 @@ public static class MauiProgram
             });
 
         builder.Services.AddSingleton<ICredentialStore, CredentialStore>();
+        builder.Services.AddSingleton<AuthTokenState>();
 
         bool useSharedApi = Preferences.Default.Get("UseSharedApi", true);
 
         if (useSharedApi)
         {
             var baseAddress = new Uri("https://set09102-api.b-davison.workers.dev/");
-
-            builder.Services.AddSingleton<AuthTokenState>();
             builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = baseAddress });
             builder.Services.AddSingleton<IApiClient, ApiClient>();
-            builder.Services.AddSingleton<IApiService>(sp => new RemoteApiService(
-                sp.GetRequiredService<IApiClient>(),
-                sp.GetRequiredService<AuthTokenState>()
-            ));
+            builder.Services.AddSingleton<IApiService, RemoteApiService>();
         }
         else
         {
@@ -57,16 +43,19 @@ public static class MauiProgram
             builder.Services.AddSingleton<IApiService>(sp => new LocalApiService(
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(),
                 sp.GetRequiredService<IItemRepository>(),
-                sp.GetRequiredService<ICategoryRepository>()
+                sp.GetRequiredService<ICategoryRepository>(),
+                sp.GetRequiredService<AuthTokenState>()
             ));
         }
 
-        builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        builder.Services.AddSingleton<IAuthenticationService>(sp => new AuthenticationService(
+            sp.GetRequiredService<IApiService>(),
+            sp.GetRequiredService<ICredentialStore>(),
+            sp.GetRequiredService<AuthTokenState>()
+        ));
 
         builder.Services.AddSingleton<IGeolocation>(Geolocation.Default);
         builder.Services.AddSingleton<ILocationService, LocationService>();
-        builder.Services.AddTransient<IItemService, ItemService>();
-
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
         builder.Services.AddSingleton<AppShellViewModel>();
