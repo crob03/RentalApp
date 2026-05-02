@@ -119,7 +119,7 @@ public void ClearToken() => CurrentToken = null;
 - **Gains:** `IAuthService`
 - `LogoutAsync()` command is **deleted** (logout now lives in `AppShellViewModel`)
 - `LoadUserData()` calls `IAuthService.GetCurrentUserAsync()` directly
-- The logout toolbar item moves from `MainPage.xaml` to `AppShell.xaml`, where it binds naturally to `AppShellViewModel.LogoutCommand`
+- The logout `ToolbarItem` stays in `MainPage.xaml` but its `Command` binding is removed. `MainPage.xaml.cs` injects `AppShellViewModel` via constructor and sets `LogoutToolbarItem.Command = shellViewModel.LogoutCommand` in code-behind. (Moving the item to `AppShell.xaml` would make it appear on all shell pages including login, which is not desired.)
 
 ---
 
