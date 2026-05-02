@@ -9,6 +9,16 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+internal static class ItemsSearchDefaults
+{
+    internal static readonly CategoryResponse AllItemsCategory = new(
+        0,
+        "All Items",
+        string.Empty,
+        0
+    );
+}
+
 public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     where TItem : IItemListable
 {
@@ -17,13 +27,6 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
 
     protected IApiService ApiService => _api;
     protected const int PageSize = 20;
-
-    protected static readonly CategoryResponse AllItemsCategory = new(
-        0,
-        "All Items",
-        string.Empty,
-        0
-    );
 
     private bool _restoringCategory;
     private bool _hasLoaded;
@@ -35,10 +38,10 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     private List<CategoryResponse> categories = [];
 
     [ObservableProperty]
-    private List<CategoryResponse> filterCategories = [AllItemsCategory];
+    private List<CategoryResponse> filterCategories = [ItemsSearchDefaults.AllItemsCategory];
 
     [ObservableProperty]
-    private CategoryResponse? selectedCategoryItem = AllItemsCategory;
+    private CategoryResponse? selectedCategoryItem = ItemsSearchDefaults.AllItemsCategory;
 
     [ObservableProperty]
     private string? selectedCategory;
@@ -67,7 +70,7 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
             return;
         var response = await _api.GetCategoriesAsync();
         var cats = response.Categories;
-        var all = new List<CategoryResponse> { AllItemsCategory };
+        var all = new List<CategoryResponse> { ItemsSearchDefaults.AllItemsCategory };
         all.AddRange(cats);
         Categories = cats;
         FilterCategories = all;
@@ -100,7 +103,10 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
             await operation();
             _hasLoaded = true;
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            // cancellation is expected; nothing to report
+        }
         catch (Exception ex)
         {
             SetError(ex.Message);
@@ -138,8 +144,9 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     {
         _restoringCategory = true;
         SelectedCategoryItem = string.IsNullOrEmpty(SelectedCategory)
-            ? AllItemsCategory
-            : all.FirstOrDefault(c => c.Slug == SelectedCategory) ?? AllItemsCategory;
+            ? ItemsSearchDefaults.AllItemsCategory
+            : all.FirstOrDefault(c => c.Slug == SelectedCategory)
+                ?? ItemsSearchDefaults.AllItemsCategory;
         _restoringCategory = false;
     }
 

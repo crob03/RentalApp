@@ -81,8 +81,7 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
             return;
         }
 
-        double.TryParse(EditDailyRate, out var parsed); // guaranteed to succeed after ValidateUpdate
-        double? rate = parsed;
+        double? rate = EditDailyRate is not null ? double.Parse(EditDailyRate) : null;
 
         await RunAsync(async () =>
         {

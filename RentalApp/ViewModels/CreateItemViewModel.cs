@@ -54,7 +54,7 @@ public partial class CreateItemViewModel : BaseViewModel
         if (!ValidateForm())
             return;
 
-        double.TryParse(DailyRate, out var rate); // guaranteed to succeed after ValidateForm
+        var rate = double.Parse(DailyRate);
 
         await RunAsync(async () =>
         {

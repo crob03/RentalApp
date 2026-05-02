@@ -114,11 +114,34 @@ public class ItemValidatorTests
         Assert.Equal("Daily rate must be greater than zero", result);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ValidateUpdate_EmptyTitle_ReturnsError(string title)
+    {
+        var result = ItemValidator.ValidateUpdate(title, null, null);
+        Assert.Equal("Title is required", result);
+    }
+
     [Fact]
     public void ValidateUpdate_TitleTooShort_ReturnsError()
     {
         var result = ItemValidator.ValidateUpdate("Hi", null, null);
         Assert.Equal("Title must be at least 5 characters", result);
+    }
+
+    [Fact]
+    public void ValidateUpdate_TitleTooLong_ReturnsError()
+    {
+        var result = ItemValidator.ValidateUpdate(new string('A', 101), null, null);
+        Assert.Equal("Title must be 100 characters or fewer", result);
+    }
+
+    [Fact]
+    public void ValidateUpdate_DescriptionTooLong_ReturnsError()
+    {
+        var result = ItemValidator.ValidateUpdate(null, new string('X', 1001), null);
+        Assert.Equal("Description must be 1000 characters or fewer", result);
     }
 
     [Fact]
