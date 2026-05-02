@@ -22,7 +22,7 @@ public class LocalItemServiceTests : IClassFixture<DatabaseFixture<LocalItemServ
     {
         var itemRepo = new ItemRepository(_contextFactory);
         var catRepo = new CategoryRepository(_contextFactory);
-        return new LocalItemService(_contextFactory, itemRepo, catRepo, _tokenState);
+        return new LocalItemService(itemRepo, catRepo, _tokenState);
     }
 
     [Fact]

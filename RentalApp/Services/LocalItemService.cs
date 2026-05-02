@@ -13,7 +13,6 @@ namespace RentalApp.Services;
 
 internal class LocalItemService : IItemService
 {
-    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly AuthTokenState _tokenState;
@@ -21,12 +20,10 @@ internal class LocalItemService : IItemService
     private static readonly GeoFactory _geoFactory = new(new NtsPrecisionModel(), 4326);
 
     public LocalItemService(
-        IDbContextFactory<AppDbContext> contextFactory,
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
         AuthTokenState tokenState)
     {
-        _contextFactory = contextFactory;
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
         _tokenState = tokenState;
