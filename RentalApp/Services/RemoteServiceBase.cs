@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 
 namespace RentalApp.Services;
 
-public abstract class RemoteServiceBase
+internal abstract class RemoteServiceBase
 {
     protected static async Task EnsureSuccessAsync(HttpResponseMessage response)
     {

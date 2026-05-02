@@ -133,4 +133,34 @@ public class RemoteAuthServiceTests
 
         Assert.Equal(42, result.Id);
     }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_ErrorResponse_ThrowsHttpRequestException()
+    {
+        _apiClient
+            .GetAsync("users/me")
+            .Returns(new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = JsonContent.Create(new { error = "Unauthorized", message = "Token expired" }),
+            });
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => CreateSut().GetCurrentUserAsync()
+        );
+    }
+
+    [Fact]
+    public async Task GetUserProfileAsync_ErrorResponse_ThrowsHttpRequestException()
+    {
+        _apiClient
+            .GetAsync("users/42/profile")
+            .Returns(new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                Content = JsonContent.Create(new { error = "NotFound", message = "User not found" }),
+            });
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => CreateSut().GetUserProfileAsync(42)
+        );
+    }
 }

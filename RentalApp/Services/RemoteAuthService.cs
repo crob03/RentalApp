@@ -5,7 +5,7 @@ using RentalApp.Http;
 
 namespace RentalApp.Services;
 
-public class RemoteAuthService : RemoteServiceBase, IAuthService
+internal class RemoteAuthService : RemoteServiceBase, IAuthService
 {
     private readonly IApiClient _apiClient;
 
