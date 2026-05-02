@@ -20,11 +20,11 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
     private double radius = 5.0;
 
     public NearbyItemsViewModel(
-        IApiService api,
+        IItemService itemService,
         ILocationService locationService,
         INavigationService navigationService
     )
-        : base(api, navigationService)
+        : base(itemService, navigationService)
     {
         _locationService = locationService;
         Title = "Nearby Items";
@@ -54,7 +54,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
                 _locationFetched = true;
             }
 
-            var response = await ApiService.GetNearbyItemsAsync(
+            var response = await ItemService.GetNearbyItemsAsync(
                 new GetNearbyItemsRequest(_cachedLat, _cachedLon, Radius, SelectedCategory)
             );
             ct.ThrowIfCancellationRequested();

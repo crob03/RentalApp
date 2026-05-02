@@ -28,7 +28,8 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
         IAuthService authService,
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
-        INavigationService navigationService)
+        INavigationService navigationService
+    )
     {
         _authService = authService;
         _tokenState = tokenState;

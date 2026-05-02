@@ -16,7 +16,8 @@ public class LoadingViewModel : BaseViewModel
         ICredentialStore credentialStore,
         IAuthService authService,
         AuthTokenState tokenState,
-        INavigationService navigationService)
+        INavigationService navigationService
+    )
     {
         _credentialStore = credentialStore;
         _authService = authService;

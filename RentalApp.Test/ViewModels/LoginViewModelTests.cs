@@ -16,7 +16,8 @@ public class LoginViewModelTests
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private LoginViewModel CreateSut() => new(_authService, _tokenState, _credentialStore, _navigationService);
+    private LoginViewModel CreateSut() =>
+        new(_authService, _tokenState, _credentialStore, _navigationService);
 
     private static LoginResponse FakeLogin() => new("eyJ...", DateTime.UtcNow.AddHours(1), 1);
 
@@ -81,7 +82,8 @@ public class LoginViewModelTests
     [Fact]
     public async Task LoginAsync_ServiceThrows_SetsError()
     {
-        _authService.LoginAsync(Arg.Any<LoginRequest>())
+        _authService
+            .LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new HttpRequestException("Invalid credentials"));
         var sut = CreateSut();
         sut.Email = "jane@example.com";
@@ -96,7 +98,8 @@ public class LoginViewModelTests
     [Fact]
     public async Task LoginAsync_ServiceThrows_DoesNotNavigate()
     {
-        _authService.LoginAsync(Arg.Any<LoginRequest>())
+        _authService
+            .LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new HttpRequestException("Invalid credentials"));
         var sut = CreateSut();
         sut.Email = "jane@example.com";
@@ -110,7 +113,8 @@ public class LoginViewModelTests
     [Fact]
     public async Task LoginAsync_ServiceThrows_DoesNotSetToken()
     {
-        _authService.LoginAsync(Arg.Any<LoginRequest>())
+        _authService
+            .LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new HttpRequestException("Invalid credentials"));
         var sut = CreateSut();
         sut.Email = "jane@example.com";

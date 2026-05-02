@@ -12,8 +12,8 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
     [ObservableProperty]
     private string searchText = string.Empty;
 
-    public ItemsListViewModel(IApiService api, INavigationService navigationService)
-        : base(api, navigationService)
+    public ItemsListViewModel(IItemService itemService, INavigationService navigationService)
+        : base(itemService, navigationService)
     {
         Title = "Browse Items";
     }
@@ -32,7 +32,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
         RunLoadAsync(async () =>
         {
             CurrentPage = 1;
-            var response = await ApiService.GetItemsAsync(
+            var response = await ItemService.GetItemsAsync(
                 new GetItemsRequest(CurrentPage, PageSize, SelectedCategory, SearchText)
             );
             ct.ThrowIfCancellationRequested();
@@ -45,7 +45,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(async () =>
         {
-            var response = await ApiService.GetItemsAsync(
+            var response = await ItemService.GetItemsAsync(
                 new GetItemsRequest(CurrentPage, PageSize, SelectedCategory, SearchText)
             );
             foreach (var item in response.Items)

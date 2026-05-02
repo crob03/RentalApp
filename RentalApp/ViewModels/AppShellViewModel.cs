@@ -14,7 +14,8 @@ public partial class AppShellViewModel : BaseViewModel
     public AppShellViewModel(
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
-        INavigationService navigationService)
+        INavigationService navigationService
+    )
     {
         _tokenState = tokenState;
         _credentialStore = credentialStore;
@@ -33,9 +34,10 @@ public partial class AppShellViewModel : BaseViewModel
     }
 
     protected virtual Task<bool> ConfirmLogoutAsync() =>
-        Application.Current?.Windows[0]?.Page?.DisplayAlertAsync(
-            "Logout", "Are you sure you want to logout?", "Yes", "No"
-        ) ?? Task.FromResult(false);
+        Application
+            .Current?.Windows[0]
+            ?.Page?.DisplayAlertAsync("Logout", "Are you sure you want to logout?", "Yes", "No")
+        ?? Task.FromResult(false);
 
     [RelayCommand(CanExecute = nameof(CanExecuteAuthenticatedAction))]
     private async Task LogoutAsync()

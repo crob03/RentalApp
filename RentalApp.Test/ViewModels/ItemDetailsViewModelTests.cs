@@ -9,10 +9,10 @@ namespace RentalApp.Test.ViewModels;
 
 public class ItemDetailsViewModelTests
 {
-    private readonly IApiService _api = Substitute.For<IApiService>();
-    private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
+    private readonly IItemService _itemService = Substitute.For<IItemService>();
+    private readonly IAuthService _authService = Substitute.For<IAuthService>();
 
-    private ItemDetailsViewModel CreateSut() => new(_api, _authService);
+    private ItemDetailsViewModel CreateSut() => new(_itemService, _authService);
 
     private static ItemDetailResponse MakeItem(int id, int ownerId, string title = "Drill") =>
         new(
@@ -43,8 +43,8 @@ public class ItemDetailsViewModelTests
     public async Task LoadItemCommand_Success_PopulatesCurrentItem()
     {
         var item = MakeItem(1, 2);
-        _api.GetItemAsync(1).Returns(item);
-        _authService.CurrentUser.Returns(MakeUser(99));
+        _itemService.GetItemAsync(1).Returns(item);
+        _authService.GetCurrentUserAsync().Returns(MakeUser(99));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
 
@@ -57,7 +57,7 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadItemCommand_ServiceThrows_SetsError()
     {
-        _api.GetItemAsync(1).ThrowsAsync(new InvalidOperationException("Not found"));
+        _itemService.GetItemAsync(1).ThrowsAsync(new InvalidOperationException("Not found"));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
 
@@ -72,8 +72,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadItemCommand_CurrentUserIsOwner_SetsIsOwnerTrue()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(5));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
 
@@ -85,8 +85,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadItemCommand_CurrentUserIsNotOwner_SetsIsOwnerFalse()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(99));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(99));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
 
@@ -100,8 +100,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task ToggleEditCommand_PopulatesEditFields()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(5));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
         await sut.LoadItemCommand.ExecuteAsync(null);
@@ -116,8 +116,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task ToggleEditCommand_WhenAlreadyEditing_ExitsEditMode()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(5));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
         await sut.LoadItemCommand.ExecuteAsync(null);
@@ -134,9 +134,10 @@ public class ItemDetailsViewModelTests
     public async Task SaveChangesCommand_ValidInput_UpdatesCurrentItemAndExitsEditMode()
     {
         var updated = MakeItem(1, ownerId: 5, title: "Updated Drill");
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5), updated);
-        _authService.CurrentUser.Returns(MakeUser(5));
-        _api.UpdateItemAsync(1, Arg.Any<UpdateItemRequest>())
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5), updated);
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
+        _itemService
+            .UpdateItemAsync(1, Arg.Any<UpdateItemRequest>())
             .Returns(new UpdateItemResponse(1, "Updated Drill", "desc", 10.0, true));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
@@ -153,8 +154,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task SaveChangesCommand_InvalidDailyRate_SetsError()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(5));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
         await sut.LoadItemCommand.ExecuteAsync(null);
@@ -172,8 +173,8 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task CancelEditCommand_ExitsEditModeWithoutSaving()
     {
-        _api.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
-        _authService.CurrentUser.Returns(MakeUser(5));
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 5));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(5));
         var sut = CreateSut();
         sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
         await sut.LoadItemCommand.ExecuteAsync(null);
@@ -182,6 +183,8 @@ public class ItemDetailsViewModelTests
         sut.CancelEditCommand.Execute(null);
 
         Assert.False(sut.IsEditing);
-        await _api.DidNotReceive().UpdateItemAsync(Arg.Any<int>(), Arg.Any<UpdateItemRequest>());
+        await _itemService
+            .DidNotReceive()
+            .UpdateItemAsync(Arg.Any<int>(), Arg.Any<UpdateItemRequest>());
     }
 }

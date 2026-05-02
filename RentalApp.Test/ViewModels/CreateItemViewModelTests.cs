@@ -9,11 +9,11 @@ namespace RentalApp.Test.ViewModels;
 
 public class CreateItemViewModelTests
 {
-    private readonly IApiService _api = Substitute.For<IApiService>();
+    private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly ILocationService _locationService = Substitute.For<ILocationService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
 
-    private CreateItemViewModel CreateSut() => new(_api, _locationService, _nav);
+    private CreateItemViewModel CreateSut() => new(_itemService, _locationService, _nav);
 
     private static CategoryResponse MakeCategory(
         int id = 1,
@@ -31,7 +31,7 @@ public class CreateItemViewModelTests
             MakeCategory(1, "Tools", "tools"),
             MakeCategory(2, "Electronics", "electronics"),
         };
-        _api.GetCategoriesAsync().Returns(new CategoriesResponse(cats));
+        _itemService.GetCategoriesAsync().Returns(new CategoriesResponse(cats));
         var sut = CreateSut();
 
         await sut.LoadCategoriesCommand.ExecuteAsync(null);
@@ -45,7 +45,8 @@ public class CreateItemViewModelTests
     public async Task CreateItemCommand_ValidInput_CallsServiceAndNavigatesBack()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.CreateItemAsync(Arg.Any<CreateItemRequest>())
+        _itemService
+            .CreateItemAsync(Arg.Any<CreateItemRequest>())
             .Returns(
                 new CreateItemResponse(
                     1,
@@ -70,7 +71,8 @@ public class CreateItemViewModelTests
 
         await sut.CreateItemCommand.ExecuteAsync(null);
 
-        await _api.Received(1)
+        await _itemService
+            .Received(1)
             .CreateItemAsync(
                 Arg.Is<CreateItemRequest>(r =>
                     r.Title == "My Drill"
@@ -95,7 +97,7 @@ public class CreateItemViewModelTests
         await sut.CreateItemCommand.ExecuteAsync(null);
 
         Assert.True(sut.HasError);
-        await _api.DidNotReceive().CreateItemAsync(Arg.Any<CreateItemRequest>());
+        await _itemService.DidNotReceive().CreateItemAsync(Arg.Any<CreateItemRequest>());
     }
 
     [Fact]
@@ -136,7 +138,8 @@ public class CreateItemViewModelTests
     public async Task CreateItemCommand_ServiceValidationFails_SetsError()
     {
         _locationService.GetCurrentLocationAsync().Returns((55.9533, -3.1883));
-        _api.CreateItemAsync(Arg.Any<CreateItemRequest>())
+        _itemService
+            .CreateItemAsync(Arg.Any<CreateItemRequest>())
             .ThrowsAsync(new ArgumentException("Title must be between 5 and 100 characters."));
         var sut = CreateSut();
         sut.ItemTitle = "Hi";

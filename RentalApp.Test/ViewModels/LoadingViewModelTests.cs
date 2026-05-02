@@ -16,7 +16,8 @@ public class LoadingViewModelTests
     private readonly AuthTokenState _tokenState = new();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private LoadingViewModel CreateSut() => new(_credentialStore, _authService, _tokenState, _navigationService);
+    private LoadingViewModel CreateSut() =>
+        new(_credentialStore, _authService, _tokenState, _navigationService);
 
     private static LoginResponse FakeLogin() => new("eyJ...", DateTime.UtcNow.AddHours(1), 1);
 
@@ -57,7 +58,8 @@ public class LoadingViewModelTests
     public async Task InitializeAsync_SavedCredentials_LoginFails_NavigatesToLogin()
     {
         _credentialStore.GetAsync().Returns(("jane@example.com", "expired"));
-        _authService.LoginAsync(Arg.Any<LoginRequest>())
+        _authService
+            .LoginAsync(Arg.Any<LoginRequest>())
             .ThrowsAsync(new HttpRequestException("Invalid credentials"));
 
         await CreateSut().InitializeAsync();
@@ -73,8 +75,12 @@ public class LoadingViewModelTests
 
         await CreateSut().InitializeAsync();
 
-        await _authService.Received(1).LoginAsync(
-            Arg.Is<LoginRequest>(r => r.Email == "jane@example.com" && r.Password == "Password1!")
-        );
+        await _authService
+            .Received(1)
+            .LoginAsync(
+                Arg.Is<LoginRequest>(r =>
+                    r.Email == "jane@example.com" && r.Password == "Password1!"
+                )
+            );
     }
 }

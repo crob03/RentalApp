@@ -11,8 +11,10 @@ public class MainViewModelTests
     private readonly IAuthService _authService = Substitute.For<IAuthService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private static CurrentUserResponse MakeUser(string firstName = "Jane", string lastName = "Doe") =>
-        new(1, "jane@example.com", firstName, lastName, null, 0, 0, DateTime.UtcNow);
+    private static CurrentUserResponse MakeUser(
+        string firstName = "Jane",
+        string lastName = "Doe"
+    ) => new(1, "jane@example.com", firstName, lastName, null, 0, 0, DateTime.UtcNow);
 
     private MainViewModel CreateSut() => new(_authService, _navigationService);
 

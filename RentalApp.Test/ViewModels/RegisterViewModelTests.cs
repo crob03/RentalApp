@@ -44,7 +44,8 @@ public class RegisterViewModelTests
     [Fact]
     public async Task RegisterAsync_ServiceThrows_DoesNotNavigate()
     {
-        _authService.RegisterAsync(Arg.Any<RegisterRequest>())
+        _authService
+            .RegisterAsync(Arg.Any<RegisterRequest>())
             .ThrowsAsync(new HttpRequestException("Email already registered"));
         var sut = WithValidForm(CreateSut());
 
@@ -68,7 +69,8 @@ public class RegisterViewModelTests
     [Fact]
     public async Task RegisterAsync_ServiceThrows_SetsError()
     {
-        _authService.RegisterAsync(Arg.Any<RegisterRequest>())
+        _authService
+            .RegisterAsync(Arg.Any<RegisterRequest>())
             .ThrowsAsync(new HttpRequestException("Email already registered"));
         var sut = WithValidForm(CreateSut());
 

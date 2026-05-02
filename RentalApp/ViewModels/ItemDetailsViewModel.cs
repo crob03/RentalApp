@@ -9,8 +9,8 @@ namespace RentalApp.ViewModels;
 
 public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
 {
-    private readonly IApiService _api;
-    private readonly IAuthenticationService _authService;
+    private readonly IItemService _itemService;
+    private readonly IAuthService _authService;
     private int _itemId;
 
     [ObservableProperty]
@@ -34,9 +34,9 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     [ObservableProperty]
     private bool editIsAvailable;
 
-    public ItemDetailsViewModel(IApiService api, IAuthenticationService authService)
+    public ItemDetailsViewModel(IItemService itemService, IAuthService authService)
     {
-        _api = api;
+        _itemService = itemService;
         _authService = authService;
         Title = "Item Details";
     }
@@ -51,8 +51,19 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     private Task LoadItemAsync() =>
         RunAsync(async () =>
         {
-            CurrentItem = await _api.GetItemAsync(_itemId);
-            IsOwner = CurrentItem?.OwnerId == _authService.CurrentUser?.Id;
+            CurrentItem = await _itemService.GetItemAsync(_itemId);
+            if (CurrentItem != null)
+            {
+                try
+                {
+                    var currentUser = await _authService.GetCurrentUserAsync();
+                    IsOwner = CurrentItem.OwnerId == currentUser.Id;
+                }
+                catch
+                {
+                    IsOwner = false;
+                }
+            }
         });
 
     [RelayCommand]
@@ -85,11 +96,11 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
 
         await RunAsync(async () =>
         {
-            await _api.UpdateItemAsync(
+            await _itemService.UpdateItemAsync(
                 CurrentItem.Id,
                 new UpdateItemRequest(EditTitle, EditDescription, rate, EditIsAvailable)
             );
-            CurrentItem = await _api.GetItemAsync(CurrentItem.Id);
+            CurrentItem = await _itemService.GetItemAsync(CurrentItem.Id);
             IsEditing = false;
         });
     }

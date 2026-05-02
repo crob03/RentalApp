@@ -36,7 +36,12 @@ internal class RemoteReviewService : RemoteServiceBase, IReviewService
     {
         var response = await _apiClient.PostAsJsonAsync(
             "reviews",
-            new { rentalId = request.RentalId, rating = request.Rating, comment = request.Comment }
+            new
+            {
+                rentalId = request.RentalId,
+                rating = request.Rating,
+                comment = request.Comment,
+            }
         );
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<CreateReviewResponse>()

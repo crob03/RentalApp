@@ -42,8 +42,8 @@ public class LocalItemServiceTests : IClassFixture<DatabaseFixture<LocalItemServ
     [Fact]
     public async Task CreateItemAsync_NoSession_ThrowsInvalidOperationException()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => CreateSut().CreateItemAsync(new CreateItemRequest("Title", "Desc", 10.0, 1, 55.0, -3.0))
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut().CreateItemAsync(new CreateItemRequest("Title", "Desc", 10.0, 1, 55.0, -3.0))
         );
     }
 }

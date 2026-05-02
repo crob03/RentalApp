@@ -22,7 +22,8 @@ internal class LocalItemService : IItemService
     public LocalItemService(
         IItemRepository itemRepository,
         ICategoryRepository categoryRepository,
-        AuthTokenState tokenState)
+        AuthTokenState tokenState
+    )
     {
         _itemRepository = itemRepository;
         _categoryRepository = categoryRepository;
@@ -32,10 +33,22 @@ internal class LocalItemService : IItemService
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
         var totalItems = await _itemRepository.CountItemsAsync(request.Category, request.Search);
-        var dbItems = await _itemRepository.GetItemsAsync(request.Category, request.Search, request.Page, request.PageSize);
+        var dbItems = await _itemRepository.GetItemsAsync(
+            request.Category,
+            request.Search,
+            request.Page,
+            request.PageSize
+        );
         var items = dbItems.Select(ToItemSummary).ToList();
-        var totalPages = request.PageSize > 0 ? (int)Math.Ceiling((double)totalItems / request.PageSize) : 0;
-        return new ItemsResponse(items, TotalItems: totalItems, Page: request.Page, PageSize: request.PageSize, TotalPages: totalPages);
+        var totalPages =
+            request.PageSize > 0 ? (int)Math.Ceiling((double)totalItems / request.PageSize) : 0;
+        return new ItemsResponse(
+            items,
+            TotalItems: totalItems,
+            Page: request.Page,
+            PageSize: request.PageSize,
+            TotalPages: totalPages
+        );
     }
 
     public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
@@ -43,15 +56,27 @@ internal class LocalItemService : IItemService
         var origin = _geoFactory.CreatePoint(new NtsCoordinate(request.Lon, request.Lat));
         var radiusMeters = request.Radius * 1000;
 
-        var dbItems = await _itemRepository.GetNearbyItemsAsync(origin, radiusMeters, request.Category, 1, int.MaxValue);
+        var dbItems = await _itemRepository.GetNearbyItemsAsync(
+            origin,
+            radiusMeters,
+            request.Category,
+            1,
+            int.MaxValue
+        );
         var items = dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
 
-        return new NearbyItemsResponse(items, new SearchLocationResponse(request.Lat, request.Lon), request.Radius, items.Count);
+        return new NearbyItemsResponse(
+            items,
+            new SearchLocationResponse(request.Lat, request.Lon),
+            request.Radius,
+            items.Count
+        );
     }
 
     public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
-        var dbItem = await _itemRepository.GetItemAsync(id)
+        var dbItem =
+            await _itemRepository.GetItemAsync(id)
             ?? throw new InvalidOperationException($"Item {id} not found.");
         return ToItemDetail(dbItem);
     }
@@ -62,47 +87,116 @@ internal class LocalItemService : IItemService
             throw new InvalidOperationException("No user is currently authenticated");
 
         var ownerId = int.Parse(_tokenState.CurrentToken!);
-        var location = _geoFactory.CreatePoint(new NtsCoordinate(request.Longitude, request.Latitude));
+        var location = _geoFactory.CreatePoint(
+            new NtsCoordinate(request.Longitude, request.Latitude)
+        );
         var dbItem = await _itemRepository.CreateItemAsync(
-            request.Title, request.Description, request.DailyRate,
-            request.CategoryId, ownerId, location
+            request.Title,
+            request.Description,
+            request.DailyRate,
+            request.CategoryId,
+            ownerId,
+            location
         );
 
         return new CreateItemResponse(
-            dbItem.Id, dbItem.Title, dbItem.Description, dbItem.DailyRate,
-            dbItem.CategoryId, dbItem.Category.Name, dbItem.OwnerId,
+            dbItem.Id,
+            dbItem.Title,
+            dbItem.Description,
+            dbItem.DailyRate,
+            dbItem.CategoryId,
+            dbItem.Category.Name,
+            dbItem.OwnerId,
             $"{dbItem.Owner.FirstName} {dbItem.Owner.LastName}",
-            request.Latitude, request.Longitude, dbItem.IsAvailable, dbItem.CreatedAt ?? DateTime.UtcNow
+            request.Latitude,
+            request.Longitude,
+            dbItem.IsAvailable,
+            dbItem.CreatedAt ?? DateTime.UtcNow
         );
     }
 
     public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
-        var dbItem = await _itemRepository.UpdateItemAsync(id, request.Title, request.Description, request.DailyRate, request.IsAvailable);
-        return new UpdateItemResponse(dbItem.Id, dbItem.Title, dbItem.Description ?? string.Empty, dbItem.DailyRate, dbItem.IsAvailable);
+        var dbItem = await _itemRepository.UpdateItemAsync(
+            id,
+            request.Title,
+            request.Description,
+            request.DailyRate,
+            request.IsAvailable
+        );
+        return new UpdateItemResponse(
+            dbItem.Id,
+            dbItem.Title,
+            dbItem.Description ?? string.Empty,
+            dbItem.DailyRate,
+            dbItem.IsAvailable
+        );
     }
 
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var results = await _categoryRepository.GetAllAsync();
-        var categories = results.Select(r => new CategoryResponse(r.Category.Id, r.Category.Name, r.Category.Slug, r.ItemCount)).ToList();
+        var categories = results
+            .Select(r => new CategoryResponse(
+                r.Category.Id,
+                r.Category.Name,
+                r.Category.Slug,
+                r.ItemCount
+            ))
+            .ToList();
         return new CategoriesResponse(categories);
     }
 
     private static ItemSummaryResponse ToItemSummary(Database.Models.Item i) =>
-        new(i.Id, i.Title, i.Description, i.DailyRate, i.CategoryId, i.Category.Name,
-            i.OwnerId, $"{i.Owner.FirstName} {i.Owner.LastName}", OwnerRating: null,
-            i.IsAvailable, AverageRating: null, i.CreatedAt ?? DateTime.UtcNow);
+        new(
+            i.Id,
+            i.Title,
+            i.Description,
+            i.DailyRate,
+            i.CategoryId,
+            i.Category.Name,
+            i.OwnerId,
+            $"{i.Owner.FirstName} {i.Owner.LastName}",
+            OwnerRating: null,
+            i.IsAvailable,
+            AverageRating: null,
+            i.CreatedAt ?? DateTime.UtcNow
+        );
 
     private static NearbyItemResponse ToNearbyItem(Database.Models.Item i, GeoPoint origin) =>
-        new(i.Id, i.Title, i.Description, i.DailyRate, i.CategoryId, i.Category.Name,
-            i.OwnerId, $"{i.Owner.FirstName} {i.Owner.LastName}",
-            Latitude: i.Location.Y, Longitude: i.Location.X,
-            Distance: i.Location.Distance(origin) / 1000.0, i.IsAvailable, AverageRating: null);
+        new(
+            i.Id,
+            i.Title,
+            i.Description,
+            i.DailyRate,
+            i.CategoryId,
+            i.Category.Name,
+            i.OwnerId,
+            $"{i.Owner.FirstName} {i.Owner.LastName}",
+            Latitude: i.Location.Y,
+            Longitude: i.Location.X,
+            Distance: i.Location.Distance(origin) / 1000.0,
+            i.IsAvailable,
+            AverageRating: null
+        );
 
     private static ItemDetailResponse ToItemDetail(Database.Models.Item i) =>
-        new(i.Id, i.Title, i.Description, i.DailyRate, i.CategoryId, i.Category.Name,
-            i.OwnerId, $"{i.Owner.FirstName} {i.Owner.LastName}", OwnerRating: null,
-            Latitude: i.Location.Y, Longitude: i.Location.X, i.IsAvailable,
-            AverageRating: null, TotalReviews: 0, i.CreatedAt ?? DateTime.UtcNow, Reviews: []);
+        new(
+            i.Id,
+            i.Title,
+            i.Description,
+            i.DailyRate,
+            i.CategoryId,
+            i.Category.Name,
+            i.OwnerId,
+            $"{i.Owner.FirstName} {i.Owner.LastName}",
+            OwnerRating: null,
+            Latitude: i.Location.Y,
+            Longitude: i.Location.X,
+            i.IsAvailable,
+            AverageRating: null,
+            TotalReviews: 0,
+            i.CreatedAt ?? DateTime.UtcNow,
+            Reviews: []
+        );
 }

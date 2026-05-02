@@ -18,10 +18,21 @@ public class RemoteReviewServiceTests
     {
         _apiClient
             .GetAsync(Arg.Is<string>(s => s.StartsWith("items/5/reviews")))
-            .Returns(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = JsonContent.Create(new { reviews = Array.Empty<object>(), totalReviews = 0, page = 1, pageSize = 20, totalPages = 0 }),
-            });
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            reviews = Array.Empty<object>(),
+                            totalReviews = 0,
+                            page = 1,
+                            pageSize = 20,
+                            totalPages = 0,
+                        }
+                    ),
+                }
+            );
 
         var result = await CreateSut().GetItemReviewsAsync(5, new GetReviewsRequest(1, 20));
 
@@ -33,10 +44,21 @@ public class RemoteReviewServiceTests
     {
         _apiClient
             .GetAsync(Arg.Is<string>(s => s.StartsWith("users/3/reviews")))
-            .Returns(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = JsonContent.Create(new { reviews = Array.Empty<object>(), totalReviews = 0, page = 1, pageSize = 20, totalPages = 0 }),
-            });
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            reviews = Array.Empty<object>(),
+                            totalReviews = 0,
+                            page = 1,
+                            pageSize = 20,
+                            totalPages = 0,
+                        }
+                    ),
+                }
+            );
 
         var result = await CreateSut().GetUserReviewsAsync(3, new GetReviewsRequest(1, 20));
 
@@ -48,13 +70,15 @@ public class RemoteReviewServiceTests
     {
         _apiClient
             .PostAsJsonAsync("reviews", Arg.Any<object>())
-            .Returns(new HttpResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = JsonContent.Create(new { error = "Bad", message = "Invalid" }),
-            });
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = JsonContent.Create(new { error = "Bad", message = "Invalid" }),
+                }
+            );
 
-        await Assert.ThrowsAsync<HttpRequestException>(
-            () => CreateSut().CreateReviewAsync(new CreateReviewRequest(1, 5, "Great"))
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            CreateSut().CreateReviewAsync(new CreateReviewRequest(1, 5, "Great"))
         );
     }
 }

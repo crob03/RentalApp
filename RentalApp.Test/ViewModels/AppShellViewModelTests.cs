@@ -18,8 +18,14 @@ public class AppShellViewModelTests
     private sealed class TestableAppShellViewModel : AppShellViewModel
     {
         public bool ConfirmResult { get; set; }
-        public TestableAppShellViewModel(AuthTokenState tokenState, ICredentialStore credentialStore, INavigationService navigationService)
+
+        public TestableAppShellViewModel(
+            AuthTokenState tokenState,
+            ICredentialStore credentialStore,
+            INavigationService navigationService
+        )
             : base(tokenState, credentialStore, navigationService) { }
+
         protected override Task<bool> ConfirmLogoutAsync() => Task.FromResult(ConfirmResult);
     }
 

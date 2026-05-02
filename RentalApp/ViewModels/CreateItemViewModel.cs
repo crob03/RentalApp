@@ -9,7 +9,7 @@ namespace RentalApp.ViewModels;
 
 public partial class CreateItemViewModel : BaseViewModel
 {
-    private readonly IApiService _api;
+    private readonly IItemService _itemService;
     private readonly ILocationService _locationService;
     private readonly INavigationService _navigationService;
 
@@ -29,12 +29,12 @@ public partial class CreateItemViewModel : BaseViewModel
     private CategoryResponse? selectedCategory;
 
     public CreateItemViewModel(
-        IApiService api,
+        IItemService itemService,
         ILocationService locationService,
         INavigationService navigationService
     )
     {
-        _api = api;
+        _itemService = itemService;
         _locationService = locationService;
         _navigationService = navigationService;
         Title = "List an Item";
@@ -44,7 +44,7 @@ public partial class CreateItemViewModel : BaseViewModel
     private Task LoadCategoriesAsync() =>
         RunAsync(async () =>
         {
-            var response = await _api.GetCategoriesAsync();
+            var response = await _itemService.GetCategoriesAsync();
             Categories = response.Categories;
         });
 
@@ -59,7 +59,7 @@ public partial class CreateItemViewModel : BaseViewModel
         await RunAsync(async () =>
         {
             var (lat, lon) = await _locationService.GetCurrentLocationAsync();
-            await _api.CreateItemAsync(
+            await _itemService.CreateItemAsync(
                 new CreateItemRequest(
                     ItemTitle,
                     Description.Length > 0 ? Description : null,

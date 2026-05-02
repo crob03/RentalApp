@@ -12,12 +12,23 @@ public partial class RegisterViewModel : BaseViewModel
     private readonly IAuthService _authService;
     private readonly INavigationService _navigationService;
 
-    [ObservableProperty] private string firstName = string.Empty;
-    [ObservableProperty] private string lastName = string.Empty;
-    [ObservableProperty] private string email = string.Empty;
-    [ObservableProperty] private string password = string.Empty;
-    [ObservableProperty] private string confirmPassword = string.Empty;
-    [ObservableProperty] private bool acceptTerms;
+    [ObservableProperty]
+    private string firstName = string.Empty;
+
+    [ObservableProperty]
+    private string lastName = string.Empty;
+
+    [ObservableProperty]
+    private string email = string.Empty;
+
+    [ObservableProperty]
+    private string password = string.Empty;
+
+    [ObservableProperty]
+    private string confirmPassword = string.Empty;
+
+    [ObservableProperty]
+    private bool acceptTerms;
 
     public RegisterViewModel(IAuthService authService, INavigationService navigationService)
     {
@@ -46,7 +57,9 @@ public partial class RegisterViewModel : BaseViewModel
 
         try
         {
-            await _authService.RegisterAsync(new RegisterRequest(FirstName, LastName, Email, Password));
+            await _authService.RegisterAsync(
+                new RegisterRequest(FirstName, LastName, Email, Password)
+            );
             await _navigationService.NavigateBackAsync();
         }
         catch (Exception ex)
@@ -60,12 +73,18 @@ public partial class RegisterViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task NavigateBackToLoginAsync() =>
-        await _navigationService.NavigateBackAsync();
+    private async Task NavigateBackToLoginAsync() => await _navigationService.NavigateBackAsync();
 
     private bool ValidateForm()
     {
-        var error = RegistrationValidator.Validate(FirstName, LastName, Email, Password, ConfirmPassword, AcceptTerms);
+        var error = RegistrationValidator.Validate(
+            FirstName,
+            LastName,
+            Email,
+            Password,
+            ConfirmPassword,
+            AcceptTerms
+        );
         if (error is not null)
         {
             SetError(error);
