@@ -31,11 +31,7 @@ public class LocalAuthServiceTests
     public Task DisposeAsync() => Task.CompletedTask;
 
     private LocalAuthService CreateSut() =>
-        new(
-            new UserRepository(_contextFactory),
-            new ItemRepository(_contextFactory),
-            _tokenState
-        );
+        new(new UserRepository(_contextFactory), new ItemRepository(_contextFactory), _tokenState);
 
     private async Task<int> SeedUserAsync(
         string email = "jane@example.com",
@@ -134,11 +130,15 @@ public class LocalAuthServiceTests
     public async Task RegisterAsync_DuplicateEmailDifferentCase_ThrowsInvalidOperationException()
     {
         await CreateSut()
-            .RegisterAsync(new RegisterRequest("Alice", "Smith", "Alice@example.com", "Password1!"));
+            .RegisterAsync(
+                new RegisterRequest("Alice", "Smith", "Alice@example.com", "Password1!")
+            );
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             CreateSut()
-                .RegisterAsync(new RegisterRequest("Alice", "Smith", "alice@example.com", "Password1!"))
+                .RegisterAsync(
+                    new RegisterRequest("Alice", "Smith", "alice@example.com", "Password1!")
+                )
         );
     }
 

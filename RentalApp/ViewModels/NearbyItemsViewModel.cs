@@ -8,6 +8,11 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// Transient view model for the nearby-items page. Extends <see cref="ItemsSearchBaseViewModel{T}"/>
+/// with radius-based filtering and client-side pagination. The nearby-items endpoint returns all
+/// matching items in a single call; results are cached in <c>_allNearbyItems</c> and sliced client-side.
+/// </summary>
 public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemResponse>
 {
     private readonly ILocationService _locationService;
@@ -17,9 +22,18 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
     private bool _locationFetched;
     private List<NearbyItemResponse> _allNearbyItems = [];
 
+    /// <summary>Search radius in kilometres; changing the value triggers a reload.</summary>
     [ObservableProperty]
     private double radius = 5.0;
 
+    /// <summary>
+    /// Initialises the view model with item, location, navigation, and authentication dependencies.
+    /// </summary>
+    /// <param name="itemService">Used to fetch nearby items and categories.</param>
+    /// <param name="locationService">Used to obtain the device's current GPS coordinates on first load.</param>
+    /// <param name="navigationService">Passed to <see cref="ItemsSearchBaseViewModel{T}"/>.</param>
+    /// <param name="tokenState">Passed to <see cref="ItemsSearchBaseViewModel{T}"/>.</param>
+    /// <param name="credentialStore">Passed to <see cref="ItemsSearchBaseViewModel{T}"/>.</param>
     public NearbyItemsViewModel(
         IItemService itemService,
         ILocationService locationService,
@@ -42,6 +56,10 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
         await LoadNearbyItemsCommand.ExecuteAsync(null);
     }
 
+    /// <summary>
+    /// Fetches all nearby items from the API, caches the full result, and shows the first page.
+    /// Device location is resolved once and cached for subsequent filter/radius changes.
+    /// </summary>
     [RelayCommand]
     private Task LoadNearbyItemsAsync(CancellationToken ct) =>
         RunLoadAsync(async () =>
@@ -67,6 +85,7 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
             await LoadCategoriesAsync();
         });
 
+    /// <summary>Slices the next page from the cached result set and appends it to <see cref="ItemsSearchBaseViewModel{T}.Items"/>.</summary>
     [RelayCommand]
     private Task LoadMoreItemsAsync() =>
         RunLoadMoreAsync(() =>

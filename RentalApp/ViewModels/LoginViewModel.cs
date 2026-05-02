@@ -8,6 +8,11 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// Singleton view model for the login page. Manages email/password form state, optional credential
+/// auto-fill, and delegates authentication to <see cref="IAuthService"/>. Owns bearer-token state
+/// and credential persistence after a successful login.
+/// </summary>
 public partial class LoginViewModel : BaseViewModel, IQueryAttributable
 {
     private readonly IAuthService _authService;
@@ -15,15 +20,25 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
     private readonly ICredentialStore _credentialStore;
     private readonly INavigationService _navigationService;
 
+    /// <summary>The email address entered by the user.</summary>
     [ObservableProperty]
     private string email = string.Empty;
 
+    /// <summary>The password entered by the user.</summary>
     [ObservableProperty]
     private string password = string.Empty;
 
+    /// <summary>Whether the user has opted to persist credentials for auto-fill on next launch.</summary>
     [ObservableProperty]
     private bool rememberMe;
 
+    /// <summary>
+    /// Initialises the view model with authentication and navigation dependencies.
+    /// </summary>
+    /// <param name="authService">Used to perform login requests.</param>
+    /// <param name="tokenState">Receives the bearer token on successful login.</param>
+    /// <param name="credentialStore">Persisted credential store read on app start and written when <see cref="RememberMe"/> is set.</param>
+    /// <param name="navigationService">Used to navigate to <see cref="Routes.Main"/> after login.</param>
     public LoginViewModel(
         IAuthService authService,
         AuthTokenState tokenState,
@@ -38,6 +53,10 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
         Title = "Login";
     }
 
+    /// <summary>
+    /// Pre-fills the form with saved credentials if present, and sets <see cref="RememberMe"/> to
+    /// <see langword="true"/> to signal that credentials were restored.
+    /// </summary>
     public async Task InitializeAsync()
     {
         var credentials = await _credentialStore.GetAsync();
@@ -49,6 +68,10 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
         RememberMe = true;
     }
 
+    /// <summary>
+    /// Handles the <c>sessionExpired</c> query attribute set when the app detects a token expiry,
+    /// showing a contextual error message.
+    /// </summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("sessionExpired", out var value) && value is true)
@@ -66,6 +89,7 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
 
     private bool CanLogin() => !IsBusy;
 
+    /// <summary>Validates credentials and navigates to <see cref="Routes.Main"/> on success.</summary>
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
@@ -98,6 +122,7 @@ public partial class LoginViewModel : BaseViewModel, IQueryAttributable
         }
     }
 
+    /// <summary>Navigates to the registration page.</summary>
     [RelayCommand]
     private async Task NavigateToRegisterAsync() =>
         await _navigationService.NavigateToAsync(Routes.Register);

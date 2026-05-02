@@ -18,6 +18,12 @@ public partial class TempViewModel : AuthenticatedViewModel
     /// </summary>
     public string Message => "This is a placeholder page.";
 
+    /// <summary>
+    /// Initialises the view model with authentication and navigation dependencies.
+    /// </summary>
+    /// <param name="tokenState">Passed to <see cref="AuthenticatedViewModel"/>.</param>
+    /// <param name="credentialStore">Passed to <see cref="AuthenticatedViewModel"/>.</param>
+    /// <param name="navigationService">Passed to <see cref="AuthenticatedViewModel"/>.</param>
     public TempViewModel(
         AuthTokenState tokenState,
         ICredentialStore credentialStore,

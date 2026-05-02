@@ -15,6 +15,7 @@ public class UserRepositoryTests
     }
 
     public Task InitializeAsync() => _fixture.ResetAsync();
+
     public Task DisposeAsync() => Task.CompletedTask;
 
     private UserRepository CreateSut() => new(_fixture.ContextFactory);
