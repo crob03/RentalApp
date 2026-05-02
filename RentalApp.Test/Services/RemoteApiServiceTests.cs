@@ -479,7 +479,7 @@ public class RemoteApiServiceTests
     public async Task GetIncomingRentalsAsync_SuccessResponse_ReturnsMappedRentals()
     {
         _apiClient
-            .GetAsync("rentals/incoming")
+            .GetAsync(Arg.Is<string>(s => s.StartsWith("rentals/incoming")))
             .Returns(
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
@@ -522,7 +522,7 @@ public class RemoteApiServiceTests
     public async Task GetIncomingRentalsAsync_WithStatusFilter_IncludesStatusInQuery()
     {
         _apiClient
-            .GetAsync("rentals/incoming?status=active")
+            .GetAsync("rentals/incoming?page=1&pageSize=20&status=active")
             .Returns(
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
@@ -535,7 +535,7 @@ public class RemoteApiServiceTests
 
         await sut.GetIncomingRentalsAsync(new GetRentalsRequest("active"));
 
-        await _apiClient.Received(1).GetAsync("rentals/incoming?status=active");
+        await _apiClient.Received(1).GetAsync("rentals/incoming?page=1&pageSize=20&status=active");
     }
 
     // ── GetOutgoingRentalsAsync ────────────────────────────────────────
@@ -544,7 +544,7 @@ public class RemoteApiServiceTests
     public async Task GetOutgoingRentalsAsync_SuccessResponse_ReturnsMappedRentals()
     {
         _apiClient
-            .GetAsync("rentals/outgoing")
+            .GetAsync(Arg.Is<string>(s => s.StartsWith("rentals/outgoing")))
             .Returns(
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
