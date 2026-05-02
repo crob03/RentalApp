@@ -11,7 +11,7 @@ public class LocalRentalServiceTests
     public async Task GetIncomingRentalsAsync_ThrowsNotImplementedException()
     {
         await Assert.ThrowsAsync<NotImplementedException>(() =>
-            CreateSut().GetIncomingRentalsAsync(new GetRentalsRequest(null, 1, 20))
+            CreateSut().GetIncomingRentalsAsync(new GetRentalsRequest())
         );
     }
 
@@ -19,7 +19,7 @@ public class LocalRentalServiceTests
     public async Task GetOutgoingRentalsAsync_ThrowsNotImplementedException()
     {
         await Assert.ThrowsAsync<NotImplementedException>(() =>
-            CreateSut().GetOutgoingRentalsAsync(new GetRentalsRequest(null, 1, 20))
+            CreateSut().GetOutgoingRentalsAsync(new GetRentalsRequest())
         );
     }
 

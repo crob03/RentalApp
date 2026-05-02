@@ -2,7 +2,6 @@ using System.Net.Http.Json;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
-using static System.FormattableString;
 
 namespace RentalApp.Services;
 
@@ -13,10 +12,10 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
     public RemoteRentalService(IApiClient apiClient) => _apiClient = apiClient;
 
     public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
-        GetRentalsAsync("rentals/incoming", request.Status, request.Page, request.PageSize);
+        GetRentalsAsync("rentals/incoming", request.Status);
 
     public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
-        GetRentalsAsync("rentals/outgoing", request.Status, request.Page, request.PageSize);
+        GetRentalsAsync("rentals/outgoing", request.Status);
 
     public async Task<RentalDetailResponse> GetRentalAsync(int id)
     {
@@ -53,7 +52,7 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
         UpdateRentalStatusRequest request
     )
     {
-        var response = await _apiClient.PutAsJsonAsync(
+        var response = await _apiClient.PatchAsJsonAsync(
             $"rentals/{id}/status",
             new { status = request.Status }
         );
@@ -62,16 +61,9 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
             ?? throw new InvalidOperationException("Empty update status response from API");
     }
 
-    private async Task<RentalsListResponse> GetRentalsAsync(
-        string path,
-        string? status,
-        int page,
-        int pageSize
-    )
+    private async Task<RentalsListResponse> GetRentalsAsync(string path, string? status)
     {
-        var query = Invariant($"{path}?page={page}&pageSize={pageSize}");
-        if (status != null)
-            query += $"&status={Uri.EscapeDataString(status)}";
+        var query = status != null ? $"{path}?status={Uri.EscapeDataString(status)}" : path;
 
         var response = await _apiClient.GetAsync(query);
         await EnsureSuccessAsync(response);

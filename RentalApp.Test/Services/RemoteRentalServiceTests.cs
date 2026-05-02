@@ -27,7 +27,7 @@ public class RemoteRentalServiceTests
                 }
             );
 
-        var result = await CreateSut().GetIncomingRentalsAsync(new GetRentalsRequest(null, 1, 20));
+        var result = await CreateSut().GetIncomingRentalsAsync(new GetRentalsRequest());
 
         Assert.NotNull(result);
     }
@@ -46,7 +46,7 @@ public class RemoteRentalServiceTests
                 }
             );
 
-        var result = await CreateSut().GetOutgoingRentalsAsync(new GetRentalsRequest(null, 1, 20));
+        var result = await CreateSut().GetOutgoingRentalsAsync(new GetRentalsRequest());
 
         Assert.NotNull(result);
     }

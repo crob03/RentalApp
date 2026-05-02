@@ -33,3 +33,6 @@ use-local-api:
 	adb shell 'run-as $(PKG) sh -c "mkdir -p shared_prefs && printf \"<?xml version=\x221.0\x22 encoding=\x22utf-8\x22 standalone=\x22yes\x22 ?>\n<map>\n    <boolean name=\x22UseSharedApi\x22 value=\x22false\x22 />\n</map>\n\" > $(PREFS_FILE)"'
 	adb shell am force-stop $(PKG)
 	adb shell monkey -p $(PKG) -c android.intent.category.LAUNCHER 1 > /dev/null
+
+format:
+	dotnet csharpier format .

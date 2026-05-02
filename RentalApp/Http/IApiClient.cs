@@ -47,4 +47,19 @@ public interface IApiClient
         T value,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Sends a PATCH request with <paramref name="value"/> serialised as JSON to the specified
+    /// <paramref name="requestUri"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the value to serialise.</typeparam>
+    /// <param name="requestUri">The relative or absolute URI of the request.</param>
+    /// <param name="value">The value to serialise as the request body.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The HTTP response message.</returns>
+    Task<HttpResponseMessage> PatchAsJsonAsync<T>(
+        string requestUri,
+        T value,
+        CancellationToken cancellationToken = default
+    );
 }
