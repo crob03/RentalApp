@@ -24,7 +24,9 @@ public partial class MainViewModel : BaseViewModel
         Title = "Dashboard";
     }
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync() => RunAsync(LoadUserAsync);
+
+    private async Task LoadUserAsync()
     {
         CurrentUser = await _authService.GetCurrentUserAsync();
         WelcomeMessage = $"Welcome, {CurrentUser.FirstName} {CurrentUser.LastName}!";
@@ -47,5 +49,5 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(Routes.CreateItem);
 
     [RelayCommand]
-    private Task RefreshDataAsync() => RunAsync(InitializeAsync);
+    private Task RefreshDataAsync() => RunAsync(LoadUserAsync);
 }

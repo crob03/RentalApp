@@ -65,7 +65,7 @@ public class ItemRepository : IItemRepository
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<DbItem>> GetNearbyItemsAsync(
+    public async Task<IEnumerable<NearbyItemResult>> GetNearbyItemsAsync(
         Point origin,
         double radiusMeters,
         string? category
@@ -81,7 +81,12 @@ public class ItemRepository : IItemRepository
         if (category != null)
             query = query.Where(i => i.Category.Slug == category);
 
-        return await query.OrderBy(i => i.Location.Distance(origin)).ToListAsync();
+        var results = await query
+            .OrderBy(i => i.Location.Distance(origin))
+            .Select(i => new { Item = i, DistanceMeters = i.Location.Distance(origin) })
+            .ToListAsync();
+
+        return results.Select(r => new NearbyItemResult(r.Item, r.DistanceMeters));
     }
 
     /// <inheritdoc/>

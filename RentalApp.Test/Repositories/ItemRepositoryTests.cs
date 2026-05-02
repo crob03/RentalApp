@@ -99,7 +99,7 @@ public class ItemRepositoryTests
         var items = await sut.GetNearbyItemsAsync(origin, 5_000, null);
 
         Assert.Equal(2, items.Count());
-        Assert.DoesNotContain(items, i => i.Title == "Far Away Laptop");
+        Assert.DoesNotContain(items, r => r.Item.Title == "Far Away Laptop");
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class ItemRepositoryTests
         var items = (await sut.GetNearbyItemsAsync(origin, 5_000, null)).ToList();
 
         Assert.Equal(2, items.Count);
-        Assert.Equal(1, items[0].Id);
+        Assert.Equal(1, items[0].Item.Id);
     }
 
     // ── GetItemAsync ───────────────────────────────────────────────────

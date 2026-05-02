@@ -1,11 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
-using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
 using RentalApp.Http;
 using GeoFactory = NetTopologySuite.Geometries.GeometryFactory;
-using GeoPoint = NetTopologySuite.Geometries.Point;
 using NtsCoordinate = NetTopologySuite.Geometries.Coordinate;
 using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 
@@ -67,7 +64,7 @@ internal class LocalItemService : IItemService
             radiusMeters,
             request.Category
         );
-        var items = dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
+        var items = dbItems.Select(r => ToNearbyItem(r.Item, r.DistanceMeters)).ToList();
 
         return new NearbyItemsResponse(
             items,
@@ -172,7 +169,7 @@ internal class LocalItemService : IItemService
             i.CreatedAt ?? DateTime.UtcNow
         );
 
-    private static NearbyItemResponse ToNearbyItem(Database.Models.Item i, GeoPoint origin) =>
+    private static NearbyItemResponse ToNearbyItem(Database.Models.Item i, double distanceMeters) =>
         new(
             i.Id,
             i.Title,
@@ -184,7 +181,7 @@ internal class LocalItemService : IItemService
             $"{i.Owner.FirstName} {i.Owner.LastName}",
             Latitude: i.Location.Y,
             Longitude: i.Location.X,
-            Distance: i.Location.Distance(origin) / 1000.0,
+            Distance: distanceMeters / 1000.0,
             i.IsAvailable,
             AverageRating: null
         );
