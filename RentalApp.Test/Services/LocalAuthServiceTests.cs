@@ -1,0 +1,114 @@
+using Microsoft.EntityFrameworkCore;
+using RentalApp.Contracts.Requests;
+using RentalApp.Database.Data;
+using RentalApp.Http;
+using RentalApp.Services;
+using RentalApp.Test.Fixtures;
+
+namespace RentalApp.Test.Services;
+
+public class LocalAuthServiceTests : IClassFixture<DatabaseFixture<LocalAuthServiceTests>>
+{
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
+    private readonly AuthTokenState _tokenState = new();
+
+    public LocalAuthServiceTests(DatabaseFixture<LocalAuthServiceTests> fixture)
+    {
+        _contextFactory = fixture.ContextFactory;
+    }
+
+    private LocalAuthService CreateSut() => new(_contextFactory, _tokenState);
+
+    private async Task<int> SeedUserAsync(
+        string email = "jane@example.com",
+        string password = "Password1!"
+    )
+    {
+        await using var ctx = _contextFactory.CreateDbContext();
+        var salt = BCrypt.Net.BCrypt.GenerateSalt();
+        var user = new RentalApp.Database.Models.User
+        {
+            FirstName = "Jane",
+            LastName = "Doe",
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password, salt),
+            PasswordSalt = salt,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        };
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync();
+        return user.Id;
+    }
+
+    [Fact]
+    public async Task LoginAsync_ValidCredentials_ReturnsTokenEqualToUserId()
+    {
+        var userId = await SeedUserAsync();
+
+        var result = await CreateSut()
+            .LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
+
+        Assert.Equal(userId.ToString(), result.Token);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WrongPassword_ThrowsUnauthorizedAccessException()
+    {
+        await SeedUserAsync();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            CreateSut().LoginAsync(new LoginRequest("jane@example.com", "wrong"))
+        );
+    }
+
+    [Fact]
+    public async Task LoginAsync_UnknownEmail_ThrowsUnauthorizedAccessException()
+    {
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            CreateSut().LoginAsync(new LoginRequest("nobody@example.com", "Password1!"))
+        );
+    }
+
+    [Fact]
+    public async Task RegisterAsync_NewUser_ReturnsEmailAndName()
+    {
+        var result = await CreateSut()
+            .RegisterAsync(
+                new RegisterRequest("Alice", "Smith", "alice@example.com", "Password1!")
+            );
+
+        Assert.Equal("alice@example.com", result.Email);
+        Assert.Equal("Alice", result.FirstName);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_DuplicateEmail_ThrowsInvalidOperationException()
+    {
+        await SeedUserAsync("dup@example.com");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut()
+                .RegisterAsync(new RegisterRequest("X", "Y", "dup@example.com", "Password1!"))
+        );
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_WithValidToken_ReturnsUser()
+    {
+        var userId = await SeedUserAsync("me@example.com");
+        _tokenState.CurrentToken = userId.ToString();
+
+        var result = await CreateSut().GetCurrentUserAsync();
+
+        Assert.Equal("me@example.com", result.Email);
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_WithNoSession_ThrowsInvalidOperationException()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut().GetCurrentUserAsync()
+        );
+    }
+}
