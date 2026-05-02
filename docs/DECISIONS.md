@@ -20,8 +20,10 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 9 | 2026-04-16 | Tooling / Dev Workflow | Runtime API switching via Android SharedPreferences written through `adb shell run-as` |
 | 10 | 2026-04-17 | Architecture | `IApiService` facade with `RemoteApiService` and `LocalApiService` as symmetric implementations |
 | 11 | 2026-04-17 | Architecture | `LoginAsync` returns `Task`; each implementation manages its own session state internally |
-| 12 | 2026-04-17 | Architecture | `RentalApp.Models` DTOs as the exclusive return types of `IApiService` — never EF entities |
+| 12 | 2026-04-17 | Architecture | `RentalApp.Models` DTOs as the exclusive return types of `IApiService` — never EF entities *(superseded by Decision 14)* |
 | 13 | 2026-04-30 | Architecture / Data Access | All EF Core entity configuration lives in `AppDbContext.OnModelCreating`; models carry only `[Required]` |
+| 14 | 2026-05-01 | Architecture | `RentalApp.Contracts` project as the exclusive source of `IApiService` request/response record types *(supersedes Decision 12)* |
+| 15 | 2026-05-01 | Architecture / MVVM | ViewModels may call `IApiService` directly for non-auth operations; `IItemService` is retired |
 
 ---
 
@@ -211,3 +213,33 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **All configuration via annotations** — cannot express all EF behaviour (relationships, custom column types such as `geography(Point, 4326)`, composite indexes). Not viable as a complete solution.
 
 **Rationale**: `AppDbContext` is already the single place that configures indexes, max lengths, relationships, and column types. Extending it to also own table names and primary keys makes it the unambiguous source of truth for how EF sees each entity. Models become near-POCOs decorated only with validation annotations, with no dependency on `Microsoft.EntityFrameworkCore` or `System.ComponentModel.DataAnnotations.Schema`.
+
+---
+
+### Decision 14: `RentalApp.Contracts` as the Exclusive Source of `IApiService` Request/Response Types *(Supersedes Decision 12)*
+**Date**: 2026-05-02
+**Area**: Architecture
+
+**Decision**: All `IApiService` method parameters and return types use records defined in the `RentalApp.Contracts` class library. Requests live under `RentalApp.Contracts/Requests/`; responses live under `RentalApp.Contracts/Responses/`. EF Core entities from `RentalApp.Database.Models` are never returned from `IApiService` or exposed to any layer above it. `RentalApp.Models` is deleted.
+
+**Alternatives considered**:
+- **Retain `RentalApp.Models` in the UI project** — the prior approach (Decision 12). Rejected because it allowed `RemoteApiService` and `LocalApiService` to diverge — each implementation could define or interpret data objects differently with no enforcement of alignment.
+- **Inline record types per service file** — no shared project; each implementation defines its own local types. Rejected for the same reason: duplicated definitions with no single point of truth, meaning shape mismatches between the two implementations go undetected until runtime.
+- **`RentalApp.Database` as the home for shared types** — `RentalApp` already references `RentalApp.Database`, so types defined there are accessible. Rejected because a data access library carrying transport contract types is a layering violation; it would mix persistence concerns with API shape concerns in a single project.
+
+**Rationale**: Without a shared contracts project, `RemoteApiService` and `LocalApiService` each had their own interpretation of what a request or response looked like, with no mechanism to keep them in sync. `RentalApp.Contracts` is the single source of truth for all data objects crossing the `IApiService` boundary — both implementations must satisfy the same record shapes, so drift between the local and remote paths is caught at compile time rather than at runtime. Registering `IApiService` as the single DI switch point only works correctly when both implementations speak the same type language; `RentalApp.Contracts` enforces that.
+
+---
+
+### Decision 15: ViewModels May Call `IApiService` Directly; `IItemService` Retired
+**Date**: 2026-05-01
+**Area**: Architecture / MVVM
+
+**Decision**: The rule from Decision 10 — *"ViewModels → Service → IApiService"* — no longer applies to item operations. ViewModels that perform item CRUD (`ItemsListViewModel`, `NearbyItemsViewModel`, `ItemDetailsViewModel`, `CreateItemViewModel`, and their base `ItemsSearchBaseViewModel`) inject and call `IApiService` directly. `IItemService` and `ItemService` are deleted. Authentication operations remain exclusively behind `IAuthenticationService`; ViewModels must never call `IApiService.LoginAsync` or `IApiService.RegisterAsync` directly.
+
+**Alternatives considered**:
+- **Retain `IItemService` as a thin pass-through** — `ItemService` delegated directly to `IApiService` with input validation. Rejected because the validation responsibility is better placed in the `ItemValidator` helper (now in `Helpers/`), and a service that only validates and delegates adds a layer with no domain logic of its own.
+- **Introduce a new `IItemService` with richer domain logic** — items have lifecycle state (available/unavailable), rental associations, and review aggregates; a stateful service could own these transitions. Rejected as premature given current requirements; this remains the preferred migration path if item domain logic grows in complexity.
+- **Keep the existing `IItemService` and extend `IApiService` to use Contracts types** — the refactoring cost of updating `IItemService`'s signatures to match the new Contracts types is equivalent to removing it, and the resulting thin wrapper provides no architectural benefit.
+
+**Rationale**: `IItemService` existed primarily to provide a stable type boundary between ViewModels and the transport layer. With `RentalApp.Contracts` now serving as that stable boundary (Decision 14), the service layer for items has no remaining responsibility that justifies its existence. Auth operations retain a dedicated service (`IAuthenticationService`) because they carry genuine domain logic — credential persistence, session state, `LoggedInUser` population, and the `OnLoginChanged` event — that must not leak into ViewModels or the transport layer.
