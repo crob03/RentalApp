@@ -526,7 +526,9 @@ public class RemoteApiServiceTests
             .Returns(
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { rentals = Array.Empty<object>(), totalRentals = 0 }),
+                    Content = JsonContent.Create(
+                        new { rentals = Array.Empty<object>(), totalRentals = 0 }
+                    ),
                 }
             );
         var sut = CreateSut();
@@ -629,7 +631,9 @@ public class RemoteApiServiceTests
             .Returns(
                 new HttpResponseMessage(HttpStatusCode.NotFound)
                 {
-                    Content = JsonContent.Create(new { error = "NotFound", message = "Rental not found" }),
+                    Content = JsonContent.Create(
+                        new { error = "NotFound", message = "Rental not found" }
+                    ),
                 }
             );
         var sut = CreateSut();
@@ -702,7 +706,10 @@ public class RemoteApiServiceTests
             );
         var sut = CreateSut();
 
-        var result = await sut.UpdateRentalStatusAsync(1, new UpdateRentalStatusRequest("approved"));
+        var result = await sut.UpdateRentalStatusAsync(
+            1,
+            new UpdateRentalStatusRequest("approved")
+        );
 
         Assert.Equal(1, result.Id);
         Assert.Equal("approved", result.Status);

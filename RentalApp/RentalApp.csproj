@@ -65,6 +65,5 @@
 
   <ItemGroup>
     <ProjectReference Include="../RentalApp.Database/RentalApp.Database.csproj" />
-    <ProjectReference Include="..\RentalApp.Contracts\RentalApp.Contracts.csproj" />
   </ItemGroup>
 </Project>
