@@ -33,7 +33,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
         {
             CurrentPage = 1;
             var response = await ApiService.GetItemsAsync(
-                new GetItemsRequest(SelectedCategory, SearchText, CurrentPage, PageSize)
+                new GetItemsRequest(CurrentPage, PageSize, SelectedCategory, SearchText)
             );
             ct.ThrowIfCancellationRequested();
             Items = new ObservableCollection<ItemSummaryResponse>(response.Items);
@@ -46,7 +46,7 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
         RunLoadMoreAsync(async () =>
         {
             var response = await ApiService.GetItemsAsync(
-                new GetItemsRequest(SelectedCategory, SearchText, CurrentPage, PageSize)
+                new GetItemsRequest(CurrentPage, PageSize, SelectedCategory, SearchText)
             );
             foreach (var item in response.Items)
                 Items.Add(item);

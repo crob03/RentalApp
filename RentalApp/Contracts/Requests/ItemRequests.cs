@@ -3,15 +3,15 @@ namespace RentalApp.Contracts.Requests;
 /// <summary>
 /// Pagination and filter parameters for retrieving a list of items.
 /// </summary>
-/// <param name="Category">When provided, only items in this category slug are returned.</param>
-/// <param name="Search">When provided, only items whose title or description match are returned.</param>
 /// <param name="Page">One-based page number; defaults to 1.</param>
 /// <param name="PageSize">Number of items per page; defaults to 20.</param>
+/// <param name="Category">When provided, only items in this category slug are returned.</param>
+/// <param name="Search">When provided, only items whose title or description match are returned.</param>
 public record GetItemsRequest(
-    string? Category = null,
-    string? Search = null,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    string? Category = null,
+    string? Search = null
 );
 
 /// <summary>
