@@ -1,5 +1,9 @@
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using RentalApp.Constants;
+using RentalApp.Contracts.Requests;
+using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -7,20 +11,34 @@ namespace RentalApp.Test.ViewModels;
 
 public class LoginViewModelTests
 {
-    private readonly IAuthenticationService _authService = Substitute.For<IAuthenticationService>();
-    private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
+    private readonly IAuthService _authService = Substitute.For<IAuthService>();
+    private readonly AuthTokenState _tokenState = new();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
+    private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private LoginViewModel CreateSut() => new(_authService, _navigationService, _credentialStore);
+    private LoginViewModel CreateSut() => new(_authService, _tokenState, _credentialStore, _navigationService);
 
-    // ── LoginAsync — navigation ────────────────────────────────────────
+    private static LoginResponse FakeLogin() => new("eyJ...", DateTime.UtcNow.AddHours(1), 1);
+
+    // ── LoginAsync — success ───────────────────────────────────────────
 
     [Fact]
-    public async Task LoginAsync_SuccessfulAuth_NavigatesToMain()
+    public async Task LoginAsync_ValidCredentials_SetsTokenOnAuthTokenState()
     {
-        _authService
-            .LoginAsync("jane@example.com", "Password1!", false)
-            .Returns(AuthenticationResult.Success());
+        _authService.LoginAsync(Arg.Any<LoginRequest>()).Returns(FakeLogin());
+        var sut = CreateSut();
+        sut.Email = "jane@example.com";
+        sut.Password = "Password1!";
+
+        await sut.LoginCommand.ExecuteAsync(null);
+
+        Assert.Equal("eyJ...", _tokenState.CurrentToken);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ValidCredentials_NavigatesToMain()
+    {
+        _authService.LoginAsync(Arg.Any<LoginRequest>()).Returns(FakeLogin());
         var sut = CreateSut();
         sut.Email = "jane@example.com";
         sut.Password = "Password1!";
@@ -31,11 +49,55 @@ public class LoginViewModelTests
     }
 
     [Fact]
-    public async Task LoginAsync_FailedAuth_DoesNotNavigate()
+    public async Task LoginAsync_RememberMeTrue_SavesCredentials()
     {
-        _authService
-            .LoginAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>())
-            .Returns(AuthenticationResult.Failure("Invalid credentials"));
+        _authService.LoginAsync(Arg.Any<LoginRequest>()).Returns(FakeLogin());
+        var sut = CreateSut();
+        sut.Email = "jane@example.com";
+        sut.Password = "Password1!";
+        sut.RememberMe = true;
+
+        await sut.LoginCommand.ExecuteAsync(null);
+
+        await _credentialStore.Received(1).SaveAsync("jane@example.com", "Password1!");
+    }
+
+    [Fact]
+    public async Task LoginAsync_RememberMeFalse_DoesNotSaveCredentials()
+    {
+        _authService.LoginAsync(Arg.Any<LoginRequest>()).Returns(FakeLogin());
+        var sut = CreateSut();
+        sut.Email = "jane@example.com";
+        sut.Password = "Password1!";
+        sut.RememberMe = false;
+
+        await sut.LoginCommand.ExecuteAsync(null);
+
+        await _credentialStore.DidNotReceive().SaveAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    // ── LoginAsync — failure ───────────────────────────────────────────
+
+    [Fact]
+    public async Task LoginAsync_ServiceThrows_SetsError()
+    {
+        _authService.LoginAsync(Arg.Any<LoginRequest>())
+            .ThrowsAsync(new HttpRequestException("Invalid credentials"));
+        var sut = CreateSut();
+        sut.Email = "jane@example.com";
+        sut.Password = "wrong";
+
+        await sut.LoginCommand.ExecuteAsync(null);
+
+        Assert.True(sut.HasError);
+        Assert.Equal("Invalid credentials", sut.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ServiceThrows_DoesNotNavigate()
+    {
+        _authService.LoginAsync(Arg.Any<LoginRequest>())
+            .ThrowsAsync(new HttpRequestException("Invalid credentials"));
         var sut = CreateSut();
         sut.Email = "jane@example.com";
         sut.Password = "wrong";
@@ -45,11 +107,27 @@ public class LoginViewModelTests
         await _navigationService.DidNotReceive().NavigateToAsync(Arg.Any<string>());
     }
 
+    [Fact]
+    public async Task LoginAsync_ServiceThrows_DoesNotSetToken()
+    {
+        _authService.LoginAsync(Arg.Any<LoginRequest>())
+            .ThrowsAsync(new HttpRequestException("Invalid credentials"));
+        var sut = CreateSut();
+        sut.Email = "jane@example.com";
+        sut.Password = "wrong";
+
+        await sut.LoginCommand.ExecuteAsync(null);
+
+        Assert.Null(_tokenState.CurrentToken);
+    }
+
+    // ── LoginAsync — empty fields ──────────────────────────────────────
+
     [Theory]
     [InlineData("", "Password1!")]
     [InlineData("jane@example.com", "")]
     [InlineData("", "")]
-    public async Task LoginAsync_EmptyFields_DoesNotNavigate(string email, string password)
+    public async Task LoginAsync_EmptyFields_DoesNotCallService(string email, string password)
     {
         var sut = CreateSut();
         sut.Email = email;
@@ -57,10 +135,8 @@ public class LoginViewModelTests
 
         await sut.LoginCommand.ExecuteAsync(null);
 
-        await _navigationService.DidNotReceive().NavigateToAsync(Arg.Any<string>());
+        await _authService.DidNotReceive().LoginAsync(Arg.Any<LoginRequest>());
     }
-
-    // ── LoginAsync — error state ───────────────────────────────────────
 
     [Fact]
     public async Task LoginAsync_EmptyFields_SetsError()
@@ -75,91 +151,12 @@ public class LoginViewModelTests
         Assert.Equal("Please enter both email and password", sut.ErrorMessage);
     }
 
-    [Fact]
-    public async Task LoginAsync_FailedAuth_SetsErrorFromService()
-    {
-        _authService
-            .LoginAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>())
-            .Returns(AuthenticationResult.Failure("Invalid credentials"));
-        var sut = CreateSut();
-        sut.Email = "jane@example.com";
-        sut.Password = "wrong";
-
-        await sut.LoginCommand.ExecuteAsync(null);
-
-        Assert.True(sut.HasError);
-        Assert.Equal("Invalid credentials", sut.ErrorMessage);
-    }
-
-    [Fact]
-    public async Task LoginAsync_SuccessfulAuth_ClearsError()
-    {
-        _authService
-            .LoginAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>())
-            .Returns(AuthenticationResult.Success());
-        var sut = CreateSut();
-        sut.Email = "jane@example.com";
-        sut.Password = "Password1!";
-
-        await sut.LoginCommand.ExecuteAsync(null);
-
-        Assert.False(sut.HasError);
-    }
-
-    // ── NavigateToRegisterAsync ────────────────────────────────────────
-
-    [Fact]
-    public async Task NavigateToRegisterCommand_NavigatesToRegister()
-    {
-        var sut = CreateSut();
-
-        await sut.NavigateToRegisterCommand.ExecuteAsync(null);
-
-        await _navigationService.Received(1).NavigateToAsync(Routes.Register);
-    }
-
-    // ── LoginAsync — RememberMe ────────────────────────────────────────
-
-    [Fact]
-    public async Task LoginAsync_WithRememberMeTrue_PassesRememberMeToService()
-    {
-        _authService
-            .LoginAsync(Arg.Any<string>(), Arg.Any<string>(), true)
-            .Returns(AuthenticationResult.Success());
-        var sut = CreateSut();
-        sut.Email = "jane@example.com";
-        sut.Password = "Password1!";
-        sut.RememberMe = true;
-
-        await sut.LoginCommand.ExecuteAsync(null);
-
-        await _authService.Received(1).LoginAsync("jane@example.com", "Password1!", true);
-    }
-
-    [Fact]
-    public async Task LoginAsync_WithRememberMeFalse_PassesRememberMeToService()
-    {
-        _authService
-            .LoginAsync(Arg.Any<string>(), Arg.Any<string>(), false)
-            .Returns(AuthenticationResult.Success());
-        var sut = CreateSut();
-        sut.Email = "jane@example.com";
-        sut.Password = "Password1!";
-        sut.RememberMe = false;
-
-        await sut.LoginCommand.ExecuteAsync(null);
-
-        await _authService.Received(1).LoginAsync("jane@example.com", "Password1!", false);
-    }
-
     // ── LoginCommand — CanExecute ──────────────────────────────────────
 
     [Fact]
     public void LoginCommand_WhenNotBusy_CanExecute()
     {
-        var sut = CreateSut();
-
-        Assert.True(sut.LoginCommand.CanExecute(null));
+        Assert.True(CreateSut().LoginCommand.CanExecute(null));
     }
 
     [Fact]
@@ -221,6 +218,15 @@ public class LoginViewModelTests
         sut.ApplyQueryAttributes(new Dictionary<string, object>());
 
         Assert.False(sut.HasError);
-        Assert.Equal(string.Empty, sut.ErrorMessage);
+    }
+
+    // ── NavigateToRegisterAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task NavigateToRegisterCommand_NavigatesToRegister()
+    {
+        await CreateSut().NavigateToRegisterCommand.ExecuteAsync(null);
+
+        await _navigationService.Received(1).NavigateToAsync(Routes.Register);
     }
 }
