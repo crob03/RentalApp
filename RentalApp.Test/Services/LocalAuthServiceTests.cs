@@ -8,15 +8,27 @@ using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Services;
 
-public class LocalAuthServiceTests : IClassFixture<DatabaseFixture<LocalAuthServiceTests>>
+public class LocalAuthServiceTests
+    : IClassFixture<DatabaseFixture<LocalAuthServiceTests>>,
+        IAsyncLifetime
 {
+    private readonly DatabaseFixture<LocalAuthServiceTests> _fixture;
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly AuthTokenState _tokenState = new();
 
     public LocalAuthServiceTests(DatabaseFixture<LocalAuthServiceTests> fixture)
     {
+        _fixture = fixture;
         _contextFactory = fixture.ContextFactory;
     }
+
+    public async Task InitializeAsync()
+    {
+        _tokenState.CurrentToken = null;
+        await _fixture.ResetAsync();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     private LocalAuthService CreateSut() =>
         new(

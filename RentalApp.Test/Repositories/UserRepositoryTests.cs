@@ -31,6 +31,8 @@ public class UserRepositoryTests
         Assert.True(user.Id > 0);
         Assert.Equal("alice@example.com", user.Email);
         Assert.Equal("Alice", user.FirstName);
+        Assert.NotNull(user.CreatedAt);
+        Assert.True(user.CreatedAt.Value > DateTime.UtcNow.AddSeconds(-5));
     }
 
     // ── GetByEmailAsync ────────────────────────────────────────────────
