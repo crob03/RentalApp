@@ -69,4 +69,16 @@ public class AuthTokenStateTests
 
         Assert.False(sut.HasSession);
     }
+
+    [Fact]
+    public void AuthenticationStateChanged_WhenCurrentTokenSetToNull_RaisesWithFalse()
+    {
+        var sut = new AuthTokenState { CurrentToken = "eyJ..." };
+        bool? raised = null;
+        sut.AuthenticationStateChanged += (_, v) => raised = v;
+
+        sut.CurrentToken = null;
+
+        Assert.False(raised);
+    }
 }
