@@ -33,8 +33,14 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
             new
             {
                 itemId = request.ItemId,
-                startDate = request.StartDate.ToString("yyyy-MM-dd"),
-                endDate = request.EndDate.ToString("yyyy-MM-dd"),
+                startDate = request.StartDate.ToString(
+                    "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
+                endDate = request.EndDate.ToString(
+                    "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             }
         );
         await EnsureSuccessAsync(response);

@@ -153,11 +153,11 @@ public class RemoteApiService : IApiService
 
     /// <inheritdoc/>
     public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
-        GetRentalsAsync("rentals/incoming", request.Status);
+        GetRentalsAsync("rentals/incoming", request.Status, request.Page, request.PageSize);
 
     /// <inheritdoc/>
     public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
-        GetRentalsAsync("rentals/outgoing", request.Status);
+        GetRentalsAsync("rentals/outgoing", request.Status, request.Page, request.PageSize);
 
     /// <inheritdoc/>
     public async Task<RentalDetailResponse> GetRentalAsync(int id)
@@ -245,9 +245,17 @@ public class RemoteApiService : IApiService
             ?? throw new InvalidOperationException("Empty create review response from API");
     }
 
-    private async Task<RentalsListResponse> GetRentalsAsync(string path, string? status)
+    private async Task<RentalsListResponse> GetRentalsAsync(
+        string path,
+        string? status,
+        int page,
+        int pageSize
+    )
     {
-        var query = status != null ? $"{path}?status={Uri.EscapeDataString(status)}" : path;
+        var query = Invariant($"{path}?page={page}&pageSize={pageSize}");
+        if (status != null)
+            query += $"&status={Uri.EscapeDataString(status)}";
+
         var response = await _apiClient.GetAsync(query);
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<RentalsListResponse>()
