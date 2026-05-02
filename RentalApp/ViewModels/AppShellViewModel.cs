@@ -46,10 +46,6 @@ public partial class AppShellViewModel : BaseViewModel
         await _credentialStore.ClearAsync();
         _tokenState.ClearToken();
         await _navigationService.NavigateToAsync(Routes.Login);
-
-        LogoutCommand.NotifyCanExecuteChanged();
-        NavigateToProfileCommand.NotifyCanExecuteChanged();
-        NavigateToSettingsCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
