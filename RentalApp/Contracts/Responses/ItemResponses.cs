@@ -1,5 +1,6 @@
 namespace RentalApp.Contracts.Responses;
 
+/// <summary>Paginated list of item summaries.</summary>
 public record ItemsResponse(
     List<ItemSummaryResponse> Items,
     int TotalItems,
@@ -8,6 +9,13 @@ public record ItemsResponse(
     int TotalPages
 );
 
+/// <summary>
+/// Summary of a single item, used in list and search views.
+/// Implements <see cref="IItemListable"/> for use with shared item-listing ViewModels.
+/// </summary>
+/// <param name="DailyRate">Rental price per day in GBP.</param>
+/// <param name="OwnerRating">Average rating of the item owner, or <see langword="null"/> if the owner has no reviews.</param>
+/// <param name="AverageRating">Average rating of this item, or <see langword="null"/> if the item has no reviews.</param>
 public record ItemSummaryResponse(
     int Id,
     string Title,
@@ -23,6 +31,8 @@ public record ItemSummaryResponse(
     DateTime CreatedAt
 ) : IItemListable;
 
+/// <summary>Response containing nearby items and the search origin used to find them.</summary>
+/// <param name="Radius">Search radius that was applied, in kilometres.</param>
 public record NearbyItemsResponse(
     List<NearbyItemResponse> Items,
     SearchLocationResponse SearchLocation,
@@ -30,6 +40,15 @@ public record NearbyItemsResponse(
     int TotalResults
 );
 
+/// <summary>
+/// A single item returned by a proximity search.
+/// Implements <see cref="IItemListable"/> for use with shared item-listing ViewModels.
+/// </summary>
+/// <param name="DailyRate">Rental price per day in GBP.</param>
+/// <param name="Latitude">Item location latitude in decimal degrees (WGS-84).</param>
+/// <param name="Longitude">Item location longitude in decimal degrees (WGS-84).</param>
+/// <param name="Distance">Straight-line distance from the search origin to this item, in kilometres.</param>
+/// <param name="AverageRating">Average rating of this item, or <see langword="null"/> if the item has no reviews.</param>
 public record NearbyItemResponse(
     int Id,
     string Title,
@@ -46,6 +65,12 @@ public record NearbyItemResponse(
     double? AverageRating
 ) : IItemListable;
 
+/// <summary>Full details of a single item, including its reviews.</summary>
+/// <param name="DailyRate">Rental price per day in GBP.</param>
+/// <param name="OwnerRating">Average rating of the item owner, or <see langword="null"/> if the owner has no reviews.</param>
+/// <param name="Latitude">Item location latitude in decimal degrees (WGS-84), or <see langword="null"/> if the API did not return location data.</param>
+/// <param name="Longitude">Item location longitude in decimal degrees (WGS-84), or <see langword="null"/> if the API did not return location data.</param>
+/// <param name="AverageRating">Average rating of this item, or <see langword="null"/> if the item has no reviews.</param>
 public record ItemDetailResponse(
     int Id,
     string Title,
@@ -65,6 +90,10 @@ public record ItemDetailResponse(
     List<ItemReviewResponse> Reviews
 );
 
+/// <summary>Response returned after a new item listing is successfully created.</summary>
+/// <param name="DailyRate">Rental price per day in GBP.</param>
+/// <param name="Latitude">Item location latitude in decimal degrees (WGS-84).</param>
+/// <param name="Longitude">Item location longitude in decimal degrees (WGS-84).</param>
 public record CreateItemResponse(
     int Id,
     string Title,
@@ -80,6 +109,8 @@ public record CreateItemResponse(
     DateTime CreatedAt
 );
 
+/// <summary>Response returned after an item listing is successfully updated.</summary>
+/// <param name="DailyRate">Rental price per day in GBP.</param>
 public record UpdateItemResponse(
     int Id,
     string Title,
@@ -88,4 +119,5 @@ public record UpdateItemResponse(
     bool IsAvailable
 );
 
+/// <summary>The geographic coordinate used as the origin for a proximity search.</summary>
 public record SearchLocationResponse(double Latitude, double Longitude);
