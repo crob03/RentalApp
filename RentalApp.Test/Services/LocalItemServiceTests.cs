@@ -33,6 +33,17 @@ public class LocalItemServiceTests : IClassFixture<DatabaseFixture<LocalItemServ
     }
 
     [Fact]
+    public async Task GetCategoriesAsync_ItemCountMatchesSeededData()
+    {
+        var result = await CreateSut().GetCategoriesAsync();
+
+        var tools = result.Categories.Single(c => c.Slug == "tools");
+        var electronics = result.Categories.Single(c => c.Slug == "electronics");
+        Assert.Equal(2, tools.ItemCount);
+        Assert.Equal(1, electronics.ItemCount);
+    }
+
+    [Fact]
     public async Task GetItemsAsync_ReturnsItemsResponse()
     {
         var result = await CreateSut().GetItemsAsync(new GetItemsRequest(1, 20, null, null));

@@ -209,4 +209,27 @@ public class ItemRepositoryTests
 
         Assert.Equal(0, count);
     }
+
+    // ── CountItemsByCategoryAsync ──────────────────────────────────────
+
+    [Fact]
+    public async Task CountItemsByCategoryAsync_ReturnsCountPerCategory()
+    {
+        var sut = CreateSut();
+
+        var counts = await sut.CountItemsByCategoryAsync();
+
+        Assert.Equal(2, counts[1]); // tools: 2 items
+        Assert.Equal(1, counts[2]); // electronics: 1 item
+    }
+
+    [Fact]
+    public async Task CountItemsByCategoryAsync_OnlyIncludesCategoriesWithItems()
+    {
+        var sut = CreateSut();
+
+        var counts = await sut.CountItemsByCategoryAsync();
+
+        Assert.All(counts.Values, count => Assert.True(count > 0));
+    }
 }

@@ -302,3 +302,17 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Use a Unit of Work pattern wrapping all repositories** — a `IUnitOfWork` interface exposing each repository as a property and managing a shared `AppDbContext` across them. Rejected as over-engineering for the current scale: each repository manages its own short-lived context, which is correct for the Singleton registration lifetime and avoids cross-repository transaction complexity that is not yet needed.
 
 **Rationale**: Confining `AppDbContext` to the repository layer enforces a stable abstraction boundary: services describe *what* data they need through repository interfaces, and repositories describe *how* to fetch it using EF Core. This separation means service tests (e.g. `LocalAuthServiceTests`) can construct real repository instances against a test database without any mocking, while still being isolated from EF Core query internals. It also ensures that data-access concerns — query optimisation, eager loading, PostGIS function calls — are consolidated in one place rather than scattered across service implementations. The `IUserRepository` introduction in this session closed the last remaining violation, where `LocalAuthService` was querying `context.Users` and `context.Items` directly.
+
+---
+
+### Decision 20: Repositories Must Not Cross Aggregate Boundaries
+**Date**: 2026-05-02
+**Area**: Architecture / Data Access
+
+**Decision**: Each repository interface and implementation may only query or mutate data belonging to its own aggregate. A repository must never reference another aggregate's `DbSet` — including read-only joins, sub-selects, or counts — to produce enriched return types. Cross-aggregate data assembly is the responsibility of the service layer, which may call multiple repositories and join their results in memory or via separate queries.
+
+**Alternatives considered**:
+- **Allow read-only cross-aggregate joins for efficiency** — `CategoryRepository.GetAllAsync()` used a `GroupJoin` against `context.Items` to return a per-category item count in a single SQL query. Rejected because the count query is now tightly coupled to the `Item` aggregate: any filtering applied in `ItemRepository` (e.g. soft deletes, availability flags) would also need to be duplicated in `CategoryRepository`. The two repositories would silently diverge as the `Item` aggregate evolves.
+- **Introduce a dedicated read-model / query service for cross-aggregate projections** — a `CategoryQueryService` producing a `CategorySummary` view model, bypassing repository interfaces entirely. Rejected as over-engineering at the current scale; the service layer already plays this role and calling two repositories from `LocalItemService` is sufficient.
+
+**Rationale**: Repositories are the authoritative boundary around a single aggregate. Allowing them to reach into other aggregates — even read-only — means that a change to one aggregate's query logic (filters, soft deletes, feature flags) must be replicated in every repository that joins against it. The practical cost of a second round-trip (two queries instead of one `GROUP BY` + `JOIN`) is negligible at the category-list scale; the correctness benefit of a single source of truth for item filtering is not. Services are the correct layer for coordinating across aggregates: they call multiple repositories and own the in-memory assembly of enriched response types.

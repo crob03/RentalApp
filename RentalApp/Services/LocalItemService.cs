@@ -133,16 +133,17 @@ internal class LocalItemService : IItemService
 
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
-        var results = await _categoryRepository.GetAllAsync();
-        var categories = results
-            .Select(r => new CategoryResponse(
-                r.Category.Id,
-                r.Category.Name,
-                r.Category.Slug,
-                r.ItemCount
+        var categories = await _categoryRepository.GetAllAsync();
+        var countsByCategoryId = await _itemRepository.CountItemsByCategoryAsync();
+        var response = categories
+            .Select(c => new CategoryResponse(
+                c.Id,
+                c.Name,
+                c.Slug,
+                countsByCategoryId.GetValueOrDefault(c.Id, 0)
             ))
             .ToList();
-        return new CategoriesResponse(categories);
+        return new CategoriesResponse(response);
     }
 
     private static ItemSummaryResponse ToItemSummary(Database.Models.Item i) =>

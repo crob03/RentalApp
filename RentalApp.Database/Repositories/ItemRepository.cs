@@ -137,6 +137,16 @@ public class ItemRepository : IItemRepository
     }
 
     /// <inheritdoc/>
+    public async Task<Dictionary<int, int>> CountItemsByCategoryAsync()
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context
+            .Items.GroupBy(i => i.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(r => r.CategoryId, r => r.Count);
+    }
+
+    /// <inheritdoc/>
     public async Task<DbItem> UpdateItemAsync(
         int id,
         string? title,

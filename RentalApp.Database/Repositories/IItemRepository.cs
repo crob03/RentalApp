@@ -61,6 +61,13 @@ public interface IItemRepository
     Task<int> CountItemsByOwnerAsync(int ownerId);
 
     /// <summary>
+    /// Returns a map of category ID to item count for all categories that have at least one item.
+    /// Categories with no items are absent from the result; callers should use
+    /// <see cref="Dictionary{TKey,TValue}.GetValueOrDefault(TKey)"/> with a default of 0.
+    /// </summary>
+    Task<Dictionary<int, int>> CountItemsByCategoryAsync();
+
+    /// <summary>
     /// Applies a partial update to an existing item; <see langword="null"/> parameters are left unchanged.
     /// Passing an empty string for <paramref name="description"/> clears the field.
     /// </summary>
