@@ -24,8 +24,11 @@ public class UserRepository : IUserRepository
     }
 
     /// <inheritdoc/>
-    public Task<DbUser?> GetByIdAsync(int id) =>
-        throw new NotImplementedException();
+    public async Task<DbUser?> GetByIdAsync(int id)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context.Users.FindAsync(id);
+    }
 
     /// <inheritdoc/>
     public async Task<DbUser> CreateAsync(

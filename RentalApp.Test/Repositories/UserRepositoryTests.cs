@@ -56,4 +56,28 @@ public class UserRepositoryTests
 
         Assert.Null(user);
     }
+
+    // ── GetByIdAsync ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByIdAsync_ExistingId_ReturnsUser()
+    {
+        var sut = CreateSut();
+        var created = await sut.CreateAsync("Carol", "White", "carol@example.com", "hash", "salt");
+
+        var user = await sut.GetByIdAsync(created.Id);
+
+        Assert.NotNull(user);
+        Assert.Equal(created.Id, user!.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        var sut = CreateSut();
+
+        var user = await sut.GetByIdAsync(999);
+
+        Assert.Null(user);
+    }
 }
