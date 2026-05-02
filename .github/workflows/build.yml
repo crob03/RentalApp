@@ -102,7 +102,7 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
             /d:sonar.cs.opencover.reportsPaths="test-results/**/coverage.opencover.xml" \
-            /d:sonar.coverage.exclusions="**/RentalApp.Migrations/**,**/RentalApp.Contracts/**" \
+            /d:sonar.coverage.exclusions="**/RentalApp.Migrations/**,**/RentalApp/Contracts/**" \
 
       # --- Build & Test ---
       - name: Build
