@@ -5,12 +5,16 @@ using RentalApp.Http;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// HTTP implementation of <see cref="IAuthService"/> that delegates all operations to the remote API via <see cref="IApiClient"/>.
+/// </summary>
 internal class RemoteAuthService : RemoteServiceBase, IAuthService
 {
     private readonly IApiClient _apiClient;
 
     public RemoteAuthService(IApiClient apiClient) => _apiClient = apiClient;
 
+    /// <inheritdoc/>
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -22,6 +26,7 @@ internal class RemoteAuthService : RemoteServiceBase, IAuthService
             ?? throw new InvalidOperationException("Empty token response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -39,6 +44,7 @@ internal class RemoteAuthService : RemoteServiceBase, IAuthService
             ?? throw new InvalidOperationException("Empty register response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
         var response = await _apiClient.GetAsync("users/me");
@@ -47,6 +53,7 @@ internal class RemoteAuthService : RemoteServiceBase, IAuthService
             ?? throw new InvalidOperationException("Empty profile response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
         var response = await _apiClient.GetAsync($"users/{userId}/profile");

@@ -6,12 +6,16 @@ using static System.FormattableString;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// HTTP implementation of <see cref="IReviewService"/> that delegates all operations to the remote API via <see cref="IApiClient"/>.
+/// </summary>
 internal class RemoteReviewService : RemoteServiceBase, IReviewService
 {
     private readonly IApiClient _apiClient;
 
     public RemoteReviewService(IApiClient apiClient) => _apiClient = apiClient;
 
+    /// <inheritdoc/>
     public async Task<ReviewsResponse> GetItemReviewsAsync(int itemId, GetReviewsRequest request)
     {
         var response = await _apiClient.GetAsync(
@@ -22,6 +26,7 @@ internal class RemoteReviewService : RemoteServiceBase, IReviewService
             ?? throw new InvalidOperationException("Empty reviews response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ReviewsResponse> GetUserReviewsAsync(int userId, GetReviewsRequest request)
     {
         var response = await _apiClient.GetAsync(
@@ -32,6 +37,7 @@ internal class RemoteReviewService : RemoteServiceBase, IReviewService
             ?? throw new InvalidOperationException("Empty reviews response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CreateReviewResponse> CreateReviewAsync(CreateReviewRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(

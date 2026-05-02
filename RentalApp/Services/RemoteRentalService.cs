@@ -5,18 +5,24 @@ using RentalApp.Http;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// HTTP implementation of <see cref="IRentalService"/> that delegates all operations to the remote API via <see cref="IApiClient"/>.
+/// </summary>
 internal class RemoteRentalService : RemoteServiceBase, IRentalService
 {
     private readonly IApiClient _apiClient;
 
     public RemoteRentalService(IApiClient apiClient) => _apiClient = apiClient;
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
         GetRentalsAsync("rentals/incoming", request.Status);
 
+    /// <inheritdoc/>
     public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
         GetRentalsAsync("rentals/outgoing", request.Status);
 
+    /// <inheritdoc/>
     public async Task<RentalDetailResponse> GetRentalAsync(int id)
     {
         var response = await _apiClient.GetAsync($"rentals/{id}");
@@ -25,6 +31,7 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
             ?? throw new InvalidOperationException("Empty rental response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -47,6 +54,7 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
             ?? throw new InvalidOperationException("Empty create rental response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateRentalStatusResponse> UpdateRentalStatusAsync(
         int id,
         UpdateRentalStatusRequest request

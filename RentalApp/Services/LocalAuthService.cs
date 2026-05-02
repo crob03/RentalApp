@@ -5,6 +5,10 @@ using RentalApp.Http;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Repository-backed implementation of <see cref="IAuthService"/> for local/offline development.
+/// Authenticates against the local database using BCrypt password verification.
+/// </summary>
 internal class LocalAuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
@@ -22,6 +26,7 @@ internal class LocalAuthService : IAuthService
         _tokenState = tokenState;
     }
 
+    /// <inheritdoc/>
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _userRepository.GetByEmailAsync(request.Email);
@@ -35,6 +40,7 @@ internal class LocalAuthService : IAuthService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         var existing = await _userRepository.GetByEmailAsync(request.Email);
@@ -59,6 +65,7 @@ internal class LocalAuthService : IAuthService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
         if (!_tokenState.HasSession)
@@ -83,6 +90,7 @@ internal class LocalAuthService : IAuthService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
         var user =

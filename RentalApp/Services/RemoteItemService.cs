@@ -6,12 +6,16 @@ using static System.FormattableString;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// HTTP implementation of <see cref="IItemService"/> that delegates all operations to the remote API via <see cref="IApiClient"/>.
+/// </summary>
 internal class RemoteItemService : RemoteServiceBase, IItemService
 {
     private readonly IApiClient _apiClient;
 
     public RemoteItemService(IApiClient apiClient) => _apiClient = apiClient;
 
+    /// <inheritdoc/>
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
         var query = Invariant($"items?page={request.Page}&pageSize={request.PageSize}");
@@ -26,6 +30,7 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
             ?? throw new InvalidOperationException("Empty items response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
     {
         var query = Invariant(
@@ -40,6 +45,7 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
             ?? throw new InvalidOperationException("Empty nearby items response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
         var response = await _apiClient.GetAsync($"items/{id}");
@@ -48,6 +54,7 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
             ?? throw new InvalidOperationException("Empty item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
@@ -67,6 +74,7 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
             ?? throw new InvalidOperationException("Empty create item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
         var response = await _apiClient.PutAsJsonAsync(
@@ -84,6 +92,7 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
             ?? throw new InvalidOperationException("Empty update item response from API");
     }
 
+    /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var response = await _apiClient.GetAsync("categories");

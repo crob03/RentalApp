@@ -11,6 +11,10 @@ using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Repository-backed implementation of <see cref="IItemService"/> for local/offline development.
+/// Reads and writes directly to the database via <see cref="IItemRepository"/> and <see cref="ICategoryRepository"/>.
+/// </summary>
 internal class LocalItemService : IItemService
 {
     private readonly IItemRepository _itemRepository;
@@ -30,6 +34,7 @@ internal class LocalItemService : IItemService
         _tokenState = tokenState;
     }
 
+    /// <inheritdoc/>
     public async Task<ItemsResponse> GetItemsAsync(GetItemsRequest request)
     {
         var totalItems = await _itemRepository.CountItemsAsync(request.Category, request.Search);
@@ -51,6 +56,7 @@ internal class LocalItemService : IItemService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<NearbyItemsResponse> GetNearbyItemsAsync(GetNearbyItemsRequest request)
     {
         var origin = _geoFactory.CreatePoint(new NtsCoordinate(request.Lon, request.Lat));
@@ -71,6 +77,7 @@ internal class LocalItemService : IItemService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<ItemDetailResponse> GetItemAsync(int id)
     {
         var dbItem =
@@ -79,6 +86,7 @@ internal class LocalItemService : IItemService
         return ToItemDetail(dbItem);
     }
 
+    /// <inheritdoc/>
     public async Task<CreateItemResponse> CreateItemAsync(CreateItemRequest request)
     {
         if (!_tokenState.HasSession)
@@ -113,6 +121,7 @@ internal class LocalItemService : IItemService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<UpdateItemResponse> UpdateItemAsync(int id, UpdateItemRequest request)
     {
         var dbItem = await _itemRepository.UpdateItemAsync(
@@ -131,6 +140,7 @@ internal class LocalItemService : IItemService
         );
     }
 
+    /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
         var categories = await _categoryRepository.GetAllAsync();
