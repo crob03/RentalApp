@@ -6,115 +6,46 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// <summary>
-/// View model for the main dashboard page. Loads the authenticated user's profile data
-/// and provides navigation commands to other sections of the application.
-/// </summary>
 public partial class MainViewModel : BaseViewModel
 {
-    private readonly IAuthenticationService _authService;
+    private readonly IAuthService _authService;
     private readonly INavigationService _navigationService;
 
-    /// <summary>
-    /// The currently authenticated user.
-    /// </summary>
     [ObservableProperty]
     private CurrentUserResponse? currentUser;
 
-    /// <summary>
-    /// Personalised welcome message derived from the current user's name.
-    /// </summary>
     [ObservableProperty]
     private string welcomeMessage = string.Empty;
 
-    /// <summary>
-    /// Initialises a new instance of <see cref="MainViewModel"/> with the required services
-    /// and immediately loads the current user's data.
-    /// </summary>
-    /// <param name="authService">The authentication service used to retrieve the current user.</param>
-    /// <param name="navigationService">The navigation service used to transition between pages.</param>
-    public MainViewModel(IAuthenticationService authService, INavigationService navigationService)
+    public MainViewModel(IAuthService authService, INavigationService navigationService)
     {
         _authService = authService;
         _navigationService = navigationService;
         Title = "Dashboard";
-
-        LoadUserData();
     }
 
-    /// <summary>
-    /// Populates <see cref="CurrentUser"/> and <see cref="WelcomeMessage"/> from the
-    /// authenticated user held by <see cref="IAuthenticationService"/>.
-    /// </summary>
-    private void LoadUserData()
+    public async Task InitializeAsync()
     {
-        CurrentUser = _authService.CurrentUser;
-
-        if (CurrentUser != null)
-        {
-            WelcomeMessage = $"Welcome, {CurrentUser.FirstName} {CurrentUser.LastName}!";
-        }
+        CurrentUser = await _authService.GetCurrentUserAsync();
+        WelcomeMessage = $"Welcome, {CurrentUser.FirstName} {CurrentUser.LastName}!";
     }
 
-    /// <summary>
-    /// Prompts the user for confirmation and, if confirmed, logs out and navigates to the
-    /// login page.
-    /// </summary>
     [RelayCommand]
-    private async Task LogoutAsync()
-    {
-        var result = await (
-            Application
-                .Current?.Windows[0]
-                ?.Page?.DisplayAlertAsync("Logout", "Are you sure you want to logout?", "Yes", "No")
-            ?? Task.FromResult(false)
-        );
-
-        if (result)
-        {
-            await _authService.LogoutAsync();
-            await _navigationService.NavigateToAsync(Routes.LoginPage);
-        }
-    }
-
-    /// <summary>
-    /// Navigates to the user profile page.
-    /// </summary>
-    [RelayCommand]
-    private async Task NavigateToProfileAsync()
-    {
+    private async Task NavigateToProfileAsync() =>
         await _navigationService.NavigateToAsync(Routes.Temp);
-    }
 
-    /// <summary>Navigates to the browsable items list page.</summary>
     [RelayCommand]
-    private async Task NavigateToItemsListAsync()
-    {
+    private async Task NavigateToItemsListAsync() =>
         await _navigationService.NavigateToAsync(Routes.ItemsList);
-    }
 
-    /// <summary>Navigates to the nearby items page, which resolves the device location on arrival.</summary>
     [RelayCommand]
-    private async Task NavigateToNearbyItemsAsync()
-    {
+    private async Task NavigateToNearbyItemsAsync() =>
         await _navigationService.NavigateToAsync(Routes.NearbyItems);
-    }
 
-    /// <summary>Navigates to the create-item page so the user can list a new rental.</summary>
     [RelayCommand]
-    private async Task NavigateToCreateItemAsync()
-    {
+    private async Task NavigateToCreateItemAsync() =>
         await _navigationService.NavigateToAsync(Routes.CreateItem);
-    }
 
-    /// <summary>
-    /// Reloads the current user's data from the authentication service.
-    /// </summary>
     [RelayCommand]
-    private Task RefreshDataAsync() =>
-        RunAsync(() =>
-        {
-            LoadUserData();
-            return Task.CompletedTask;
-        });
+    private Task RefreshDataAsync() => RunAsync(InitializeAsync);
 }
