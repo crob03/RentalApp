@@ -17,8 +17,11 @@ public class UserRepository : IUserRepository
     }
 
     /// <inheritdoc/>
-    public Task<DbUser?> GetByEmailAsync(string email) =>
-        throw new NotImplementedException();
+    public async Task<DbUser?> GetByEmailAsync(string email)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    }
 
     /// <inheritdoc/>
     public Task<DbUser?> GetByIdAsync(int id) =>

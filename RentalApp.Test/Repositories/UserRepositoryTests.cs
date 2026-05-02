@@ -32,4 +32,28 @@ public class UserRepositoryTests
         Assert.Equal("alice@example.com", user.Email);
         Assert.Equal("Alice", user.FirstName);
     }
+
+    // ── GetByEmailAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByEmailAsync_ExistingEmail_ReturnsUser()
+    {
+        var sut = CreateSut();
+        await sut.CreateAsync("Bob", "Jones", "bob@example.com", "hash", "salt");
+
+        var user = await sut.GetByEmailAsync("bob@example.com");
+
+        Assert.NotNull(user);
+        Assert.Equal("bob@example.com", user!.Email);
+    }
+
+    [Fact]
+    public async Task GetByEmailAsync_UnknownEmail_ReturnsNull()
+    {
+        var sut = CreateSut();
+
+        var user = await sut.GetByEmailAsync("nobody@example.com");
+
+        Assert.Null(user);
+    }
 }
