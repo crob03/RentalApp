@@ -1,72 +1,31 @@
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Contracts.Requests;
 using RentalApp.Helpers;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// <summary>
-/// View model for the registration page. Manages the registration form fields, validates all
-/// inputs, and delegates account creation to <see cref="IAuthenticationService"/>.
-/// </summary>
 public partial class RegisterViewModel : BaseViewModel
 {
-    private readonly IAuthenticationService _authService;
+    private readonly IAuthService _authService;
     private readonly INavigationService _navigationService;
 
-    /// <summary>
-    /// The user's first name.
-    /// </summary>
-    [ObservableProperty]
-    private string firstName = string.Empty;
+    [ObservableProperty] private string firstName = string.Empty;
+    [ObservableProperty] private string lastName = string.Empty;
+    [ObservableProperty] private string email = string.Empty;
+    [ObservableProperty] private string password = string.Empty;
+    [ObservableProperty] private string confirmPassword = string.Empty;
+    [ObservableProperty] private bool acceptTerms;
 
-    /// <summary>
-    /// The user's last name.
-    /// </summary>
-    [ObservableProperty]
-    private string lastName = string.Empty;
-
-    /// <summary>
-    /// The user's email address.
-    /// </summary>
-    [ObservableProperty]
-    private string email = string.Empty;
-
-    /// <summary>
-    /// The password chosen by the user.
-    /// </summary>
-    [ObservableProperty]
-    private string password = string.Empty;
-
-    /// <summary>
-    /// Confirmation of the password; must match <see cref="Password"/> for validation to pass.
-    /// </summary>
-    [ObservableProperty]
-    private string confirmPassword = string.Empty;
-
-    /// <summary>
-    /// Whether the user has accepted the terms and conditions.
-    /// </summary>
-    [ObservableProperty]
-    private bool acceptTerms;
-
-    /// <summary>
-    /// Initialises a new instance of <see cref="RegisterViewModel"/> with the required services.
-    /// </summary>
-    /// <param name="authService">The authentication service used to create the new account.</param>
-    /// <param name="navigationService">The navigation service used to transition between pages.</param>
-    public RegisterViewModel(
-        IAuthenticationService authService,
-        INavigationService navigationService
-    )
+    public RegisterViewModel(IAuthService authService, INavigationService navigationService)
     {
         _authService = authService;
         _navigationService = navigationService;
         Title = "Register";
     }
 
-    /// <inheritdoc/>
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -76,10 +35,6 @@ public partial class RegisterViewModel : BaseViewModel
 
     private bool CanRegister() => !IsBusy;
 
-    /// <summary>
-    /// Validates the registration form and creates a new user account.
-    /// Navigates back to the login page on success, or surfaces an error message on failure.
-    /// </summary>
     [RelayCommand(CanExecute = nameof(CanRegister))]
     private async Task RegisterAsync()
     {
@@ -89,46 +44,33 @@ public partial class RegisterViewModel : BaseViewModel
         IsBusy = true;
         ClearError();
 
-        var result = await _authService.RegisterAsync(FirstName, LastName, Email, Password);
-
-        if (result.IsSuccess)
+        try
         {
+            await _authService.RegisterAsync(new RegisterRequest(FirstName, LastName, Email, Password));
             await _navigationService.NavigateBackAsync();
         }
-        else
+        catch (Exception ex)
         {
-            SetError(result.ErrorMessage);
+            SetError(ex.Message);
         }
-
-        IsBusy = false;
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    /// <summary>
-    /// Navigates back to the login page without registering.
-    /// </summary>
     [RelayCommand]
-    private async Task NavigateBackToLoginAsync()
-    {
+    private async Task NavigateBackToLoginAsync() =>
         await _navigationService.NavigateBackAsync();
-    }
 
     private bool ValidateForm()
     {
-        var error = RegistrationValidator.Validate(
-            FirstName,
-            LastName,
-            Email,
-            Password,
-            ConfirmPassword,
-            AcceptTerms
-        );
-
+        var error = RegistrationValidator.Validate(FirstName, LastName, Email, Password, ConfirmPassword, AcceptTerms);
         if (error is not null)
         {
             SetError(error);
             return false;
         }
-
         return true;
     }
 }
