@@ -152,4 +152,23 @@ public class LocalAuthServiceTests
 
         Assert.NotNull(result.Token);
     }
+
+    [Fact]
+    public async Task GetUserProfileAsync_WithExistingUser_ReturnsProfile()
+    {
+        var userId = await SeedUserAsync("profile@example.com");
+
+        var result = await CreateSut().GetUserProfileAsync(userId);
+
+        Assert.Equal(userId, result.Id);
+        Assert.Equal("Jane", result.FirstName);
+    }
+
+    [Fact]
+    public async Task GetUserProfileAsync_WithNonExistentUser_ThrowsInvalidOperationException()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut().GetUserProfileAsync(999)
+        );
+    }
 }
