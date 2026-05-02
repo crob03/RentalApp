@@ -472,4 +472,382 @@ public class RemoteApiServiceTests
         Assert.Single(response.Categories);
         Assert.Equal("Tools", response.Categories[0].Name);
     }
+
+    // ── GetIncomingRentalsAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task GetIncomingRentalsAsync_SuccessResponse_ReturnsMappedRentals()
+    {
+        _apiClient
+            .GetAsync("rentals/incoming")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            rentals = new[]
+                            {
+                                new
+                                {
+                                    id = 1,
+                                    itemId = 2,
+                                    itemTitle = "Drill",
+                                    borrowerId = 3,
+                                    borrowerName = "Bob Smith",
+                                    ownerId = 1,
+                                    ownerName = "Jane Doe",
+                                    startDate = new DateOnly(2026, 3, 1),
+                                    endDate = new DateOnly(2026, 3, 5),
+                                    status = "pending",
+                                    totalPrice = 40.0,
+                                    createdAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+                                },
+                            },
+                            totalRentals = 1,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var response = await sut.GetIncomingRentalsAsync(new GetRentalsRequest());
+
+        Assert.Single(response.Rentals);
+        Assert.Equal("Drill", response.Rentals[0].ItemTitle);
+        Assert.Equal("pending", response.Rentals[0].Status);
+    }
+
+    [Fact]
+    public async Task GetIncomingRentalsAsync_WithStatusFilter_IncludesStatusInQuery()
+    {
+        _apiClient
+            .GetAsync("rentals/incoming?status=active")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(new { rentals = Array.Empty<object>(), totalRentals = 0 }),
+                }
+            );
+        var sut = CreateSut();
+
+        await sut.GetIncomingRentalsAsync(new GetRentalsRequest("active"));
+
+        await _apiClient.Received(1).GetAsync("rentals/incoming?status=active");
+    }
+
+    // ── GetOutgoingRentalsAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOutgoingRentalsAsync_SuccessResponse_ReturnsMappedRentals()
+    {
+        _apiClient
+            .GetAsync("rentals/outgoing")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            rentals = new[]
+                            {
+                                new
+                                {
+                                    id = 2,
+                                    itemId = 5,
+                                    itemTitle = "Ladder",
+                                    borrowerId = 7,
+                                    borrowerName = "Alice",
+                                    ownerId = 1,
+                                    ownerName = "Jane Doe",
+                                    startDate = new DateOnly(2026, 4, 1),
+                                    endDate = new DateOnly(2026, 4, 3),
+                                    status = "active",
+                                    totalPrice = 20.0,
+                                    createdAt = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+                                },
+                            },
+                            totalRentals = 1,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var response = await sut.GetOutgoingRentalsAsync(new GetRentalsRequest());
+
+        Assert.Single(response.Rentals);
+        Assert.Equal("Ladder", response.Rentals[0].ItemTitle);
+        Assert.Equal("active", response.Rentals[0].Status);
+    }
+
+    // ── GetRentalAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetRentalAsync_SuccessResponse_ReturnsMappedDetail()
+    {
+        _apiClient
+            .GetAsync("rentals/1")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 1,
+                            itemId = 2,
+                            itemTitle = "Drill",
+                            itemDescription = (string?)null,
+                            borrowerId = 3,
+                            borrowerName = "Bob Smith",
+                            ownerId = 1,
+                            ownerName = "Jane Doe",
+                            startDate = new DateOnly(2026, 3, 1),
+                            endDate = new DateOnly(2026, 3, 5),
+                            status = "active",
+                            totalPrice = 40.0,
+                            requestedAt = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc),
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var rental = await sut.GetRentalAsync(1);
+
+        Assert.Equal(1, rental.Id);
+        Assert.Equal("Drill", rental.ItemTitle);
+        Assert.Equal("active", rental.Status);
+        Assert.Equal(40.0, rental.TotalPrice);
+    }
+
+    [Fact]
+    public async Task GetRentalAsync_ErrorResponse_ThrowsHttpRequestException()
+    {
+        _apiClient
+            .GetAsync("rentals/99")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.NotFound)
+                {
+                    Content = JsonContent.Create(new { error = "NotFound", message = "Rental not found" }),
+                }
+            );
+        var sut = CreateSut();
+
+        var act = () => sut.GetRentalAsync(99);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(act);
+        Assert.Equal("Rental not found", ex.Message);
+    }
+
+    // ── CreateRentalAsync ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateRentalAsync_SuccessResponse_ReturnsMappedRental()
+    {
+        _apiClient
+            .PostAsJsonAsync("rentals", Arg.Any<object>())
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 10,
+                            itemId = 2,
+                            itemTitle = "Drill",
+                            borrowerId = 3,
+                            borrowerName = "Bob Smith",
+                            ownerId = 1,
+                            ownerName = "Jane Doe",
+                            startDate = new DateOnly(2026, 5, 1),
+                            endDate = new DateOnly(2026, 5, 3),
+                            status = "pending",
+                            totalPrice = 20.0,
+                            createdAt = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var rental = await sut.CreateRentalAsync(
+            new CreateRentalRequest(2, new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 3))
+        );
+
+        Assert.Equal(10, rental.Id);
+        Assert.Equal("pending", rental.Status);
+        Assert.Equal(20.0, rental.TotalPrice);
+    }
+
+    // ── UpdateRentalStatusAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateRentalStatusAsync_SuccessResponse_ReturnsUpdatedStatus()
+    {
+        _apiClient
+            .PutAsJsonAsync("rentals/1/status", Arg.Any<object>())
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 1,
+                            status = "approved",
+                            updatedAt = new DateTime(2026, 5, 1, 0, 0, 0, DateTimeKind.Utc),
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var result = await sut.UpdateRentalStatusAsync(1, new UpdateRentalStatusRequest("approved"));
+
+        Assert.Equal(1, result.Id);
+        Assert.Equal("approved", result.Status);
+    }
+
+    // ── GetItemReviewsAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetItemReviewsAsync_SuccessResponse_ReturnsMappedReviews()
+    {
+        _apiClient
+            .GetAsync(Arg.Is<string>(s => s.StartsWith("items/1/reviews")))
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            reviews = new[]
+                            {
+                                new
+                                {
+                                    id = 5,
+                                    rating = 4,
+                                    comment = "Good condition",
+                                    reviewerName = "Bob",
+                                    createdAt = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+                                },
+                            },
+                            averageRating = (double?)4.0,
+                            totalReviews = 1,
+                            page = 1,
+                            pageSize = 10,
+                            totalPages = 1,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var response = await sut.GetItemReviewsAsync(1, new GetReviewsRequest());
+
+        Assert.Single(response.Reviews);
+        Assert.Equal(4, response.Reviews[0].Rating);
+        Assert.Equal("Good condition", response.Reviews[0].Comment);
+        Assert.Equal(4.0, response.AverageRating);
+    }
+
+    // ── GetUserReviewsAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetUserReviewsAsync_SuccessResponse_ReturnsMappedReviews()
+    {
+        _apiClient
+            .GetAsync(Arg.Is<string>(s => s.StartsWith("users/1/reviews")))
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            reviews = new[]
+                            {
+                                new
+                                {
+                                    id = 3,
+                                    rating = 5,
+                                    comment = "Excellent!",
+                                    reviewerName = "Alice",
+                                    createdAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+                                },
+                            },
+                            averageRating = (double?)5.0,
+                            totalReviews = 1,
+                            page = 1,
+                            pageSize = 10,
+                            totalPages = 1,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var response = await sut.GetUserReviewsAsync(1, new GetReviewsRequest());
+
+        Assert.Single(response.Reviews);
+        Assert.Equal(5, response.Reviews[0].Rating);
+        Assert.Equal("Excellent!", response.Reviews[0].Comment);
+    }
+
+    // ── CreateReviewAsync ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateReviewAsync_SuccessResponse_ReturnsMappedReview()
+    {
+        _apiClient
+            .PostAsJsonAsync("reviews", Arg.Any<object>())
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 7,
+                            rentalId = 1,
+                            reviewerId = 3,
+                            reviewerName = "Bob Smith",
+                            rating = 4,
+                            comment = "Great item!",
+                            createdAt = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var review = await sut.CreateReviewAsync(new CreateReviewRequest(1, 4, "Great item!"));
+
+        Assert.Equal(7, review.Id);
+        Assert.Equal(4, review.Rating);
+        Assert.Equal("Great item!", review.Comment);
+    }
+
+    [Fact]
+    public async Task CreateReviewAsync_ErrorResponse_ThrowsHttpRequestException()
+    {
+        _apiClient
+            .PostAsJsonAsync("reviews", Arg.Any<object>())
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            error = "BadRequest",
+                            message = "Review already submitted for this rental",
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        var act = () => sut.CreateReviewAsync(new CreateReviewRequest(1, 4, "Late"));
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(act);
+        Assert.Equal("Review already submitted for this rental", ex.Message);
+    }
 }
