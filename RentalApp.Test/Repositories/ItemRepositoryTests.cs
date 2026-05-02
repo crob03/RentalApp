@@ -187,4 +187,26 @@ public class ItemRepositoryTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
+
+    // ── CountItemsByOwnerAsync ─────────────────────────────────────────
+
+    [Fact]
+    public async Task CountItemsByOwnerAsync_OwnerWithItems_ReturnsCorrectCount()
+    {
+        var sut = CreateSut();
+
+        var count = await sut.CountItemsByOwnerAsync(1);
+
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
+    public async Task CountItemsByOwnerAsync_UnknownOwner_ReturnsZero()
+    {
+        var sut = CreateSut();
+
+        var count = await sut.CountItemsByOwnerAsync(999);
+
+        Assert.Equal(0, count);
+    }
 }

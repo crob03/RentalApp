@@ -57,6 +57,9 @@ public interface IItemRepository
         Point location
     );
 
+    /// <summary>Returns the number of items owned by the user with the given <paramref name="ownerId"/>.</summary>
+    Task<int> CountItemsByOwnerAsync(int ownerId);
+
     /// <summary>
     /// Applies a partial update to an existing item; <see langword="null"/> parameters are left unchanged.
     /// Passing an empty string for <paramref name="description"/> clears the field.

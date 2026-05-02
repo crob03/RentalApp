@@ -130,6 +130,13 @@ public class ItemRepository : IItemRepository
     }
 
     /// <inheritdoc/>
+    public async Task<int> CountItemsByOwnerAsync(int ownerId)
+    {
+        await using var context = _contextFactory.CreateDbContext();
+        return await context.Items.CountAsync(i => i.OwnerId == ownerId);
+    }
+
+    /// <inheritdoc/>
     public async Task<DbItem> UpdateItemAsync(
         int id,
         string? title,
