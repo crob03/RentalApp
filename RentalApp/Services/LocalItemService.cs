@@ -56,7 +56,11 @@ internal class LocalItemService : IItemService
         var origin = _geoFactory.CreatePoint(new NtsCoordinate(request.Lon, request.Lat));
         var radiusMeters = request.Radius * 1000;
 
-        var dbItems = await _itemRepository.GetNearbyItemsAsync(origin, radiusMeters, request.Category);
+        var dbItems = await _itemRepository.GetNearbyItemsAsync(
+            origin,
+            radiusMeters,
+            request.Category
+        );
         var items = dbItems.Select(i => ToNearbyItem(i, origin)).ToList();
 
         return new NearbyItemsResponse(
