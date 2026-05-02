@@ -96,7 +96,7 @@ public class ItemRepositoryTests
         var sut = CreateSut();
         var origin = Factory.CreatePoint(new Coordinate(-3.1883, 55.9533));
 
-        var items = await sut.GetNearbyItemsAsync(origin, 5_000, null, 1, 20);
+        var items = await sut.GetNearbyItemsAsync(origin, 5_000, null);
 
         Assert.Equal(2, items.Count());
         Assert.DoesNotContain(items, i => i.Title == "Far Away Laptop");
@@ -108,7 +108,7 @@ public class ItemRepositoryTests
         var sut = CreateSut();
         var origin = Factory.CreatePoint(new Coordinate(-3.1883, 55.9533));
 
-        var items = await sut.GetNearbyItemsAsync(origin, 5_000, "electronics", 1, 20);
+        var items = await sut.GetNearbyItemsAsync(origin, 5_000, "electronics");
 
         Assert.Empty(items);
     }
@@ -119,24 +119,10 @@ public class ItemRepositoryTests
         var sut = CreateSut();
         var origin = Factory.CreatePoint(new Coordinate(-3.1883, 55.9533));
 
-        var items = (await sut.GetNearbyItemsAsync(origin, 5_000, null, 1, 20)).ToList();
+        var items = (await sut.GetNearbyItemsAsync(origin, 5_000, null)).ToList();
 
         Assert.Equal(2, items.Count);
         Assert.Equal(1, items[0].Id);
-    }
-
-    [Fact]
-    public async Task GetNearbyItemsAsync_Pagination_ReturnsCorrectPage()
-    {
-        var sut = CreateSut();
-        var origin = Factory.CreatePoint(new Coordinate(-3.1883, 55.9533));
-
-        var page1 = await sut.GetNearbyItemsAsync(origin, 5_000, null, 1, 1);
-        var page2 = await sut.GetNearbyItemsAsync(origin, 5_000, null, 2, 1);
-
-        Assert.Single(page1);
-        Assert.Single(page2);
-        Assert.NotEqual(page1.First().Id, page2.First().Id);
     }
 
     // ── GetItemAsync ───────────────────────────────────────────────────

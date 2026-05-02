@@ -23,20 +23,16 @@ public interface IItemRepository
     );
 
     /// <summary>
-    /// Returns items whose location falls within <paramref name="radiusMeters"/> of <paramref name="origin"/>,
+    /// Returns all items whose location falls within <paramref name="radiusMeters"/> of <paramref name="origin"/>,
     /// ordered by ascending distance from the origin.
     /// </summary>
     /// <param name="origin">Geographic origin point (SRID 4326).</param>
     /// <param name="radiusMeters">Search radius in metres, passed directly to PostGIS <c>ST_DWithin</c>.</param>
     /// <param name="category">Category slug to filter by; <see langword="null"/> returns all categories.</param>
-    /// <param name="page">1-based page number.</param>
-    /// <param name="pageSize">Maximum records per page.</param>
     Task<IEnumerable<DbItem>> GetNearbyItemsAsync(
         Point origin,
         double radiusMeters,
-        string? category,
-        int page,
-        int pageSize
+        string? category
     );
 
     /// <summary>

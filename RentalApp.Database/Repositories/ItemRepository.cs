@@ -68,9 +68,7 @@ public class ItemRepository : IItemRepository
     public async Task<IEnumerable<DbItem>> GetNearbyItemsAsync(
         Point origin,
         double radiusMeters,
-        string? category,
-        int page,
-        int pageSize
+        string? category
     )
     {
         await using var context = _contextFactory.CreateDbContext();
@@ -83,11 +81,7 @@ public class ItemRepository : IItemRepository
         if (category != null)
             query = query.Where(i => i.Category.Slug == category);
 
-        return await query
-            .OrderBy(i => i.Location.Distance(origin))
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        return await query.OrderBy(i => i.Location.Distance(origin)).ToListAsync();
     }
 
     /// <inheritdoc/>
