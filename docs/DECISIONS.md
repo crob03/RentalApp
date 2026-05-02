@@ -22,8 +22,9 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 11 | 2026-04-17 | Architecture | `LoginAsync` returns `Task`; each implementation manages its own session state internally |
 | 12 | 2026-04-17 | Architecture | `RentalApp.Models` DTOs as the exclusive return types of `IApiService` — never EF entities *(superseded by Decision 14)* |
 | 13 | 2026-04-30 | Architecture / Data Access | All EF Core entity configuration lives in `AppDbContext.OnModelCreating`; models carry only `[Required]` |
-| 14 | 2026-05-01 | Architecture | `RentalApp.Contracts` project as the exclusive source of `IApiService` request/response record types *(supersedes Decision 12)* |
+| 14 | 2026-05-01 | Architecture | `RentalApp.Contracts` project as the exclusive source of `IApiService` request/response record types *(supersedes Decision 12; superseded by Decision 16)* |
 | 15 | 2026-05-01 | Architecture / MVVM | ViewModels may call `IApiService` directly for non-auth operations; `IItemService` is retired |
+| 16 | 2026-05-02 | Architecture | Contracts folder collapsed into `RentalApp`; `RentalApp.Contracts` class library retired *(supersedes Decision 14)* |
 
 ---
 
@@ -216,7 +217,7 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 
 ---
 
-### Decision 14: `RentalApp.Contracts` as the Exclusive Source of `IApiService` Request/Response Types *(Supersedes Decision 12)*
+### Decision 14: `RentalApp.Contracts` as the Exclusive Source of `IApiService` Request/Response Types *(Supersedes Decision 12; superseded by Decision 16)*
 **Date**: 2026-05-02
 **Area**: Architecture
 
@@ -243,3 +244,16 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Keep the existing `IItemService` and extend `IApiService` to use Contracts types** — the refactoring cost of updating `IItemService`'s signatures to match the new Contracts types is equivalent to removing it, and the resulting thin wrapper provides no architectural benefit.
 
 **Rationale**: `IItemService` existed primarily to provide a stable type boundary between ViewModels and the transport layer. With `RentalApp.Contracts` now serving as that stable boundary (Decision 14), the service layer for items has no remaining responsibility that justifies its existence. Auth operations retain a dedicated service (`IAuthenticationService`) because they carry genuine domain logic — credential persistence, session state, `LoggedInUser` population, and the `OnLoginChanged` event — that must not leak into ViewModels or the transport layer.
+
+---
+
+### Decision 16: Contracts Folder Collapsed into `RentalApp`; `RentalApp.Contracts` Class Library Retired *(Supersedes Decision 14)*
+**Date**: 2026-05-02
+**Area**: Architecture
+
+**Decision**: The `RentalApp.Contracts` class library is removed. Request/response records now live in a `Contracts/` folder inside `RentalApp` under the `RentalApp.Contracts` namespace — requests in `Contracts/Requests/`, responses in `Contracts/Responses/`. `RentalApp.Database` does not reference these types; only `RentalApp` and `RentalApp.Test` (via its project reference to `RentalApp`) consume them.
+
+**Alternatives considered**:
+- **Retain `RentalApp.Contracts` as a separate class library** — the prior approach (Decision 14). Rejected because the separate project added cognitive overhead (an extra entry in the solution, an extra project reference to manage) without delivering meaningful architectural benefit at the current scale of three projects and a single consumer.
+
+**Rationale**: The original motivation for a dedicated contracts project was to enforce a compile-time boundary ensuring both `RemoteApiService` and `LocalApiService` used the same record shapes. That boundary still exists — both implementations are in `RentalApp` and must satisfy the same `IApiService` signatures — but it no longer requires a separate assembly to enforce it. A `Contracts/` folder in `RentalApp` provides the same organisational clarity with less structural overhead. The namespace (`RentalApp.Contracts`) is preserved so call sites read identically to the separate-project approach.
