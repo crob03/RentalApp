@@ -43,6 +43,7 @@ public class LocalApiServiceTests : IClassFixture<DatabaseFixture<LocalApiServic
         );
         Assert.NotNull(user);
         Assert.Equal("Jane", user.FirstName);
+        Assert.Equal("Doe", user.LastName);
     }
 
     [Fact]

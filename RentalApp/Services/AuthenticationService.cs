@@ -37,16 +37,18 @@ public class AuthenticationService : IAuthenticationService
             var response = await _api.LoginAsync(new LoginRequest(email, password));
             _tokenState.CurrentToken = response.Token;
 
+            _currentUser = await _api.GetCurrentUserAsync();
+
             if (rememberMe)
                 await _credentialStore.SaveAsync(email, password);
 
-            _currentUser = await _api.GetCurrentUserAsync();
             AuthenticationStateChanged?.Invoke(this, true);
             return AuthenticationResult.Success();
         }
         catch (Exception ex)
         {
             _tokenState.CurrentToken = null;
+            await _credentialStore.ClearAsync();
             return AuthenticationResult.Failure(ex.Message);
         }
     }

@@ -171,6 +171,30 @@ public class AuthenticationServiceTests
         Assert.False(eventRaised);
     }
 
+    [Fact]
+    public async Task LoginAsync_ApiThrows_DoesNotSaveCredentials()
+    {
+        _api.LoginAsync(Arg.Any<LoginRequest>())
+            .ThrowsAsync(new HttpRequestException("Invalid credentials"));
+        var sut = CreateSut();
+
+        await sut.LoginAsync("jane@example.com", "wrong", rememberMe: true);
+
+        await _credentialStore.DidNotReceive().SaveAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task LoginAsync_GetCurrentUserThrows_DoesNotSaveCredentials()
+    {
+        _api.LoginAsync(Arg.Any<LoginRequest>()).Returns(FakeLoginResponse());
+        _api.GetCurrentUserAsync().ThrowsAsync(new HttpRequestException("Server error"));
+        var sut = CreateSut();
+
+        await sut.LoginAsync("jane@example.com", "Password1!", rememberMe: true);
+
+        await _credentialStore.DidNotReceive().SaveAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
     // ── RegisterAsync ──────────────────────────────────────────────────
 
     [Fact]
