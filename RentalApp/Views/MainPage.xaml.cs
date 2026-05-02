@@ -2,18 +2,21 @@ using RentalApp.ViewModels;
 
 namespace RentalApp.Views;
 
-/// <summary>
-/// The main authenticated page, presented after a successful login or registration.
-/// </summary>
 public partial class MainPage : ContentPage
 {
-    /// <summary>
-    /// Initialises the page and binds it to the provided <see cref="MainViewModel"/>.
-    /// </summary>
-    /// <param name="viewModel">The transient view model for this page.</param>
-    public MainPage(MainViewModel viewModel)
+    private readonly MainViewModel _viewModel;
+
+    public MainPage(MainViewModel viewModel, AppShellViewModel shellViewModel)
     {
-        InitializeComponent();
+        _viewModel = viewModel;
         BindingContext = viewModel;
+        InitializeComponent();
+        LogoutToolbarItem.Command = shellViewModel.LogoutCommand;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await _viewModel.InitializeAsync();
     }
 }
