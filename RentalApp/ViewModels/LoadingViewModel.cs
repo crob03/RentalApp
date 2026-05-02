@@ -43,7 +43,7 @@ public class LoadingViewModel : BaseViewModel
             _tokenState.CurrentToken = response.Token;
             await _navigationService.NavigateToAsync(Routes.Main);
         }
-        catch (Exception)
+        catch
         {
             await _navigationService.NavigateToAsync(Routes.Login);
         }

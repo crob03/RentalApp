@@ -27,6 +27,10 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 16 | 2026-05-02 | Architecture | Contracts folder collapsed into `RentalApp`; `RentalApp.Contracts` class library retired *(supersedes Decision 14)* |
 | 17 | 2026-05-02 | Tooling / Dev Workflow | Release builds always use the remote API; SharedPreferences switching is debug-only |
 | 18 | 2026-05-02 | Architecture | `IApiService` split into four domain service interfaces; `IAuthenticationService` removed with its orchestration logic distributed into ViewModels *(supersedes Decisions 10, 11, 15)* |
+| 19 | 2026-05-02 | Architecture / Data Access | Services must use repositories; direct `AppDbContext` access is prohibited |
+| 20 | 2026-05-02 | Architecture / Data Access | Repositories must not cross aggregate boundaries |
+| 21 | 2026-05-02 | Architecture / MVVM | `AuthenticatedViewModel` abstract base class replaces `AppShellViewModel` composition for shared post-auth commands |
+| 22 | 2026-05-02 | Architecture / Navigation | `MainPage` declared as an absolute Shell route (`//main`) so navigating to it replaces the navigation stack |
 
 ---
 
@@ -316,3 +320,30 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Introduce a dedicated read-model / query service for cross-aggregate projections** — a `CategoryQueryService` producing a `CategorySummary` view model, bypassing repository interfaces entirely. Rejected as over-engineering at the current scale; the service layer already plays this role and calling two repositories from `LocalItemService` is sufficient.
 
 **Rationale**: Repositories are the authoritative boundary around a single aggregate. Allowing them to reach into other aggregates — even read-only — means that a change to one aggregate's query logic (filters, soft deletes, feature flags) must be replicated in every repository that joins against it. The practical cost of a second round-trip (two queries instead of one `GROUP BY` + `JOIN`) is negligible at the category-list scale; the correctness benefit of a single source of truth for item filtering is not. Services are the correct layer for coordinating across aggregates: they call multiple repositories and own the in-memory assembly of enriched response types.
+
+---
+
+### Decision 21: `AuthenticatedViewModel` Abstract Base Class for Shared Post-Auth Commands
+**Date**: 2026-05-02
+**Area**: Architecture / MVVM
+
+**Decision**: Replace the `AppShellViewModel` composition approach with an abstract base class, `AuthenticatedViewModel`, that all post-auth ViewModels inherit from. `LogoutCommand` and `NavigateToProfileCommand` live on the base class. XAML binds directly to these commands on the page's own ViewModel; no code-behind wiring is required.
+
+**Alternatives considered**:
+- **Composition via code-behind injection** — inject `AppShellViewModel` as a second constructor parameter in each page's code-behind and wire toolbar commands manually (`ProfileToolbarItem.Command = shellViewModel.NavigateToProfileCommand`). This was the initial implementation. Rejected because it added boilerplate to every code-behind and placed the commands on a separate object from the ViewModel the XAML was already bound to, requiring `x:Name` attributes on toolbar items and imperative wiring.
+- **Retain `AppShellViewModel` with `CanExecute` guards** — `AppShellViewModel` subscribed to `AuthenticationStateChanged` and guarded both commands with a `CanExecute` predicate checking for a non-null token. Rejected because the check is redundant: post-auth pages are only reachable when authenticated, so defending against an unauthenticated state at the command level adds complexity without adding safety.
+
+**Rationale**: Every post-auth ViewModel needs the same logout and profile navigation behaviour. The relationship is genuinely "is-a" — `MainViewModel`, `ItemsListViewModel`, etc. are all authenticated ViewModels — so inheritance is appropriate. Moving the commands onto the base class eliminates the code-behind boilerplate, allows XAML to bind directly (consistent with MVVM conventions), and removes the now-redundant `CanExecute` logic. Protected navigation helpers (`NavigateToAsync`, `NavigateBackAsync`) on the base class also remove the need for each subclass to hold its own `INavigationService` field.
+
+---
+
+### Decision 22: `MainPage` Declared as an Absolute Shell Route (`//main`)
+**Date**: 2026-05-02
+**Area**: Architecture / Navigation
+
+**Decision**: `MainPage` is declared as a `ShellContent` in `AppShell.xaml` with `Route="main"`, and `Routes.Main` is set to `"//main"`. After a successful login or on auto-login startup, navigation uses this absolute route. The manual `Routing.RegisterRoute(Routes.Main, typeof(MainPage))` call is removed.
+
+**Alternatives considered**:
+- **Keep relative route, suppress back button with `Shell.BackButtonBehavior`** — setting `IsVisible="False"` on the back button in `MainPage.xaml` hides the button visually, but `LoginPage` remains on the navigation stack beneath `MainPage`. Rejected because this is a visual workaround for a structural problem: the login page should not exist on the stack after the user has authenticated.
+
+**Rationale**: Absolute Shell navigation (`//route`) replaces the entire navigation stack, making `MainPage` the new root. This is the correct semantic for a home/dashboard page — there is nothing to navigate back to after login. The pattern matches the existing conventions in the app: `//login` and `//loading` are already declared as `ShellContent` items and navigated to absolutely for the same reason. `MainPage` was the only post-login root that was not following this convention.

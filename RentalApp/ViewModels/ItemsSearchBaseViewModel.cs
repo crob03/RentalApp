@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using RentalApp.Constants;
 using RentalApp.Contracts;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -19,10 +20,9 @@ internal static class ItemsSearchDefaults
     );
 }
 
-public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
+public abstract partial class ItemsSearchBaseViewModel<TItem> : AuthenticatedViewModel
     where TItem : IItemListable
 {
-    private readonly INavigationService _navigationService;
     private readonly IItemService _itemService;
 
     protected IItemService ItemService => _itemService;
@@ -60,11 +60,13 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
 
     protected ItemsSearchBaseViewModel(
         IItemService itemService,
-        INavigationService navigationService
+        INavigationService navigationService,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
     )
+        : base(tokenState, credentialStore, navigationService)
     {
         _itemService = itemService;
-        _navigationService = navigationService;
     }
 
     protected async Task LoadCategoriesAsync()
@@ -154,13 +156,12 @@ public abstract partial class ItemsSearchBaseViewModel<TItem> : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task NavigateToItemAsync(TItem item) =>
-        await _navigationService.NavigateToAsync(
+    private Task NavigateToItemAsync(TItem item) =>
+        NavigateToAsync(
             Routes.ItemDetails,
             new Dictionary<string, object> { ["itemId"] = item.Id }
         );
 
     [RelayCommand]
-    private async Task NavigateToCreateItemAsync() =>
-        await _navigationService.NavigateToAsync(Routes.CreateItem);
+    private Task NavigateToCreateItemAsync() => NavigateToAsync(Routes.CreateItem);
 }

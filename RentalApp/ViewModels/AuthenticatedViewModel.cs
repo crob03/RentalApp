@@ -5,13 +5,13 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-public partial class AppShellViewModel : BaseViewModel
+public abstract partial class AuthenticatedViewModel : BaseViewModel
 {
     private readonly AuthTokenState _tokenState;
     private readonly ICredentialStore _credentialStore;
     private readonly INavigationService _navigationService;
 
-    public AppShellViewModel(
+    protected AuthenticatedViewModel(
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
         INavigationService navigationService
@@ -20,18 +20,14 @@ public partial class AppShellViewModel : BaseViewModel
         _tokenState = tokenState;
         _credentialStore = credentialStore;
         _navigationService = navigationService;
-        _tokenState.AuthenticationStateChanged += OnAuthenticationStateChanged;
-        Title = "RentalApp";
     }
 
-    private bool CanExecuteAuthenticatedAction() => _tokenState.HasSession;
+    protected Task NavigateToAsync(string route) => _navigationService.NavigateToAsync(route);
 
-    private void OnAuthenticationStateChanged(object? sender, bool isAuthenticated)
-    {
-        LogoutCommand.NotifyCanExecuteChanged();
-        NavigateToProfileCommand.NotifyCanExecuteChanged();
-        NavigateToSettingsCommand.NotifyCanExecuteChanged();
-    }
+    protected Task NavigateToAsync(string route, Dictionary<string, object> parameters) =>
+        _navigationService.NavigateToAsync(route, parameters);
+
+    protected Task NavigateBackAsync() => _navigationService.NavigateBackAsync();
 
     protected virtual Task<bool> ConfirmLogoutAsync() =>
         Application
@@ -39,7 +35,7 @@ public partial class AppShellViewModel : BaseViewModel
             ?.Page?.DisplayAlertAsync("Logout", "Are you sure you want to logout?", "Yes", "No")
         ?? Task.FromResult(false);
 
-    [RelayCommand(CanExecute = nameof(CanExecuteAuthenticatedAction))]
+    [RelayCommand]
     private async Task LogoutAsync()
     {
         if (!await ConfirmLogoutAsync())
@@ -52,9 +48,5 @@ public partial class AppShellViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task NavigateToProfileAsync() =>
-        await _navigationService.NavigateToAsync(Routes.Temp);
-
-    [RelayCommand]
-    private async Task NavigateToSettingsAsync() =>
         await _navigationService.NavigateToAsync(Routes.Temp);
 }

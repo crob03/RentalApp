@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -12,8 +13,13 @@ public partial class ItemsListViewModel : ItemsSearchBaseViewModel<ItemSummaryRe
     [ObservableProperty]
     private string searchText = string.Empty;
 
-    public ItemsListViewModel(IItemService itemService, INavigationService navigationService)
-        : base(itemService, navigationService)
+    public ItemsListViewModel(
+        IItemService itemService,
+        INavigationService navigationService,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
+    )
+        : base(itemService, navigationService, tokenState, credentialStore)
     {
         Title = "Browse Items";
     }

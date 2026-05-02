@@ -3,11 +3,12 @@ using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Helpers;
+using RentalApp.Http;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
+public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttributable
 {
     private readonly IItemService _itemService;
     private readonly IAuthService _authService;
@@ -34,7 +35,14 @@ public partial class ItemDetailsViewModel : BaseViewModel, IQueryAttributable
     [ObservableProperty]
     private bool editIsAvailable;
 
-    public ItemDetailsViewModel(IItemService itemService, IAuthService authService)
+    public ItemDetailsViewModel(
+        IItemService itemService,
+        IAuthService authService,
+        INavigationService navigationService,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
+    )
+        : base(tokenState, credentialStore, navigationService)
     {
         _itemService = itemService;
         _authService = authService;

@@ -2,6 +2,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -12,8 +13,11 @@ public class NearbyItemsViewModelTests
     private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly ILocationService _locationService = Substitute.For<ILocationService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
+    private readonly AuthTokenState _tokenState = new();
+    private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
 
-    private NearbyItemsViewModel CreateSut() => new(_itemService, _locationService, _nav);
+    private NearbyItemsViewModel CreateSut() =>
+        new(_itemService, _locationService, _nav, _tokenState, _credentialStore);
 
     private static NearbyItemResponse MakeItem(int id) =>
         new(id, $"Item {id}", null, 10.0, 1, "Tools", 1, "Owner", 55.9, -3.2, 0.5, true, null);

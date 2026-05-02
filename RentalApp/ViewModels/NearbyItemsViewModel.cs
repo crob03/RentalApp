@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
@@ -22,9 +23,11 @@ public partial class NearbyItemsViewModel : ItemsSearchBaseViewModel<NearbyItemR
     public NearbyItemsViewModel(
         IItemService itemService,
         ILocationService locationService,
-        INavigationService navigationService
+        INavigationService navigationService,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
     )
-        : base(itemService, navigationService)
+        : base(itemService, navigationService, tokenState, credentialStore)
     {
         _locationService = locationService;
         Title = "Nearby Items";

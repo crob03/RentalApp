@@ -14,6 +14,16 @@
   <d:ContentPage.BindingContext>
     <vm:NearbyItemsViewModel />
   </d:ContentPage.BindingContext>
+
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
   <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
     <!-- Error banner -->
     <Border
