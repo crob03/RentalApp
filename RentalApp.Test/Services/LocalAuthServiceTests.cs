@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Contracts.Requests;
 using RentalApp.Database.Data;
+using RentalApp.Database.Repositories;
 using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.Test.Fixtures;
@@ -17,7 +18,12 @@ public class LocalAuthServiceTests : IClassFixture<DatabaseFixture<LocalAuthServ
         _contextFactory = fixture.ContextFactory;
     }
 
-    private LocalAuthService CreateSut() => new(_contextFactory, _tokenState);
+    private LocalAuthService CreateSut() =>
+        new(
+            new UserRepository(_contextFactory),
+            new ItemRepository(_contextFactory),
+            _tokenState
+        );
 
     private async Task<int> SeedUserAsync(
         string email = "jane@example.com",

@@ -1,31 +1,30 @@
-using Microsoft.EntityFrameworkCore;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
-using RentalApp.Database.Data;
+using RentalApp.Database.Repositories;
 using RentalApp.Http;
-using DbUser = RentalApp.Database.Models.User;
 
 namespace RentalApp.Services;
 
 internal class LocalAuthService : IAuthService
 {
-    private readonly IDbContextFactory<AppDbContext> _contextFactory;
+    private readonly IUserRepository _userRepository;
+    private readonly IItemRepository _itemRepository;
     private readonly AuthTokenState _tokenState;
 
     public LocalAuthService(
-        IDbContextFactory<AppDbContext> contextFactory,
+        IUserRepository userRepository,
+        IItemRepository itemRepository,
         AuthTokenState tokenState
     )
     {
-        _contextFactory = contextFactory;
+        _userRepository = userRepository;
+        _itemRepository = itemRepository;
         _tokenState = tokenState;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
-        await using var context = _contextFactory.CreateDbContext();
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-
+        var user = await _userRepository.GetByEmailAsync(request.Email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password");
 
@@ -38,24 +37,18 @@ internal class LocalAuthService : IAuthService
 
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
-        await using var context = _contextFactory.CreateDbContext();
-        var existing = await context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var existing = await _userRepository.GetByEmailAsync(request.Email);
         if (existing != null)
             throw new InvalidOperationException("User with this email already exists");
 
         var salt = BCrypt.Net.BCrypt.GenerateSalt();
-        var newUser = new DbUser
-        {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, salt),
-            PasswordSalt = salt,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
-        context.Users.Add(newUser);
-        await context.SaveChangesAsync();
+        var newUser = await _userRepository.CreateAsync(
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            BCrypt.Net.BCrypt.HashPassword(request.Password, salt),
+            salt
+        );
 
         return new RegisterResponse(
             newUser.Id,
@@ -72,12 +65,11 @@ internal class LocalAuthService : IAuthService
             throw new InvalidOperationException("No user is currently authenticated");
 
         var userId = int.Parse(_tokenState.CurrentToken!);
-        await using var context = _contextFactory.CreateDbContext();
         var user =
-            await context.Users.FindAsync(userId)
+            await _userRepository.GetByIdAsync(userId)
             ?? throw new InvalidOperationException("Authenticated user not found");
 
-        var itemsListed = await context.Items.CountAsync(i => i.OwnerId == userId);
+        var itemsListed = await _itemRepository.CountItemsByOwnerAsync(userId);
 
         return new CurrentUserResponse(
             user.Id,
@@ -93,12 +85,11 @@ internal class LocalAuthService : IAuthService
 
     public async Task<UserProfileResponse> GetUserProfileAsync(int userId)
     {
-        await using var context = _contextFactory.CreateDbContext();
         var user =
-            await context.Users.FindAsync(userId)
+            await _userRepository.GetByIdAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
-        var itemsListed = await context.Items.CountAsync(i => i.OwnerId == userId);
+        var itemsListed = await _itemRepository.CountItemsByOwnerAsync(userId);
 
         return new UserProfileResponse(
             user.Id,

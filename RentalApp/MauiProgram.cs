@@ -44,10 +44,12 @@ public static class MauiProgram
         else
         {
             builder.Services.AddDbContextFactory<AppDbContext>();
+            builder.Services.AddSingleton<IUserRepository, UserRepository>();
             builder.Services.AddSingleton<IItemRepository, ItemRepository>();
             builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
             builder.Services.AddSingleton<IAuthService>(sp => new LocalAuthService(
-                sp.GetRequiredService<IDbContextFactory<AppDbContext>>(),
+                sp.GetRequiredService<IUserRepository>(),
+                sp.GetRequiredService<IItemRepository>(),
                 sp.GetRequiredService<AuthTokenState>()
             ));
             builder.Services.AddSingleton<IItemService>(sp => new LocalItemService(
