@@ -39,7 +39,7 @@ format:
 	dotnet csharpier format .
 
 seed-db:
-	psql "$(PSQL_CONN)" -f scripts/seed_db.sql
+	psql "$(PSQL_CONN)" -f scripts/sql/seed_db.sql
 
 clear-db:
-	psql "$(PSQL_CONN)" -f scripts/clear_db.sql
+	psql "$(PSQL_CONN)" -f scripts/sql/clear_db.sql
