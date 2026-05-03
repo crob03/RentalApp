@@ -141,7 +141,7 @@ internal class LocalRentalService : IRentalService
 
         var newState = await RentalStateFactory
             .FromString(rental.Status)
-            .TransitionTo(request.Status, rental);
+            .TransitionTo(targetStatus, rental);
 
         var updated = await _rentalRepository.UpdateRentalStatusAsync(id, newState.StateName);
 

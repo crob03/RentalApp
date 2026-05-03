@@ -10,8 +10,6 @@ public interface IRentalRepository
     /// <summary>
     /// Returns the rental with the given <paramref name="id"/>, including its <c>Item</c>, <c>Owner</c>,
     /// and <c>Borrower</c> navigation properties, or <see langword="null"/> if not found.
-    /// Applies lazy overdue promotion: if the rental status is <c>OutForRent</c> and
-    /// <c>EndDate</c> is before today, the status is updated to <c>Overdue</c> before returning.
     /// </summary>
     Task<Rental?> GetRentalAsync(int id);
 
