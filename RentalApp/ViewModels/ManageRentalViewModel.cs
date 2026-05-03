@@ -18,7 +18,6 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
 {
     private readonly IRentalService _rentalService;
     private int _rentalId;
-    private bool _isOwner;
 
     /// <summary>The currently loaded rental; <see langword="null"/> while loading.</summary>
     [ObservableProperty]
@@ -96,20 +95,16 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         if (
             CurrentRental is null
             || !int.TryParse(TokenState.CurrentToken, out var userId)
-            || !Enum.TryParse<RentalStatus>(
-                CurrentRental.Status.Replace(" ", ""),
-                ignoreCase: true,
-                out var status
-            )
+            || !Enum.TryParse<RentalStatus>(CurrentRental.Status, ignoreCase: true, out var status)
         )
         {
             CanApprove = CanReject = CanMarkOutForRent = CanMarkReturned = CanComplete = false;
             return;
         }
 
-        _isOwner = userId == CurrentRental.OwnerId;
+        var isOwner = userId == CurrentRental.OwnerId;
         var state = RentalStateFactory.From(status);
-        var transitions = _isOwner ? state.OwnerTransitions : state.BorrowerTransitions;
+        var transitions = isOwner ? state.OwnerTransitions : state.BorrowerTransitions;
 
         CanApprove = transitions.Contains(RentalStatus.Approved);
         CanReject = transitions.Contains(RentalStatus.Rejected);
