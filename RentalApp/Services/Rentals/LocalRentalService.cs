@@ -120,6 +120,8 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
+        await PromoteOverdueRentalsAsync([rental]);
+
         var targetStatus = ParseStatus(request.Status);
 
         if (targetStatus == RentalStatus.Overdue)

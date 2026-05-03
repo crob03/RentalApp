@@ -307,4 +307,24 @@ public class LocalRentalServiceTests
 
         Assert.Equal("Overdue", result.Status);
     }
+
+    [Fact]
+    public async Task UpdateRentalStatusAsync_OutForRentPastEndDate_PromotesOverdueBeforeTransition()
+    {
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        // Manually set OutForRent with a past end date to simulate overdue scenario
+        await _fixture.Context.Database.ExecuteSqlAsync(
+            $"""UPDATE rentals SET "Status" = 'OutForRent', "EndDate" = {Today().AddDays(-1)} WHERE "Id" = {created.Id}"""
+        );
+        _fixture.Context.ChangeTracker.Clear();
+
+        var result = await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Returned"));
+
+        Assert.Equal("Returned", result.Status);
+    }
 }
