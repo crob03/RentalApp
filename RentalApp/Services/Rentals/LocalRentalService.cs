@@ -42,7 +42,7 @@ internal class LocalRentalService : IRentalService
     {
         var currentUserId = GetCurrentUserId();
         var rentals = (await fetchRentals(currentUserId)).ToList();
-        await PromoteOverdueRentalsAsync(rentals);
+        await ApplyAutomaticTransitionsAsync(rentals);
         var filtered =
             request.Status == null
                 ? rentals
@@ -62,7 +62,7 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
-        await PromoteOverdueRentalsAsync([rental]);
+        await ApplyAutomaticTransitionsAsync([rental]);
         return ToRentalDetail(rental);
     }
 
@@ -120,7 +120,7 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
-        await PromoteOverdueRentalsAsync([rental]);
+        await ApplyAutomaticTransitionsAsync([rental]);
 
         var targetStatus = ParseStatus(request.Status);
 
@@ -157,17 +157,22 @@ internal class LocalRentalService : IRentalService
         );
     }
 
-    private async Task PromoteOverdueRentalsAsync(IList<DbRental> rentals)
+    private async Task ApplyAutomaticTransitionsAsync(IList<DbRental> rentals)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-        foreach (
-            var rental in rentals.Where(r =>
-                r.Status == RentalStatus.OutForRent && r.EndDate < today
-            )
-        )
+        foreach (var rental in rentals)
         {
-            await _rentalRepository.UpdateRentalStatusAsync(rental.Id, RentalStatus.Overdue);
-            rental.Status = RentalStatus.Overdue;
+            RentalStatus? target = rental.Status switch
+            {
+                RentalStatus.OutForRent when rental.EndDate < today => RentalStatus.Overdue,
+                RentalStatus.Requested when rental.StartDate < today => RentalStatus.Rejected,
+                _ => null,
+            };
+            if (target is { } newStatus)
+            {
+                await _rentalRepository.UpdateRentalStatusAsync(rental.Id, newStatus);
+                rental.Status = newStatus;
+            }
         }
     }
 
