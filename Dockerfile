@@ -8,7 +8,7 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
     && rm dotnet-install.sh
 
 # Install Java JDK (required for Android SDK) and unzip
-RUN apt-get update && apt-get install -y openjdk-21-jdk unzip \
+RUN apt-get update && apt-get install -y openjdk-21-jdk unzip postgresql-client \
     && ln -sfn "$(dirname $(dirname $(readlink -f $(which javac))))" /usr/lib/jvm/java-21
 
 # Pre-install NuGet workload packs that fail over Docker Desktop's virtualised network.
