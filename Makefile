@@ -1,5 +1,6 @@
 PKG := com.companyname.rentalapp
 DB_CONN ?= Host=localhost;Port=5432;Database=appdb;Username=app_user;Password=app_password
+PSQL_CONN ?= postgresql://app_user:app_password@localhost:5432/appdb
 PREFS_FILE := shared_prefs/$(PKG)_preferences.xml
 
 build-debug:
@@ -36,3 +37,9 @@ use-local-api:
 
 format:
 	dotnet csharpier format .
+
+seed:
+	psql "$(PSQL_CONN)" -f scripts/seed.sql
+
+clear:
+	psql "$(PSQL_CONN)" -f scripts/clear.sql
