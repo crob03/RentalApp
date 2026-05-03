@@ -6,6 +6,9 @@ namespace RentalApp.Database.States;
 public class RequestedState : IRentalState
 {
     public RentalStatus Status => RentalStatus.Requested;
+    public IReadOnlyList<RentalStatus> OwnerTransitions { get; } =
+    [RentalStatus.Approved, RentalStatus.Rejected];
+    public IReadOnlyList<RentalStatus> BorrowerTransitions { get; } = [];
 
     public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
         targetStatus switch

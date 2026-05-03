@@ -28,4 +28,12 @@ public class ApprovedStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new ApprovedState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_ContainsOutForRent() =>
+        Assert.Contains(RentalStatus.OutForRent, new ApprovedState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_IsEmpty() =>
+        Assert.Empty(new ApprovedState().BorrowerTransitions);
 }

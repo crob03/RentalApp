@@ -34,4 +34,16 @@ public class RequestedStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new RequestedState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_ContainsApprovedAndRejected()
+    {
+        var transitions = new RequestedState().OwnerTransitions;
+        Assert.Contains(RentalStatus.Approved, transitions);
+        Assert.Contains(RentalStatus.Rejected, transitions);
+    }
+
+    [Fact]
+    public void BorrowerTransitions_IsEmpty() =>
+        Assert.Empty(new RequestedState().BorrowerTransitions);
 }

@@ -28,4 +28,12 @@ public class ReturnedStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new ReturnedState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_ContainsCompleted() =>
+        Assert.Contains(RentalStatus.Completed, new ReturnedState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_IsEmpty() =>
+        Assert.Empty(new ReturnedState().BorrowerTransitions);
 }
