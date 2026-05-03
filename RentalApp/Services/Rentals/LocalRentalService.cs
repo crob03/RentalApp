@@ -28,24 +28,20 @@ internal class LocalRentalService : IRentalService
     }
 
     /// <inheritdoc/>
-    public async Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request)
-    {
-        var currentUserId = GetCurrentUserId();
-        var rentals = (await _rentalRepository.GetIncomingRentalsAsync(currentUserId)).ToList();
-        await PromoteOverdueRentalsAsync(rentals);
-        var filtered =
-            request.Status == null
-                ? rentals
-                : rentals.Where(r => r.Status == ParseStatus(request.Status)).ToList();
-        var summaries = filtered.Select(ToRentalSummary).ToList();
-        return new RentalsListResponse(summaries, summaries.Count);
-    }
+    public Task<RentalsListResponse> GetIncomingRentalsAsync(GetRentalsRequest request) =>
+        GetRentalsAsync(request, _rentalRepository.GetIncomingRentalsAsync);
 
     /// <inheritdoc/>
-    public async Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request)
+    public Task<RentalsListResponse> GetOutgoingRentalsAsync(GetRentalsRequest request) =>
+        GetRentalsAsync(request, _rentalRepository.GetOutgoingRentalsAsync);
+
+    private async Task<RentalsListResponse> GetRentalsAsync(
+        GetRentalsRequest request,
+        Func<int, Task<IEnumerable<DbRental>>> fetchRentals
+    )
     {
         var currentUserId = GetCurrentUserId();
-        var rentals = (await _rentalRepository.GetOutgoingRentalsAsync(currentUserId)).ToList();
+        var rentals = (await fetchRentals(currentUserId)).ToList();
         await PromoteOverdueRentalsAsync(rentals);
         var filtered =
             request.Status == null
