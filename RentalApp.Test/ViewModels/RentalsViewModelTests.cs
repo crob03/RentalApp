@@ -366,4 +366,22 @@ public class RentalsViewModelTests
 
         Assert.False(sut.IsIncoming);
     }
+
+    // ── NavigateToRentalCommand ────────────────────────────────────────
+
+    [Fact]
+    public async Task NavigateToRentalCommand_NavigatesToManageRentalWithId()
+    {
+        var sut = CreateSut();
+
+        await sut.NavigateToRentalCommand.ExecuteAsync(42);
+
+        await _nav.Received(1)
+            .NavigateToAsync(
+                Routes.ManageRental,
+                Arg.Is<Dictionary<string, object>>(d =>
+                    d.ContainsKey("rentalId") && (int)d["rentalId"] == 42
+                )
+            );
+    }
 }

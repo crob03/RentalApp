@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
@@ -149,4 +150,9 @@ public partial class RentalsViewModel : AuthenticatedViewModel
             _suppressReload = false;
         }
     }
+
+    /// <summary>Navigates to the manage-rental page for the given <paramref name="id"/>.</summary>
+    [RelayCommand]
+    private Task NavigateToRentalAsync(int id) =>
+        NavigateToAsync(Routes.ManageRental, new Dictionary<string, object> { { "rentalId", id } });
 }
