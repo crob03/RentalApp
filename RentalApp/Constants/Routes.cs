@@ -31,4 +31,7 @@ public static class Routes
 
     /// <summary>The registered route name for the rentals page.</summary>
     public const string Rentals = "RentalsPage";
+
+    /// <summary>The registered route name for the manage rental page.</summary>
+    public const string ManageRental = "ManageRentalPage";
 }
