@@ -184,7 +184,8 @@ internal class LocalRentalService : IRentalService
 
     private static RentalStatus ParseStatus(string status)
     {
-        if (!Enum.TryParse<RentalStatus>(status, ignoreCase: true, out var result))
+        var normalized = status.Replace(" ", "");
+        if (!Enum.TryParse<RentalStatus>(normalized, ignoreCase: true, out var result))
             throw new InvalidOperationException($"Unknown rental status: '{status}'.");
         return result;
     }

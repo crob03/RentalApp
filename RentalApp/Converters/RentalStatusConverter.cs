@@ -4,8 +4,9 @@ using System.Text.RegularExpressions;
 namespace RentalApp.Converters;
 
 /// <summary>
-/// Converts a PascalCase rental status string (e.g. "OutForRent") to a human-readable
-/// display string with spaces (e.g. "Out For Rent").
+/// Converts a rental status string to a human-readable display string.
+/// PascalCase values (e.g. "OutForRent") are split into words ("Out For Rent").
+/// Already-spaced values (e.g. "Out for Rent") are returned unchanged.
 /// </summary>
 public partial class RentalStatusConverter : IValueConverter
 {
