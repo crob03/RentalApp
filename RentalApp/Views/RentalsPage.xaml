@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.RentalsPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:responses="clr-namespace:RentalApp.Contracts.Responses;assembly=RentalApp.Contracts"
+  mc:Ignorable="d"
+  x:DataType="vm:RentalsViewModel"
+  Title="{Binding Title}"
+>
+  <d:ContentPage.BindingContext>
+    <vm:RentalsViewModel />
+  </d:ContentPage.BindingContext>
+
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
+
+    <!-- Error banner -->
+    <Border
+      Grid.Row="0"
+      BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+      Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+      StrokeThickness="1"
+      Padding="12"
+      Margin="0,0,0,4"
+      IsVisible="{Binding HasError}"
+    >
+      <Border.StrokeShape>
+        <RoundRectangle CornerRadius="8" />
+      </Border.StrokeShape>
+      <Label
+        Text="{Binding ErrorMessage}"
+        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+      />
+    </Border>
+
+    <!-- Direction toggle -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,4">
+      <StackLayout Grid.Column="0">
+        <Button
+          Text="Incoming"
+          Command="{Binding ShowIncomingCommand}"
+          BackgroundColor="Transparent"
+          TextColor="{StaticResource Primary}"
+        />
+        <BoxView
+          HeightRequest="2"
+          BackgroundColor="{StaticResource Primary}"
+          IsVisible="{Binding IsIncoming}"
+        />
+      </StackLayout>
+      <StackLayout Grid.Column="1">
+        <Button
+          Text="Outgoing"
+          Command="{Binding ShowOutgoingCommand}"
+          BackgroundColor="Transparent"
+          TextColor="{StaticResource Primary}"
+        />
+        <BoxView
+          HeightRequest="2"
+          BackgroundColor="{StaticResource Primary}"
+          IsVisible="{Binding IsIncoming, Converter={StaticResource InvertedBoolConverter}}"
+        />
+      </StackLayout>
+    </Grid>
+
+    <!-- Status filter -->
+    <Picker
+      Grid.Row="2"
+      ItemsSource="{Binding FilterStatuses}"
+      SelectedItem="{Binding SelectedStatusItem}"
+      Margin="0,4"
+    />
+
+    <!-- Rentals list with pull-to-refresh -->
+    <RefreshView
+      Grid.Row="3"
+      IsRefreshing="{Binding IsLoading}"
+      Command="{Binding LoadRentalsCommand}"
+    >
+      <CollectionView ItemsSource="{Binding Rentals}" SelectionMode="None">
+        <CollectionView.EmptyView>
+          <Label
+            Text="No rentals found."
+            HorizontalOptions="Center"
+            Margin="0,40"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </CollectionView.EmptyView>
+        <CollectionView.ItemTemplate>
+          <DataTemplate x:DataType="responses:RentalSummaryResponse">
+            <Border
+              Margin="0,4"
+              Padding="12"
+              StrokeThickness="1"
+              Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+            >
+              <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+              </Border.StrokeShape>
+              <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="2">
+                <!-- Item title + status -->
+                <Label
+                  Grid.Row="0"
+                  Grid.Column="0"
+                  Text="{Binding ItemTitle}"
+                  FontAttributes="Bold"
+                />
+                <Label
+                  Grid.Row="0"
+                  Grid.Column="1"
+                  Text="{Binding Status}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+                <!-- Dates -->
+                <Label
+                  Grid.Row="1"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="2"
+                  Text="{Binding StartDate, StringFormat='{0:d} → '}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+                <!-- Direction-aware party label -->
+                <Label
+                  Grid.Row="2"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="2"
+                  Text="{Binding BorrowerName, StringFormat='Borrowed by: {0}'}"
+                  FontSize="12"
+                  IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:RentalsViewModel}}, Path=IsIncoming}"
+                />
+                <Label
+                  Grid.Row="2"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="2"
+                  Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
+                  FontSize="12"
+                  IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:RentalsViewModel}}, Path=IsIncoming, Converter={StaticResource InvertedBoolConverter}}"
+                />
+                <!-- Total price -->
+                <Label
+                  Grid.Row="3"
+                  Grid.Column="0"
+                  Grid.ColumnSpan="2"
+                  Text="{Binding TotalPrice, StringFormat='Total: £{0:F2}'}"
+                  FontSize="12"
+                  FontAttributes="Bold"
+                />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+    </RefreshView>
+
+    <!-- Initial load indicator -->
+    <ActivityIndicator
+      Grid.Row="3"
+      IsRunning="{Binding IsLoading}"
+      IsVisible="{Binding IsLoading}"
+      HorizontalOptions="Center"
+      VerticalOptions="Center"
+    />
+
+  </Grid>
+</ContentPage>
