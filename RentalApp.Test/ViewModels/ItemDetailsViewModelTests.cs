@@ -257,6 +257,20 @@ public class ItemDetailsViewModelTests
     }
 
     [Fact]
+    public async Task TotalPrice_IsInitialisedOnLoad()
+    {
+        // Default dates are today (start) and today+1 (end) → 1 day × £10 = £10
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 2));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(99));
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
+
+        await sut.LoadItemCommand.ExecuteAsync(null);
+
+        Assert.Equal(10.0, sut.TotalPrice);
+    }
+
+    [Fact]
     public async Task TotalPrice_RecalculatesWhenDatesChange()
     {
         // MakeItem returns DailyRate = 10.0

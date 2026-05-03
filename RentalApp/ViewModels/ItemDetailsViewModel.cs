@@ -202,6 +202,8 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
         if (CurrentItem == null)
             return;
 
+        ClearError();
+
         if (RentalStartDate.Date < DateTime.Today)
         {
             SetError("Start date cannot be in the past");
