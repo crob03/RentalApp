@@ -206,7 +206,10 @@ public class RentalsViewModelTests
         _rentalService
             .GetIncomingRentalsAsync(Arg.Is<GetRentalsRequest>(r => r.Status == null))
             .Returns(
-                MakeRentalsResponse([MakeRental(1, status: "Requested"), MakeRental(2, status: "Approved")])
+                MakeRentalsResponse([
+                    MakeRental(1, status: "Requested"),
+                    MakeRental(2, status: "Approved"),
+                ])
             );
         _rentalService
             .GetIncomingRentalsAsync(Arg.Is<GetRentalsRequest>(r => r.Status == "Requested"))
