@@ -2,6 +2,7 @@ using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.Repositories;
 using RentalApp.Services.Auth;
+using DbItem = RentalApp.Database.Models.Item;
 using GeoFactory = NetTopologySuite.Geometries.GeometryFactory;
 using NtsCoordinate = NetTopologySuite.Geometries.Coordinate;
 using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
@@ -153,7 +154,7 @@ internal class LocalItemService : IItemService
         return new CategoriesResponse(response);
     }
 
-    private static ItemSummaryResponse ToItemSummary(Database.Models.Item i) =>
+    private static ItemSummaryResponse ToItemSummary(DbItem i) =>
         new(
             i.Id,
             i.Title,
@@ -169,7 +170,7 @@ internal class LocalItemService : IItemService
             i.CreatedAt ?? DateTime.UtcNow
         );
 
-    private static NearbyItemResponse ToNearbyItem(Database.Models.Item i, double distanceMeters) =>
+    private static NearbyItemResponse ToNearbyItem(DbItem i, double distanceMeters) =>
         new(
             i.Id,
             i.Title,
@@ -186,7 +187,7 @@ internal class LocalItemService : IItemService
             AverageRating: null
         );
 
-    private static ItemDetailResponse ToItemDetail(Database.Models.Item i) =>
+    private static ItemDetailResponse ToItemDetail(DbItem i) =>
         new(
             i.Id,
             i.Title,

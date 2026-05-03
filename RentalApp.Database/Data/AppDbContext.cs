@@ -75,6 +75,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<Item> Items { get; set; }
 
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Rental"/> entity.
+    /// </summary>
+    public DbSet<Rental> Rentals { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +115,18 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Location).HasColumnType("geography(Point, 4326)");
             entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
             entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryId);
+        });
+
+        modelBuilder.Entity<Rental>(entity =>
+        {
+            entity.ToTable("rentals");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(50);
+            entity.Property(e => e.StartDate).HasColumnType("date");
+            entity.Property(e => e.EndDate).HasColumnType("date");
+            entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.ItemId);
+            entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
+            entity.HasOne(e => e.Borrower).WithMany().HasForeignKey(e => e.BorrowerId);
         });
     }
 }

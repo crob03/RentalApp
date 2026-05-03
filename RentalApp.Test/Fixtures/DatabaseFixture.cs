@@ -45,7 +45,7 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
     public async Task ResetAsync()
     {
         await Context.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE items, categories, users RESTART IDENTITY CASCADE"
+            "TRUNCATE TABLE rentals, items, categories, users RESTART IDENTITY CASCADE"
         );
         Context.ChangeTracker.Clear();
         await SeedAsync();
@@ -58,6 +58,12 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
         );
         Context.ChangeTracker.Clear();
         await SeedItemsAsync();
+    }
+
+    public async Task ResetRentalsAsync()
+    {
+        await Context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE rentals RESTART IDENTITY");
+        Context.ChangeTracker.Clear();
     }
 
     private async Task RecreateDatabaseAsync()
@@ -116,6 +122,17 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
                 FirstName = "Test",
                 LastName = "User",
                 Email = "test@example.com",
+                PasswordHash = "hash",
+                PasswordSalt = "salt",
+            }
+        );
+        Context.Users.Add(
+            new User
+            {
+                Id = 2,
+                FirstName = "Borrower",
+                LastName = "User",
+                Email = "borrower@example.com",
                 PasswordHash = "hash",
                 PasswordSalt = "salt",
             }

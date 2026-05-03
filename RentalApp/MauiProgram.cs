@@ -61,7 +61,12 @@ public static class MauiProgram
                 sp.GetRequiredService<ICategoryRepository>(),
                 sp.GetRequiredService<AuthTokenState>()
             ));
-            builder.Services.AddSingleton<IRentalService, LocalRentalService>();
+            builder.Services.AddSingleton<IRentalRepository, RentalRepository>();
+            builder.Services.AddSingleton<IRentalService>(sp => new LocalRentalService(
+                sp.GetRequiredService<IRentalRepository>(),
+                sp.GetRequiredService<IItemRepository>(),
+                sp.GetRequiredService<AuthTokenState>()
+            ));
             builder.Services.AddSingleton<IReviewService, LocalReviewService>();
         }
 
