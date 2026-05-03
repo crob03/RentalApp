@@ -50,6 +50,30 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
     [ObservableProperty]
     private bool editIsAvailable;
 
+    /// <summary>Rental start date bound to the start DatePicker. Defaults to today.</summary>
+    [ObservableProperty]
+    private DateTime rentalStartDate = DateTime.Today;
+
+    /// <summary>Rental end date bound to the end DatePicker. Defaults to tomorrow.</summary>
+    [ObservableProperty]
+    private DateTime rentalEndDate = DateTime.Today.AddDays(1);
+
+    /// <summary>Computed total rental cost: (EndDate - StartDate).Days × DailyRate.</summary>
+    [ObservableProperty]
+    private double totalPrice;
+
+    /// <summary>Set to a confirmation string after a successful request; null otherwise.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRentalSuccess))]
+    private string? rentalSuccessMessage;
+
+    /// <summary>True when <see cref="RentalSuccessMessage"/> is non-null and non-empty.</summary>
+    public bool HasRentalSuccess => !string.IsNullOrEmpty(RentalSuccessMessage);
+
+    /// <summary>True when the current user is not the owner and the item is available.</summary>
+    [ObservableProperty]
+    private bool showRentalForm;
+
     /// <summary>
     /// Initialises the view model with item, authentication, and navigation dependencies.
     /// </summary>
@@ -98,6 +122,9 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
                 {
                     IsOwner = false;
                 }
+                ShowRentalForm = !IsOwner && CurrentItem.IsAvailable;
+                TotalPrice =
+                    Math.Max(0, (RentalEndDate - RentalStartDate).Days) * CurrentItem.DailyRate;
             }
         });
 
@@ -150,5 +177,53 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
     {
         IsEditing = false;
         ClearError();
+    }
+
+    partial void OnRentalStartDateChanged(DateTime value)
+    {
+        TotalPrice = Math.Max(0, (RentalEndDate - value).Days) * (CurrentItem?.DailyRate ?? 0);
+        RentalSuccessMessage = null;
+    }
+
+    partial void OnRentalEndDateChanged(DateTime value)
+    {
+        TotalPrice = Math.Max(0, (value - RentalStartDate).Days) * (CurrentItem?.DailyRate ?? 0);
+        RentalSuccessMessage = null;
+    }
+
+    /// <summary>
+    /// Validates the selected dates and submits a rental request via <see cref="IRentalService"/>.
+    /// Sets <see cref="RentalSuccessMessage"/> on success; <see cref="BaseViewModel.SetError"/> on failure.
+    /// Dates are not reset after success to preserve the success message (date callbacks clear it).
+    /// </summary>
+    [RelayCommand]
+    private async Task RequestRentalAsync()
+    {
+        if (CurrentItem == null)
+            return;
+
+        if (RentalStartDate.Date < DateTime.Today)
+        {
+            SetError("Start date cannot be in the past");
+            return;
+        }
+
+        if (RentalEndDate <= RentalStartDate)
+        {
+            SetError("End date must be after start date");
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            await _rentalService.CreateRentalAsync(
+                new CreateRentalRequest(
+                    CurrentItem.Id,
+                    DateOnly.FromDateTime(RentalStartDate),
+                    DateOnly.FromDateTime(RentalEndDate)
+                )
+            );
+            RentalSuccessMessage = "Rental requested successfully!";
+        });
     }
 }
