@@ -146,6 +146,30 @@ public class LocalRentalServiceTests
         Assert.Empty(approved.Rentals);
     }
 
+    [Fact]
+    public async Task GetIncomingRentalsAsync_WithSpacedStatusFilter_NormalisesAndReturnsMatchingRentals()
+    {
+        // "Out for Rent" is the format returned by the remote API — local service must handle it too
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"));
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("OutForRent"));
+
+        var outForRent = await CreateSut()
+            .GetIncomingRentalsAsync(new GetRentalsRequest("Out for Rent"));
+        var requested = await CreateSut()
+            .GetIncomingRentalsAsync(new GetRentalsRequest("Requested"));
+
+        Assert.Single(outForRent.Rentals);
+        Assert.Empty(requested.Rentals);
+    }
+
     // ── GetOutgoingRentalsAsync ────────────────────────────────────────────────
 
     [Fact]
@@ -235,6 +259,24 @@ public class LocalRentalServiceTests
             CreateSut()
                 .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"))
         );
+    }
+
+    [Fact]
+    public async Task UpdateRentalStatusAsync_SpacedStatusFormat_NormalisesAndTransitions()
+    {
+        // "Out for Rent" is how the remote API spells this status — local service must accept it
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"));
+        var result = await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Out for Rent"));
+
+        Assert.Equal("OutForRent", result.Status);
     }
 
     [Fact]
