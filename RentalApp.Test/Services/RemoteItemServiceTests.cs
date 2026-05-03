@@ -301,4 +301,23 @@ public class RemoteItemServiceTests
             CreateSut().GetItemsAsync(new GetItemsRequest(1, 20, null, null))
         );
     }
+
+    [Fact]
+    public async Task GetCategoriesAsync_CalledTwice_OnlyCallsApiOnce()
+    {
+        _apiClient
+            .GetAsync("categories")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(new { categories = Array.Empty<object>() }),
+                }
+            );
+        var sut = CreateSut();
+
+        await sut.GetCategoriesAsync();
+        await sut.GetCategoriesAsync();
+
+        _ = _apiClient.Received(1).GetAsync("categories");
+    }
 }
