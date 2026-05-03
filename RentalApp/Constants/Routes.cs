@@ -28,4 +28,7 @@ public static class Routes
 
     /// <summary>The registered route name for the nearby items page.</summary>
     public const string NearbyItems = "NearbyItemsPage";
+
+    /// <summary>The registered route name for the rentals page.</summary>
+    public const string Rentals = "RentalsPage";
 }
