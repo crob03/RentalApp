@@ -294,7 +294,7 @@ public class ItemDetailsViewModelTests
         _rentalService
             .CreateRentalAsync(Arg.Any<CreateRentalRequest>())
             .Returns(
-                new RentalSummaryResponse(
+                new CreateRentalResponse(
                     1,
                     1,
                     "Drill",
@@ -302,8 +302,8 @@ public class ItemDetailsViewModelTests
                     "Jane",
                     2,
                     "Owner",
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(3)),
+                    DateTime.Today.AddDays(1),
+                    DateTime.Today.AddDays(3),
                     "Requested",
                     20.0,
                     DateTime.UtcNow
@@ -332,7 +332,7 @@ public class ItemDetailsViewModelTests
         _rentalService
             .CreateRentalAsync(Arg.Any<CreateRentalRequest>())
             .Returns(
-                new RentalSummaryResponse(
+                new CreateRentalResponse(
                     1,
                     1,
                     "Drill",
@@ -340,8 +340,8 @@ public class ItemDetailsViewModelTests
                     "Jane",
                     2,
                     "Owner",
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(3)),
+                    DateTime.Today.AddDays(1),
+                    DateTime.Today.AddDays(3),
                     "Requested",
                     20.0,
                     DateTime.UtcNow
@@ -367,7 +367,7 @@ public class ItemDetailsViewModelTests
         _rentalService
             .CreateRentalAsync(Arg.Any<CreateRentalRequest>())
             .Returns(
-                new RentalSummaryResponse(
+                new CreateRentalResponse(
                     1,
                     7,
                     "Drill",
@@ -375,8 +375,8 @@ public class ItemDetailsViewModelTests
                     "Jane",
                     2,
                     "Owner",
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
-                    DateOnly.FromDateTime(DateTime.Today.AddDays(3)),
+                    DateTime.Today.AddDays(1),
+                    DateTime.Today.AddDays(3),
                     "Requested",
                     20.0,
                     DateTime.UtcNow

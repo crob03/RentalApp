@@ -35,7 +35,7 @@ public interface IRentalService
     /// </summary>
     /// <param name="request">The item identifier together with the requested start and end dates.</param>
     /// <returns>A summary of the created rental including its assigned identifier and initial status.</returns>
-    Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request);
+    Task<CreateRentalResponse> CreateRentalAsync(CreateRentalRequest request);
 
     /// <summary>
     /// Transitions a rental to a new status (e.g. accepted, rejected, or completed).

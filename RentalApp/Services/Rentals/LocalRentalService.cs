@@ -67,7 +67,7 @@ internal class LocalRentalService : IRentalService
     }
 
     /// <inheritdoc/>
-    public async Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request)
+    public async Task<CreateRentalResponse> CreateRentalAsync(CreateRentalRequest request)
     {
         var currentUserId = GetCurrentUserId();
 
@@ -103,7 +103,7 @@ internal class LocalRentalService : IRentalService
             request.EndDate
         );
 
-        return ToRentalSummary(rental);
+        return ToCreateRentalResponse(rental);
     }
 
     /// <inheritdoc/>
@@ -194,15 +194,33 @@ internal class LocalRentalService : IRentalService
             r.Id,
             r.ItemId,
             r.Item.Title,
+            BorrowerId: r.BorrowerId,
+            BorrowerName: $"{r.Borrower.FirstName} {r.Borrower.LastName}",
+            BorrowerRating: null,
+            OwnerId: r.OwnerId,
+            OwnerName: $"{r.Owner.FirstName} {r.Owner.LastName}",
+            OwnerRating: null,
+            StartDate: r.StartDate.ToDateTime(TimeOnly.MinValue),
+            EndDate: r.EndDate.ToDateTime(TimeOnly.MinValue),
+            r.Status.ToString(),
+            TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
+            RequestedAt: r.CreatedAt ?? DateTime.UtcNow
+        );
+
+    private static CreateRentalResponse ToCreateRentalResponse(DbRental r) =>
+        new(
+            r.Id,
+            r.ItemId,
+            r.Item.Title,
             r.BorrowerId,
             $"{r.Borrower.FirstName} {r.Borrower.LastName}",
             r.OwnerId,
             $"{r.Owner.FirstName} {r.Owner.LastName}",
-            r.StartDate,
-            r.EndDate,
+            StartDate: r.StartDate.ToDateTime(TimeOnly.MinValue),
+            EndDate: r.EndDate.ToDateTime(TimeOnly.MinValue),
             r.Status.ToString(),
             TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
-            r.CreatedAt ?? DateTime.UtcNow
+            CreatedAt: r.CreatedAt ?? DateTime.UtcNow
         );
 
     private static RentalDetailResponse ToRentalDetail(DbRental r) =>

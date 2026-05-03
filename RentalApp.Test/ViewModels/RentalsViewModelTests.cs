@@ -29,13 +29,15 @@ public class RentalsViewModelTests
             ItemTitle: itemTitle,
             BorrowerId: 2,
             BorrowerName: "Bob Smith",
+            BorrowerRating: null,
             OwnerId: 1,
             OwnerName: "Alice Jones",
-            StartDate: new DateOnly(2026, 6, 1),
-            EndDate: new DateOnly(2026, 6, 5),
+            OwnerRating: null,
+            StartDate: new DateTime(2026, 6, 1),
+            EndDate: new DateTime(2026, 6, 5),
             Status: status,
             TotalPrice: 40.0,
-            CreatedAt: DateTime.UtcNow
+            RequestedAt: DateTime.UtcNow
         );
 
     private static RentalsListResponse MakeRentalsResponse(List<RentalSummaryResponse> rentals) =>
