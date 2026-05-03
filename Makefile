@@ -38,8 +38,8 @@ use-local-api:
 format:
 	dotnet csharpier format .
 
-seed:
-	psql "$(PSQL_CONN)" -f scripts/seed.sql
+seed-db:
+	psql "$(PSQL_CONN)" -f scripts/seed_db.sql
 
-clear:
-	psql "$(PSQL_CONN)" -f scripts/clear.sql
+clear-db:
+	psql "$(PSQL_CONN)" -f scripts/clear_db.sql
