@@ -6,6 +6,7 @@ using RentalApp.Http;
 using RentalApp.Services.Auth;
 using RentalApp.Services.Items;
 using RentalApp.Services.Navigation;
+using RentalApp.Services.Rentals;
 using RentalApp.ViewModels;
 
 namespace RentalApp.Test.ViewModels;
@@ -14,12 +15,13 @@ public class ItemDetailsViewModelTests
 {
     private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly IAuthService _authService = Substitute.For<IAuthService>();
+    private readonly IRentalService _rentalService = Substitute.For<IRentalService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
     private readonly AuthTokenState _tokenState = new();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
 
     private ItemDetailsViewModel CreateSut() =>
-        new(_itemService, _authService, _nav, _tokenState, _credentialStore);
+        new(_itemService, _authService, _rentalService, _nav, _tokenState, _credentialStore);
 
     private static ItemDetailResponse MakeItem(int id, int ownerId, string title = "Drill") =>
         new(

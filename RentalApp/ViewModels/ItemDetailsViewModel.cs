@@ -7,6 +7,7 @@ using RentalApp.Http;
 using RentalApp.Services.Auth;
 using RentalApp.Services.Items;
 using RentalApp.Services.Navigation;
+using RentalApp.Services.Rentals;
 
 namespace RentalApp.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
 {
     private readonly IItemService _itemService;
     private readonly IAuthService _authService;
+    private readonly IRentalService _rentalService;
     private int _itemId;
 
     /// <summary>The currently displayed item; <see langword="null"/> while loading.</summary>
@@ -59,6 +61,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
     public ItemDetailsViewModel(
         IItemService itemService,
         IAuthService authService,
+        IRentalService rentalService,
         INavigationService navigationService,
         AuthTokenState tokenState,
         ICredentialStore credentialStore
@@ -67,6 +70,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
     {
         _itemService = itemService;
         _authService = authService;
+        _rentalService = rentalService;
         Title = "Item Details";
     }
 
