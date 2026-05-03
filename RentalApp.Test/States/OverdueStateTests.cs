@@ -27,4 +27,11 @@ public class OverdueStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new OverdueState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_IsEmpty() => Assert.Empty(new OverdueState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_ContainsReturned() =>
+        Assert.Contains(RentalStatus.Returned, new OverdueState().BorrowerTransitions);
 }

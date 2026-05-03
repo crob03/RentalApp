@@ -12,12 +12,14 @@ namespace RentalApp.Services.Auth;
 internal class RemoteAuthService : RemoteServiceBase, IAuthService
 {
     private readonly IApiClient _apiClient;
+    private CurrentUserResponse? _currentUserCache;
 
     public RemoteAuthService(IApiClient apiClient) => _apiClient = apiClient;
 
     /// <inheritdoc/>
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
+        _currentUserCache = null;
         var response = await _apiClient.PostAsJsonAsync(
             "auth/token",
             new { email = request.Email, password = request.Password }
@@ -48,10 +50,14 @@ internal class RemoteAuthService : RemoteServiceBase, IAuthService
     /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
+        if (_currentUserCache is not null)
+            return _currentUserCache;
         var response = await _apiClient.GetAsync("users/me");
         await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<CurrentUserResponse>()
+        _currentUserCache =
+            await response.Content.ReadFromJsonAsync<CurrentUserResponse>()
             ?? throw new InvalidOperationException("Empty profile response from API");
+        return _currentUserCache;
     }
 
     /// <inheritdoc/>

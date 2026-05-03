@@ -170,4 +170,31 @@ public class LocalAuthServiceTests
             CreateSut().GetUserProfileAsync(999)
         );
     }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_CalledTwice_ReturnsSameInstance()
+    {
+        var userId = await SeedUserAsync("cached@example.com");
+        _tokenState.CurrentToken = userId.ToString();
+        var sut = CreateSut();
+
+        var first = await sut.GetCurrentUserAsync();
+        var second = await sut.GetCurrentUserAsync();
+
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_AfterLogin_ReturnsFreshResult()
+    {
+        var userId = await SeedUserAsync("fresh@example.com");
+        _tokenState.CurrentToken = userId.ToString();
+        var sut = CreateSut();
+
+        var first = await sut.GetCurrentUserAsync();
+        await sut.LoginAsync(new LoginRequest("fresh@example.com", "Password1!"));
+        var second = await sut.GetCurrentUserAsync();
+
+        Assert.NotSame(first, second);
+    }
 }

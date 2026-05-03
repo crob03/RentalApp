@@ -145,4 +145,15 @@ public class LocalItemServiceTests
         Assert.Equal(55.9533, result.Latitude);
         Assert.Equal(-3.1883, result.Longitude);
     }
+
+    [Fact]
+    public async Task GetCategoriesAsync_CalledTwice_ReturnsSameInstance()
+    {
+        var sut = CreateSut();
+
+        var first = await sut.GetCategoriesAsync();
+        var second = await sut.GetCategoriesAsync();
+
+        Assert.Same(first, second);
+    }
 }

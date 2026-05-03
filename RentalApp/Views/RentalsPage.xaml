@@ -106,6 +106,12 @@
               StrokeThickness="1"
               Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
             >
+              <Border.GestureRecognizers>
+                <TapGestureRecognizer
+                  Command="{Binding Source={RelativeSource AncestorType={x:Type vm:RentalsViewModel}}, Path=NavigateToRentalCommand}"
+                  CommandParameter="{Binding Id}"
+                />
+              </Border.GestureRecognizers>
               <Border.StrokeShape>
                 <RoundRectangle CornerRadius="8" />
               </Border.StrokeShape>

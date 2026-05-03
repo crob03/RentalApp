@@ -234,8 +234,8 @@ internal class LocalRentalService : IRentalService
             $"{r.Borrower.FirstName} {r.Borrower.LastName}",
             r.OwnerId,
             $"{r.Owner.FirstName} {r.Owner.LastName}",
-            r.StartDate,
-            r.EndDate,
+            r.StartDate.ToDateTime(TimeOnly.MinValue),
+            r.EndDate.ToDateTime(TimeOnly.MinValue),
             r.Status.ToString(),
             TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
             RequestedAt: r.CreatedAt ?? DateTime.UtcNow

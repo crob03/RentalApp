@@ -194,4 +194,82 @@ public class RemoteAuthServiceTests
 
         await Assert.ThrowsAsync<HttpRequestException>(() => CreateSut().GetUserProfileAsync(42));
     }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_CalledTwice_OnlyCallsApiOnce()
+    {
+        _apiClient
+            .GetAsync("users/me")
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 1,
+                            email = "jane@example.com",
+                            firstName = "Jane",
+                            lastName = "Doe",
+                            averageRating = (double?)null,
+                            itemsListed = 0,
+                            rentalsCompleted = 0,
+                            createdAt = DateTime.UtcNow,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        await sut.GetCurrentUserAsync();
+        await sut.GetCurrentUserAsync();
+
+        _ = _apiClient.Received(1).GetAsync("users/me");
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_AfterLogin_CallsApiAgain()
+    {
+        _apiClient
+            .PostAsJsonAsync("auth/token", Arg.Any<object>())
+            .Returns(
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            token = "abc123",
+                            expiresAt = DateTime.UtcNow.AddHours(1),
+                            userId = 1,
+                        }
+                    ),
+                }
+            );
+        _apiClient
+            .GetAsync("users/me")
+            .Returns(_ =>
+                new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new
+                        {
+                            id = 1,
+                            email = "jane@example.com",
+                            firstName = "Jane",
+                            lastName = "Doe",
+                            averageRating = (double?)null,
+                            itemsListed = 0,
+                            rentalsCompleted = 0,
+                            createdAt = DateTime.UtcNow,
+                        }
+                    ),
+                }
+            );
+        var sut = CreateSut();
+
+        await sut.GetCurrentUserAsync();
+        await sut.LoginAsync(new LoginRequest("jane@example.com", "Password1!"));
+        await sut.GetCurrentUserAsync();
+
+        _ = _apiClient.Received(2).GetAsync("users/me");
+    }
 }

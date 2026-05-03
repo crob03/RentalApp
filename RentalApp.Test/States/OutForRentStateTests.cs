@@ -34,4 +34,11 @@ public class OutForRentStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new OutForRentState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_IsEmpty() => Assert.Empty(new OutForRentState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_ContainsReturned() =>
+        Assert.Contains(RentalStatus.Returned, new OutForRentState().BorrowerTransitions);
 }

@@ -18,6 +18,7 @@ internal class LocalItemService : IItemService
     private readonly IItemRepository _itemRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly AuthTokenState _tokenState;
+    private CategoriesResponse? _categoriesCache;
 
     private static readonly GeoFactory _geoFactory = new(new NtsPrecisionModel(), 4326);
 
@@ -141,9 +142,11 @@ internal class LocalItemService : IItemService
     /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
+        if (_categoriesCache is not null)
+            return _categoriesCache;
         var categories = await _categoryRepository.GetAllAsync();
         var countsByCategoryId = await _itemRepository.CountItemsByCategoryAsync();
-        var response = categories
+        var categoryList = categories
             .Select(c => new CategoryResponse(
                 c.Id,
                 c.Name,
@@ -151,7 +154,8 @@ internal class LocalItemService : IItemService
                 countsByCategoryId.GetValueOrDefault(c.Id, 0)
             ))
             .ToList();
-        return new CategoriesResponse(response);
+        _categoriesCache = new CategoriesResponse(categoryList);
+        return _categoriesCache;
     }
 
     private static ItemSummaryResponse ToItemSummary(DbItem i) =>

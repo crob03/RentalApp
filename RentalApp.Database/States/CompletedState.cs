@@ -6,6 +6,8 @@ namespace RentalApp.Database.States;
 public class CompletedState : IRentalState
 {
     public RentalStatus Status => RentalStatus.Completed;
+    public IReadOnlyList<RentalStatus> OwnerTransitions { get; } = [];
+    public IReadOnlyList<RentalStatus> BorrowerTransitions { get; } = [];
 
     public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
         throw new InvalidOperationException(

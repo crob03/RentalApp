@@ -19,4 +19,11 @@ public class CompletedStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new CompletedState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_IsEmpty() => Assert.Empty(new CompletedState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_IsEmpty() =>
+        Assert.Empty(new CompletedState().BorrowerTransitions);
 }

@@ -98,6 +98,8 @@ public static class MauiProgram
         builder.Services.AddTransient<NearbyItemsPage>();
         builder.Services.AddTransient<RentalsViewModel>();
         builder.Services.AddTransient<RentalsPage>();
+        builder.Services.AddTransient<ManageRentalViewModel>();
+        builder.Services.AddTransient<ManageRentalPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

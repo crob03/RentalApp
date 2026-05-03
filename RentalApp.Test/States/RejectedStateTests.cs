@@ -20,4 +20,11 @@ public class RejectedStateTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new RejectedState().TransitionTo(target, AnyRental())
         );
+
+    [Fact]
+    public void OwnerTransitions_IsEmpty() => Assert.Empty(new RejectedState().OwnerTransitions);
+
+    [Fact]
+    public void BorrowerTransitions_IsEmpty() =>
+        Assert.Empty(new RejectedState().BorrowerTransitions);
 }
