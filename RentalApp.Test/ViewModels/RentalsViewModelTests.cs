@@ -200,6 +200,46 @@ public class RentalsViewModelTests
         Assert.Equal(2, sut.FilterStatuses.Count); // "All" + "Requested"
     }
 
+    [Fact]
+    public async Task FilterStatuses_NotRebuiltWhenStatusFilterChanges()
+    {
+        _rentalService
+            .GetIncomingRentalsAsync(Arg.Is<GetRentalsRequest>(r => r.Status == null))
+            .Returns(
+                MakeRentalsResponse([MakeRental(1, status: "Requested"), MakeRental(2, status: "Approved")])
+            );
+        _rentalService
+            .GetIncomingRentalsAsync(Arg.Is<GetRentalsRequest>(r => r.Status == "Requested"))
+            .Returns(MakeRentalsResponse([MakeRental(1, status: "Requested")]));
+        var sut = CreateSut();
+        await sut.LoadRentalsCommand.ExecuteAsync(null);
+
+        sut.SelectedStatusItem = "Requested";
+        await (sut.LoadRentalsCommand.ExecutionTask ?? Task.CompletedTask);
+
+        Assert.Contains("Approved", sut.FilterStatuses);
+        Assert.Contains("Requested", sut.FilterStatuses);
+    }
+
+    [Fact]
+    public async Task FilterStatuses_RebuiltWhenDirectionChanges()
+    {
+        _rentalService
+            .GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>())
+            .Returns(MakeRentalsResponse([MakeRental(status: "Requested")]));
+        _rentalService
+            .GetOutgoingRentalsAsync(Arg.Any<GetRentalsRequest>())
+            .Returns(MakeRentalsResponse([MakeRental(status: "Approved")]));
+        var sut = CreateSut();
+        await sut.LoadRentalsCommand.ExecuteAsync(null);
+
+        sut.IsIncoming = false;
+        await (sut.LoadRentalsCommand.ExecutionTask ?? Task.CompletedTask);
+
+        Assert.Contains("Approved", sut.FilterStatuses);
+        Assert.DoesNotContain("Requested", sut.FilterStatuses);
+    }
+
     // ── SelectedStatusItem ─────────────────────────────────────────────
 
     [Fact]

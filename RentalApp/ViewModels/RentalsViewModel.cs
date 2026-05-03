@@ -19,6 +19,7 @@ public partial class RentalsViewModel : AuthenticatedViewModel
     private readonly IRentalService _rentalService;
     private bool _hasLoaded;
     private bool _suppressReload;
+    private bool _rebuildStatuses = true;
 
     /// <summary>Sentinel value used in <see cref="FilterStatuses"/> to represent "no filter".</summary>
     public const string AllStatuses = "All";
@@ -67,7 +68,11 @@ public partial class RentalsViewModel : AuthenticatedViewModel
         Title = "My Rentals";
     }
 
-    partial void OnIsIncomingChanged(bool value) => _ = TriggerReloadIfLoadedAsync();
+    partial void OnIsIncomingChanged(bool value)
+    {
+        _rebuildStatuses = true;
+        _ = TriggerReloadIfLoadedAsync();
+    }
 
     partial void OnSelectedStatusItemChanged(string value)
     {
@@ -80,6 +85,7 @@ public partial class RentalsViewModel : AuthenticatedViewModel
     {
         if (_suppressReload)
             return;
+        _rebuildStatuses = false;
         _ = TriggerReloadIfLoadedAsync();
     }
 
@@ -115,15 +121,19 @@ public partial class RentalsViewModel : AuthenticatedViewModel
                 : await _rentalService.GetOutgoingRentalsAsync(request);
             ct.ThrowIfCancellationRequested();
             Rentals = new ObservableCollection<RentalSummaryResponse>(response.Rentals);
-            RebuildFilterStatuses(response.Rentals);
+            if (_rebuildStatuses)
+                RebuildFilterStatuses(response.Rentals);
+            _rebuildStatuses = true;
             _hasLoaded = true;
         });
 
     /// <summary>
     /// Rebuilds <see cref="FilterStatuses"/> from the distinct status values in
-    /// <paramref name="rentals"/>. If the current <see cref="SelectedStatusItem"/> is no
-    /// longer present in the new list, it is reset to <see cref="AllStatuses"/> without
-    /// triggering a further reload.
+    /// <paramref name="rentals"/>. Only called on initial load, direction change, or
+    /// pull-to-refresh — never on status-filter-triggered reloads, so the picker options
+    /// do not shrink to match the filtered result set. If the current
+    /// <see cref="SelectedStatusItem"/> is no longer present in the new list, it is reset
+    /// to <see cref="AllStatuses"/> without triggering a further reload.
     /// </summary>
     private void RebuildFilterStatuses(List<RentalSummaryResponse> rentals)
     {
