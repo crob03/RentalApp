@@ -108,7 +108,11 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         if (
             CurrentRental is null
             || _currentUser is null
-            || !Enum.TryParse<RentalStatus>(CurrentRental.Status, ignoreCase: true, out var status)
+            || !Enum.TryParse<RentalStatus>(
+                CurrentRental.Status.Replace(" ", ""),
+                ignoreCase: true,
+                out var status
+            )
         )
         {
             CanApprove = CanReject = CanMarkOutForRent = CanMarkReturned = CanComplete = false;

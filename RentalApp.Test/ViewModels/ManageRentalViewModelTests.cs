@@ -153,6 +153,7 @@ public class ManageRentalViewModelTests
 
     [Theory]
     [InlineData("OutForRent")]
+    [InlineData("Out for Rent")]
     [InlineData("Overdue")]
     public async Task LoadRentalCommand_WhenBorrower_ActiveRental_SetsCanMarkReturned(string status)
     {

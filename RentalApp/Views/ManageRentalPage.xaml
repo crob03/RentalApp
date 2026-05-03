@@ -115,7 +115,7 @@
             Text="Mark as Out for Rent"
             IsVisible="{Binding CanMarkOutForRent}"
             Command="{Binding UpdateStatusCommand}"
-            CommandParameter="OutForRent"
+            CommandParameter="Out for Rent"
           />
           <Button
             Text="Mark as Returned"
