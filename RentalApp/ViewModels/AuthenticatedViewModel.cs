@@ -16,6 +16,9 @@ public abstract partial class AuthenticatedViewModel : BaseViewModel
     private readonly ICredentialStore _credentialStore;
     private readonly INavigationService _navigationService;
 
+    /// <summary>Gets the bearer-token state for the current session.</summary>
+    protected AuthTokenState TokenState => _tokenState;
+
     /// <summary>
     /// Initialises the view model with the required authentication and navigation dependencies.
     /// </summary>

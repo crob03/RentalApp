@@ -17,7 +17,6 @@ namespace RentalApp.ViewModels;
 public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttributable
 {
     private readonly IRentalService _rentalService;
-    private readonly AuthTokenState _tokenState;
     private int _rentalId;
     private bool _isOwner;
 
@@ -57,7 +56,6 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         : base(tokenState, credentialStore, navigationService)
     {
         _rentalService = rentalService;
-        _tokenState = tokenState;
         Title = "Manage Rental";
     }
 
@@ -74,7 +72,6 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         RunAsync(async () =>
         {
             CurrentRental = await _rentalService.GetRentalAsync(_rentalId);
-            _isOwner = int.Parse(_tokenState.CurrentToken!) == CurrentRental.OwnerId;
             RefreshAvailableActions();
         });
 
@@ -91,7 +88,6 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
                 new UpdateRentalStatusRequest(targetStatus)
             );
             CurrentRental = await _rentalService.GetRentalAsync(_rentalId);
-            _isOwner = int.Parse(_tokenState.CurrentToken!) == CurrentRental.OwnerId;
             RefreshAvailableActions();
         });
 
@@ -99,6 +95,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
     {
         if (
             CurrentRental is null
+            || !int.TryParse(TokenState.CurrentToken, out var userId)
             || !Enum.TryParse<RentalStatus>(
                 CurrentRental.Status.Replace(" ", ""),
                 ignoreCase: true,
@@ -110,6 +107,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
             return;
         }
 
+        _isOwner = userId == CurrentRental.OwnerId;
         var state = RentalStateFactory.From(status);
         var transitions = _isOwner ? state.OwnerTransitions : state.BorrowerTransitions;
 
