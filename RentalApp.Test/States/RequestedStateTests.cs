@@ -39,6 +39,7 @@ public class RequestedStateTests
     public void OwnerTransitions_ContainsApprovedAndRejected()
     {
         var transitions = new RequestedState().OwnerTransitions;
+        Assert.Equal(2, transitions.Count);
         Assert.Contains(RentalStatus.Approved, transitions);
         Assert.Contains(RentalStatus.Rejected, transitions);
     }
