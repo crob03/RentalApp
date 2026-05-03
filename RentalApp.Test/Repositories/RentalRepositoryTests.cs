@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
+using RentalApp.Database.Models;
 using RentalApp.Database.Repositories;
+using RentalApp.Database.States;
 using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Repositories;
@@ -44,7 +46,7 @@ public class RentalRepositoryTests
         Assert.Equal(BorrowerId, rental.BorrowerId);
         Assert.Equal(start, rental.StartDate);
         Assert.Equal(end, rental.EndDate);
-        Assert.Equal("Requested", rental.Status);
+        Assert.Equal(RentalStatus.Requested, rental.Status);
         Assert.NotNull(rental.Item);
         Assert.NotNull(rental.Owner);
         Assert.NotNull(rental.Borrower);
@@ -101,9 +103,9 @@ public class RentalRepositoryTests
         var created = await CreateSut()
             .CreateRentalAsync(ItemId, OwnerId, BorrowerId, start, start.AddDays(2));
 
-        var updated = await CreateSut().UpdateRentalStatusAsync(created.Id, "Approved");
+        var updated = await CreateSut().UpdateRentalStatusAsync(created.Id, RentalStatus.Approved);
 
-        Assert.Equal("Approved", updated.Status);
+        Assert.Equal(RentalStatus.Approved, updated.Status);
         Assert.NotNull(updated.UpdatedAt);
     }
 
@@ -111,7 +113,7 @@ public class RentalRepositoryTests
     public async Task UpdateRentalStatusAsync_NonExistentId_Throws()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            CreateSut().UpdateRentalStatusAsync(9999, "Approved")
+            CreateSut().UpdateRentalStatusAsync(9999, RentalStatus.Approved)
         );
     }
 

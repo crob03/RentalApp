@@ -35,7 +35,7 @@ internal class LocalRentalService : IRentalService
         var filtered =
             request.Status == null
                 ? rentals
-                : rentals.Where(r => r.Status == request.Status).ToList();
+                : rentals.Where(r => r.Status == ParseStatus(request.Status)).ToList();
         var summaries = filtered.Select(ToRentalSummary).ToList();
         return new RentalsListResponse(summaries, summaries.Count);
     }
@@ -49,7 +49,7 @@ internal class LocalRentalService : IRentalService
         var filtered =
             request.Status == null
                 ? rentals
-                : rentals.Where(r => r.Status == request.Status).ToList();
+                : rentals.Where(r => r.Status == ParseStatus(request.Status)).ToList();
         var summaries = filtered.Select(ToRentalSummary).ToList();
         return new RentalsListResponse(summaries, summaries.Count);
     }
@@ -123,31 +123,37 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
-        var targetStatus = request.Status.ToLower();
+        var targetStatus = ParseStatus(request.Status);
 
-        if (targetStatus == "overdue")
+        if (targetStatus == RentalStatus.Overdue)
             throw new InvalidOperationException("The overdue status is set automatically.");
 
         var isOwner = rental.OwnerId == currentUserId;
-        string[] ownerOnlyStatuses = ["approved", "rejected", "outforrent", "completed"];
+        RentalStatus[] ownerOnlyStatuses =
+        [
+            RentalStatus.Approved,
+            RentalStatus.Rejected,
+            RentalStatus.OutForRent,
+            RentalStatus.Completed,
+        ];
 
         if (ownerOnlyStatuses.Contains(targetStatus) && !isOwner)
             throw new UnauthorizedAccessException("Only the owner can perform this transition.");
 
-        if (targetStatus == "returned" && isOwner)
+        if (targetStatus == RentalStatus.Returned && isOwner)
             throw new UnauthorizedAccessException(
                 "Only the borrower can mark an item as returned."
             );
 
         var newState = await RentalStateFactory
-            .FromString(rental.Status)
+            .From(rental.Status)
             .TransitionTo(targetStatus, rental);
 
-        var updated = await _rentalRepository.UpdateRentalStatusAsync(id, newState.StateName);
+        var updated = await _rentalRepository.UpdateRentalStatusAsync(id, newState.Status);
 
         return new UpdateRentalStatusResponse(
             updated.Id,
-            updated.Status,
+            updated.Status.ToString(),
             updated.UpdatedAt ?? DateTime.UtcNow
         );
     }
@@ -155,10 +161,14 @@ internal class LocalRentalService : IRentalService
     private async Task PromoteOverdueRentalsAsync(IList<Database.Models.Rental> rentals)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-        foreach (var rental in rentals.Where(r => r.Status == "OutForRent" && r.EndDate < today))
+        foreach (
+            var rental in rentals.Where(r =>
+                r.Status == RentalStatus.OutForRent && r.EndDate < today
+            )
+        )
         {
-            await _rentalRepository.UpdateRentalStatusAsync(rental.Id, "Overdue");
-            rental.Status = "Overdue";
+            await _rentalRepository.UpdateRentalStatusAsync(rental.Id, RentalStatus.Overdue);
+            rental.Status = RentalStatus.Overdue;
         }
     }
 
@@ -167,6 +177,13 @@ internal class LocalRentalService : IRentalService
             _tokenState.CurrentToken
                 ?? throw new InvalidOperationException("No user is authenticated.")
         );
+
+    private static RentalStatus ParseStatus(string status)
+    {
+        if (!Enum.TryParse<RentalStatus>(status, ignoreCase: true, out var result))
+            throw new InvalidOperationException($"Unknown rental status: '{status}'.");
+        return result;
+    }
 
     private static RentalSummaryResponse ToRentalSummary(Database.Models.Rental r) =>
         new(
@@ -179,7 +196,7 @@ internal class LocalRentalService : IRentalService
             $"{r.Owner.FirstName} {r.Owner.LastName}",
             r.StartDate,
             r.EndDate,
-            r.Status,
+            r.Status.ToString(),
             TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
             r.CreatedAt ?? DateTime.UtcNow
         );
@@ -196,7 +213,7 @@ internal class LocalRentalService : IRentalService
             $"{r.Owner.FirstName} {r.Owner.LastName}",
             r.StartDate,
             r.EndDate,
-            r.Status,
+            r.Status.ToString(),
             TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
             RequestedAt: r.CreatedAt ?? DateTime.UtcNow
         );

@@ -1,4 +1,5 @@
 using RentalApp.Database.Models;
+using RentalApp.Database.States;
 
 namespace RentalApp.Database.Repositories;
 
@@ -34,7 +35,7 @@ public interface IRentalRepository
     /// Sets the <c>Status</c> and <c>UpdatedAt</c> of the rental with the given <paramref name="id"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown if no rental with <paramref name="id"/> exists.</exception>
-    Task<Rental> UpdateRentalStatusAsync(int id, string status);
+    Task<Rental> UpdateRentalStatusAsync(int id, RentalStatus status);
 
     /// <summary>
     /// Returns <see langword="true"/> if any active rental for <paramref name="itemId"/> overlaps the given date range.

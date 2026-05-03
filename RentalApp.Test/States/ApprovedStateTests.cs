@@ -5,32 +5,26 @@ namespace RentalApp.Test.States;
 
 public class ApprovedStateTests
 {
-    private static Rental AnyRental() => new() { Status = "Approved" };
+    private static Rental AnyRental() => new() { Status = RentalStatus.Approved };
 
     [Fact]
-    public void StateName_IsApproved() => Assert.Equal("Approved", new ApprovedState().StateName);
+    public void Status_IsApproved() =>
+        Assert.Equal(RentalStatus.Approved, new ApprovedState().Status);
 
     [Fact]
     public async Task TransitionTo_OutForRent_ReturnsOutForRentState()
     {
-        var result = await new ApprovedState().TransitionTo("OutForRent", AnyRental());
-        Assert.IsType<OutForRentState>(result);
-    }
-
-    [Fact]
-    public async Task TransitionTo_IsCaseInsensitive()
-    {
-        var result = await new ApprovedState().TransitionTo("OUTFORRENT", AnyRental());
+        var result = await new ApprovedState().TransitionTo(RentalStatus.OutForRent, AnyRental());
         Assert.IsType<OutForRentState>(result);
     }
 
     [Theory]
-    [InlineData("requested")]
-    [InlineData("rejected")]
-    [InlineData("returned")]
-    [InlineData("completed")]
-    [InlineData("overdue")]
-    public async Task TransitionTo_InvalidTarget_Throws(string target) =>
+    [InlineData(RentalStatus.Requested)]
+    [InlineData(RentalStatus.Rejected)]
+    [InlineData(RentalStatus.Returned)]
+    [InlineData(RentalStatus.Completed)]
+    [InlineData(RentalStatus.Overdue)]
+    public async Task TransitionTo_InvalidTarget_Throws(RentalStatus target) =>
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new ApprovedState().TransitionTo(target, AnyRental())
         );

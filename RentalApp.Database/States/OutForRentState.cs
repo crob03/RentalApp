@@ -5,15 +5,15 @@ namespace RentalApp.Database.States;
 /// <summary>The item is currently out on rent.</summary>
 public class OutForRentState : IRentalState
 {
-    public string StateName => "OutForRent";
+    public RentalStatus Status => RentalStatus.OutForRent;
 
-    public Task<IRentalState> TransitionTo(string targetStatus, Rental rental) =>
-        targetStatus.ToLower() switch
+    public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
+        targetStatus switch
         {
-            "overdue" => Task.FromResult<IRentalState>(new OverdueState()),
-            "returned" => Task.FromResult<IRentalState>(new ReturnedState()),
+            RentalStatus.Overdue => Task.FromResult<IRentalState>(new OverdueState()),
+            RentalStatus.Returned => Task.FromResult<IRentalState>(new ReturnedState()),
             _ => throw new InvalidOperationException(
-                $"Cannot transition from {StateName} to {targetStatus}."
+                $"Cannot transition from {Status} to {targetStatus}."
             ),
         };
 }

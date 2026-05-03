@@ -5,14 +5,14 @@ namespace RentalApp.Database.States;
 /// <summary>The borrower has marked the item as returned.</summary>
 public class ReturnedState : IRentalState
 {
-    public string StateName => "Returned";
+    public RentalStatus Status => RentalStatus.Returned;
 
-    public Task<IRentalState> TransitionTo(string targetStatus, Rental rental) =>
-        targetStatus.ToLower() switch
+    public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
+        targetStatus switch
         {
-            "completed" => Task.FromResult<IRentalState>(new CompletedState()),
+            RentalStatus.Completed => Task.FromResult<IRentalState>(new CompletedState()),
             _ => throw new InvalidOperationException(
-                $"Cannot transition from {StateName} to {targetStatus}."
+                $"Cannot transition from {Status} to {targetStatus}."
             ),
         };
 }

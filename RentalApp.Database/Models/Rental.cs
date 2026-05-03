@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using RentalApp.Database.States;
 
 namespace RentalApp.Database.Models;
 
@@ -31,7 +32,7 @@ public class Rental
     public DateOnly EndDate { get; set; }
 
     [Required]
-    public string Status { get; set; } = "Requested";
+    public RentalStatus Status { get; set; } = RentalStatus.Requested;
 
     public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
 

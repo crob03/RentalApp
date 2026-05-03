@@ -121,7 +121,7 @@ public class AppDbContext : DbContext
         {
             entity.ToTable("rentals");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Status).HasMaxLength(50);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(50);
             entity.Property(e => e.StartDate).HasColumnType("date");
             entity.Property(e => e.EndDate).HasColumnType("date");
             entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.ItemId);

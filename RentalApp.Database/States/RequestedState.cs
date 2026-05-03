@@ -5,15 +5,15 @@ namespace RentalApp.Database.States;
 /// <summary>Initial state when a borrower submits a rental request.</summary>
 public class RequestedState : IRentalState
 {
-    public string StateName => "Requested";
+    public RentalStatus Status => RentalStatus.Requested;
 
-    public Task<IRentalState> TransitionTo(string targetStatus, Rental rental) =>
-        targetStatus.ToLower() switch
+    public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
+        targetStatus switch
         {
-            "approved" => Task.FromResult<IRentalState>(new ApprovedState()),
-            "rejected" => Task.FromResult<IRentalState>(new RejectedState()),
+            RentalStatus.Approved => Task.FromResult<IRentalState>(new ApprovedState()),
+            RentalStatus.Rejected => Task.FromResult<IRentalState>(new RejectedState()),
             _ => throw new InvalidOperationException(
-                $"Cannot transition from {StateName} to {targetStatus}."
+                $"Cannot transition from {Status} to {targetStatus}."
             ),
         };
 }

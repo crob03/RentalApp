@@ -5,14 +5,14 @@ namespace RentalApp.Database.States;
 /// <summary>The owner has accepted the rental request.</summary>
 public class ApprovedState : IRentalState
 {
-    public string StateName => "Approved";
+    public RentalStatus Status => RentalStatus.Approved;
 
-    public Task<IRentalState> TransitionTo(string targetStatus, Rental rental) =>
-        targetStatus.ToLower() switch
+    public Task<IRentalState> TransitionTo(RentalStatus targetStatus, Rental rental) =>
+        targetStatus switch
         {
-            "outforrent" => Task.FromResult<IRentalState>(new OutForRentState()),
+            RentalStatus.OutForRent => Task.FromResult<IRentalState>(new OutForRentState()),
             _ => throw new InvalidOperationException(
-                $"Cannot transition from {StateName} to {targetStatus}."
+                $"Cannot transition from {Status} to {targetStatus}."
             ),
         };
 }

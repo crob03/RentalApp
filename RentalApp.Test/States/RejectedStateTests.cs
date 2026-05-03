@@ -5,18 +5,18 @@ namespace RentalApp.Test.States;
 
 public class RejectedStateTests
 {
-    private static Rental AnyRental() => new() { Status = "Rejected" };
+    private static Rental AnyRental() => new() { Status = RentalStatus.Rejected };
 
     [Fact]
-    public void StateName_IsRejected() => Assert.Equal("Rejected", new RejectedState().StateName);
+    public void Status_IsRejected() =>
+        Assert.Equal(RentalStatus.Rejected, new RejectedState().Status);
 
     [Theory]
-    [InlineData("approved")]
-    [InlineData("outforrent")]
-    [InlineData("returned")]
-    [InlineData("completed")]
-    [InlineData("anything")]
-    public async Task TransitionTo_AnyTarget_ThrowsBecauseTerminal(string target) =>
+    [InlineData(RentalStatus.Approved)]
+    [InlineData(RentalStatus.OutForRent)]
+    [InlineData(RentalStatus.Returned)]
+    [InlineData(RentalStatus.Completed)]
+    public async Task TransitionTo_AnyTarget_ThrowsBecauseTerminal(RentalStatus target) =>
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new RejectedState().TransitionTo(target, AnyRental())
         );

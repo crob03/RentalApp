@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
+using RentalApp.Database.States;
 
 namespace RentalApp.Database.Repositories;
 
@@ -70,7 +71,7 @@ public class RentalRepository : IRentalRepository
             BorrowerId = borrowerId,
             StartDate = startDate,
             EndDate = endDate,
-            Status = "Requested",
+            Status = RentalStatus.Requested,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -87,7 +88,7 @@ public class RentalRepository : IRentalRepository
     }
 
     /// <inheritdoc/>
-    public async Task<Rental> UpdateRentalStatusAsync(int id, string status)
+    public async Task<Rental> UpdateRentalStatusAsync(int id, RentalStatus status)
     {
         await using var context = _contextFactory.CreateDbContext();
         var rental =
@@ -112,7 +113,13 @@ public class RentalRepository : IRentalRepository
     )
     {
         await using var context = _contextFactory.CreateDbContext();
-        var activeStatuses = new[] { "Requested", "Approved", "OutForRent", "Overdue" };
+        var activeStatuses = new[]
+        {
+            RentalStatus.Requested,
+            RentalStatus.Approved,
+            RentalStatus.OutForRent,
+            RentalStatus.Overdue,
+        };
         return await context.Rentals.AnyAsync(r =>
             r.ItemId == itemId
             && activeStatuses.Contains(r.Status)

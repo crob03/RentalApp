@@ -5,25 +5,26 @@ namespace RentalApp.Test.States;
 
 public class ReturnedStateTests
 {
-    private static Rental AnyRental() => new() { Status = "Returned" };
+    private static Rental AnyRental() => new() { Status = RentalStatus.Returned };
 
     [Fact]
-    public void StateName_IsReturned() => Assert.Equal("Returned", new ReturnedState().StateName);
+    public void Status_IsReturned() =>
+        Assert.Equal(RentalStatus.Returned, new ReturnedState().Status);
 
     [Fact]
     public async Task TransitionTo_Completed_ReturnsCompletedState()
     {
-        var result = await new ReturnedState().TransitionTo("completed", AnyRental());
+        var result = await new ReturnedState().TransitionTo(RentalStatus.Completed, AnyRental());
         Assert.IsType<CompletedState>(result);
     }
 
     [Theory]
-    [InlineData("requested")]
-    [InlineData("approved")]
-    [InlineData("rejected")]
-    [InlineData("outforrent")]
-    [InlineData("overdue")]
-    public async Task TransitionTo_InvalidTarget_Throws(string target) =>
+    [InlineData(RentalStatus.Requested)]
+    [InlineData(RentalStatus.Approved)]
+    [InlineData(RentalStatus.Rejected)]
+    [InlineData(RentalStatus.OutForRent)]
+    [InlineData(RentalStatus.Overdue)]
+    public async Task TransitionTo_InvalidTarget_Throws(RentalStatus target) =>
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new ReturnedState().TransitionTo(target, AnyRental())
         );

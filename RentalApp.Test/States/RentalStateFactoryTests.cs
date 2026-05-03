@@ -1,3 +1,4 @@
+using RentalApp.Database.Models;
 using RentalApp.Database.States;
 
 namespace RentalApp.Test.States;
@@ -5,23 +6,20 @@ namespace RentalApp.Test.States;
 public class RentalStateFactoryTests
 {
     [Theory]
-    [InlineData("Requested", typeof(RequestedState))]
-    [InlineData("Approved", typeof(ApprovedState))]
-    [InlineData("Rejected", typeof(RejectedState))]
-    [InlineData("OutForRent", typeof(OutForRentState))]
-    [InlineData("Overdue", typeof(OverdueState))]
-    [InlineData("Returned", typeof(ReturnedState))]
-    [InlineData("Completed", typeof(CompletedState))]
-    public void FromString_KnownStatus_ReturnsCorrectType(string status, Type expectedType)
+    [InlineData(RentalStatus.Requested, typeof(RequestedState))]
+    [InlineData(RentalStatus.Approved, typeof(ApprovedState))]
+    [InlineData(RentalStatus.Rejected, typeof(RejectedState))]
+    [InlineData(RentalStatus.OutForRent, typeof(OutForRentState))]
+    [InlineData(RentalStatus.Overdue, typeof(OverdueState))]
+    [InlineData(RentalStatus.Returned, typeof(ReturnedState))]
+    [InlineData(RentalStatus.Completed, typeof(CompletedState))]
+    public void From_KnownStatus_ReturnsCorrectType(RentalStatus status, Type expectedType)
     {
-        var state = RentalStateFactory.FromString(status);
+        var state = RentalStateFactory.From(status);
         Assert.IsType(expectedType, state);
     }
 
-    [Theory]
-    [InlineData("unknown")]
-    [InlineData("")]
-    [InlineData("requested")]
-    public void FromString_UnknownStatus_Throws(string status) =>
-        Assert.Throws<InvalidOperationException>(() => RentalStateFactory.FromString(status));
+    [Fact]
+    public void From_OutOfRangeStatus_Throws() =>
+        Assert.Throws<InvalidOperationException>(() => RentalStateFactory.From((RentalStatus)999));
 }
