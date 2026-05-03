@@ -297,8 +297,8 @@ public class LocalRentalServiceTests
             .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
 
         // Manually set OutForRent with a past end date to simulate overdue scenario
-        await _fixture.Context.Database.ExecuteSqlRawAsync(
-            $"""UPDATE rentals SET "Status" = 'OutForRent', "EndDate" = '{Today().AddDays(-1)}' WHERE "Id" = {created.Id}"""
+        await _fixture.Context.Database.ExecuteSqlAsync(
+            $"""UPDATE rentals SET "Status" = 'OutForRent', "EndDate" = {Today().AddDays(-1)} WHERE "Id" = {created.Id}"""
         );
         _fixture.Context.ChangeTracker.Clear();
 
