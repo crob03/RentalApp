@@ -89,6 +89,19 @@ public class RentalsViewModelTests
     }
 
     [Fact]
+    public async Task LoadRentalsCommand_IsBusyFalseAfterCompletion()
+    {
+        _rentalService
+            .GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>())
+            .Returns(MakeRentalsResponse([]));
+        var sut = CreateSut();
+
+        await sut.LoadRentalsCommand.ExecuteAsync(null);
+
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
     public async Task LoadRentalsCommand_ServiceThrows_SetsError()
     {
         _rentalService
@@ -109,9 +122,11 @@ public class RentalsViewModelTests
             .GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>())
             .Returns(MakeRentalsResponse([MakeRental(status: "Requested")]));
         var sut = CreateSut();
-        await sut.LoadRentalsCommand.ExecuteAsync(null);
+        // Set before first load: _hasLoaded is false so no reload is triggered,
+        // but SelectedStatus is already "Requested" when LoadRentalsCommand fires.
         sut.SelectedStatusItem = "Requested";
-        await (sut.LoadRentalsCommand.ExecutionTask ?? Task.CompletedTask);
+
+        await sut.LoadRentalsCommand.ExecuteAsync(null);
 
         await _rentalService
             .Received(1)
@@ -269,6 +284,17 @@ public class RentalsViewModelTests
 
         Assert.Equal(RentalsViewModel.AllStatuses, sut.SelectedStatusItem);
         Assert.Null(sut.SelectedStatus);
+    }
+
+    [Fact]
+    public void IsIncomingChanged_BeforeLoad_DoesNotTriggerReload()
+    {
+        var sut = CreateSut();
+
+        sut.IsIncoming = false;
+
+        _rentalService.DidNotReceive().GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>());
+        _rentalService.DidNotReceive().GetOutgoingRentalsAsync(Arg.Any<GetRentalsRequest>());
     }
 
     // ── ShowIncomingCommand / ShowOutgoingCommand ──────────────────────
