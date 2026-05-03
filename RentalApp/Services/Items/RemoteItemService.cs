@@ -13,6 +13,7 @@ namespace RentalApp.Services.Items;
 internal class RemoteItemService : RemoteServiceBase, IItemService
 {
     private readonly IApiClient _apiClient;
+    private CategoriesResponse? _categoriesCache;
 
     public RemoteItemService(IApiClient apiClient) => _apiClient = apiClient;
 
@@ -96,9 +97,13 @@ internal class RemoteItemService : RemoteServiceBase, IItemService
     /// <inheritdoc/>
     public async Task<CategoriesResponse> GetCategoriesAsync()
     {
+        if (_categoriesCache is not null)
+            return _categoriesCache;
         var response = await _apiClient.GetAsync("categories");
         await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<CategoriesResponse>()
+        _categoriesCache =
+            await response.Content.ReadFromJsonAsync<CategoriesResponse>()
             ?? throw new InvalidOperationException("Empty categories response from API");
+        return _categoriesCache;
     }
 }
