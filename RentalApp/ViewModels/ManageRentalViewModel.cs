@@ -76,16 +76,13 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         RunAsync(async () =>
         {
             CurrentRental = await _rentalService.GetRentalAsync(_rentalId);
-            if (_currentUser is null)
+            try
             {
-                try
-                {
-                    _currentUser = await _authService.GetCurrentUserAsync();
-                }
-                catch
-                {
-                    // Current user unavailable — no action buttons will be shown.
-                }
+                _currentUser = await _authService.GetCurrentUserAsync();
+            }
+            catch
+            {
+                // Current user unavailable — no action buttons will be shown.
             }
             RefreshAvailableActions();
         });

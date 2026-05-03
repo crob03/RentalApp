@@ -13,6 +13,7 @@ internal class LocalAuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IItemRepository _itemRepository;
     private readonly AuthTokenState _tokenState;
+    private CurrentUserResponse? _currentUserCache;
 
     public LocalAuthService(
         IUserRepository userRepository,
@@ -32,6 +33,7 @@ internal class LocalAuthService : IAuthService
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Invalid email or password");
 
+        _currentUserCache = null;
         return new LoginResponse(
             Token: user.Id.ToString(),
             ExpiresAt: DateTime.MaxValue,
@@ -67,6 +69,9 @@ internal class LocalAuthService : IAuthService
     /// <inheritdoc/>
     public async Task<CurrentUserResponse> GetCurrentUserAsync()
     {
+        if (_currentUserCache is not null)
+            return _currentUserCache;
+
         if (!_tokenState.HasSession)
             throw new InvalidOperationException("No user is currently authenticated");
 
@@ -77,7 +82,7 @@ internal class LocalAuthService : IAuthService
 
         var itemsListed = await _itemRepository.CountItemsByOwnerAsync(userId);
 
-        return new CurrentUserResponse(
+        _currentUserCache = new CurrentUserResponse(
             user.Id,
             user.Email,
             user.FirstName,
@@ -87,6 +92,7 @@ internal class LocalAuthService : IAuthService
             RentalsCompleted: 0,
             user.CreatedAt ?? DateTime.UtcNow
         );
+        return _currentUserCache;
     }
 
     /// <inheritdoc/>
