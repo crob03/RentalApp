@@ -1,12 +1,12 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.Repositories;
-using RentalApp.Http;
+using RentalApp.Services.Auth;
 using GeoFactory = NetTopologySuite.Geometries.GeometryFactory;
 using NtsCoordinate = NetTopologySuite.Geometries.Coordinate;
 using NtsPrecisionModel = NetTopologySuite.Geometries.PrecisionModel;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Items;
 
 /// <summary>
 /// Repository-backed implementation of <see cref="IItemService"/> for local/offline development.

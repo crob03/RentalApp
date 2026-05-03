@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using NSubstitute;
 using RentalApp.Contracts.Requests;
 using RentalApp.Http;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
 
 namespace RentalApp.Test.Services;
 

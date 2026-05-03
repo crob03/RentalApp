@@ -1,4 +1,4 @@
-using RentalApp.Http;
+using RentalApp.Services.Auth;
 
 namespace RentalApp.Test.Http;
 

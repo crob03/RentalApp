@@ -1,7 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Auth;
 
 /// <summary>
 /// Defines the contract for user authentication and profile retrieval.

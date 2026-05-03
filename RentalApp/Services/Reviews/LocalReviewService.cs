@@ -1,7 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Reviews;
 
 /// <summary>
 /// Stub implementation of <see cref="IReviewService"/> for local/offline mode.

@@ -1,6 +1,6 @@
 using Microsoft.Maui.Devices.Sensors;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Location;
 
 /// <summary>
 /// MAUI implementation of <see cref="ILocationService"/>. Wraps platform-specific

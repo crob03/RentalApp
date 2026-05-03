@@ -1,4 +1,4 @@
-namespace RentalApp.Services;
+namespace RentalApp.Services.Navigation;
 
 /// <summary>
 /// Defines the contract for Shell-based page navigation.

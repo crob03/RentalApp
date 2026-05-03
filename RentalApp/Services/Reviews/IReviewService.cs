@@ -1,7 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Reviews;
 
 /// <summary>
 /// Defines the contract for submitting and retrieving rental reviews.

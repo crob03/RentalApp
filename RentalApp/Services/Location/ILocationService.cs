@@ -1,4 +1,4 @@
-namespace RentalApp.Services;
+namespace RentalApp.Services.Location;
 
 /// <summary>
 /// Abstraction over the device geolocation API, allowing the location provider to be swapped or mocked in tests.

@@ -1,7 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Rentals;
 
 /// <summary>
 /// Defines the contract for creating and managing item rentals.

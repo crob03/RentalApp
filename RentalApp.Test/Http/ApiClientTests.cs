@@ -2,7 +2,8 @@ using System.Net;
 using NSubstitute;
 using RentalApp.Constants;
 using RentalApp.Http;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Navigation;
 
 namespace RentalApp.Test.Http;
 

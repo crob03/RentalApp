@@ -2,8 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RentalApp.Contracts.Requests;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
-using RentalApp.Http;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
 using RentalApp.Test.Fixtures;
 
 namespace RentalApp.Test.Services;

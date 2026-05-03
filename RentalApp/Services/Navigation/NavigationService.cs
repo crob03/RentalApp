@@ -1,4 +1,4 @@
-namespace RentalApp.Services;
+namespace RentalApp.Services.Navigation;
 
 /// <summary>
 /// Implements <see cref="INavigationService"/> using .NET MAUI's <see cref="Shell"/> for

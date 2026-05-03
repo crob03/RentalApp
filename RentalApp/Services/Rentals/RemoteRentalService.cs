@@ -2,8 +2,9 @@ using System.Net.Http.Json;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
+using RentalApp.Services;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Rentals;
 
 /// <summary>
 /// HTTP implementation of <see cref="IRentalService"/> that delegates all operations to the remote API via <see cref="IApiClient"/>.
