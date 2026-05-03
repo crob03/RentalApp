@@ -33,7 +33,7 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
     }
 
     /// <inheritdoc/>
-    public async Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request)
+    public async Task<CreateRentalResponse> CreateRentalAsync(CreateRentalRequest request)
     {
         var response = await _apiClient.PostAsJsonAsync(
             "rentals",
@@ -51,7 +51,7 @@ internal class RemoteRentalService : RemoteServiceBase, IRentalService
             }
         );
         await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<RentalSummaryResponse>()
+        return await response.Content.ReadFromJsonAsync<CreateRentalResponse>()
             ?? throw new InvalidOperationException("Empty create rental response from API");
     }
 

@@ -70,6 +70,10 @@ public partial class BaseViewModel : ObservableObject
             ClearError();
             await operation();
         }
+        catch (OperationCanceledException)
+        {
+            // cancellation is expected; nothing to report
+        }
         catch (Exception ex)
         {
             SetError(ex.Message);

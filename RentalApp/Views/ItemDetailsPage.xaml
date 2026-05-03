@@ -24,7 +24,7 @@
   </ContentPage.ToolbarItems>
 
   <ScrollView>
-    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
       <!-- Error banner -->
       <Border
         Grid.Row="0"
@@ -136,6 +136,30 @@
           IsVisible="{Binding IsEditing}"
           BackgroundColor="Transparent"
           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+        />
+      </StackLayout>
+      <!-- Rental request form (non-owner, available items only) -->
+      <StackLayout Grid.Row="5" IsVisible="{Binding ShowRentalForm}" Spacing="10">
+        <Label Text="Request a Rental" FontAttributes="Bold" FontSize="18" />
+
+        <Label Text="Start Date" FontAttributes="Bold" />
+        <DatePicker Date="{Binding RentalStartDate}" />
+
+        <Label Text="End Date" FontAttributes="Bold" />
+        <DatePicker Date="{Binding RentalEndDate}" />
+
+        <Label
+          Text="{Binding TotalPrice, StringFormat='Total: £{0:F2}'}"
+          FontSize="16"
+          FontAttributes="Bold"
+        />
+
+        <Button Text="Request Rental" Command="{Binding RequestRentalCommand}" />
+
+        <Label
+          Text="{Binding RentalSuccessMessage}"
+          IsVisible="{Binding HasRentalSuccess}"
+          TextColor="{AppThemeBinding Light=#2E7D32, Dark=#66BB6A}"
         />
       </StackLayout>
     </Grid>

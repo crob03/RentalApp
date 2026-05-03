@@ -146,6 +146,30 @@ public class LocalRentalServiceTests
         Assert.Empty(approved.Rentals);
     }
 
+    [Fact]
+    public async Task GetIncomingRentalsAsync_WithSpacedStatusFilter_NormalisesAndReturnsMatchingRentals()
+    {
+        // "Out for Rent" is the format returned by the remote API — local service must handle it too
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"));
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("OutForRent"));
+
+        var outForRent = await CreateSut()
+            .GetIncomingRentalsAsync(new GetRentalsRequest("Out for Rent"));
+        var requested = await CreateSut()
+            .GetIncomingRentalsAsync(new GetRentalsRequest("Requested"));
+
+        Assert.Single(outForRent.Rentals);
+        Assert.Empty(requested.Rentals);
+    }
+
     // ── GetOutgoingRentalsAsync ────────────────────────────────────────────────
 
     [Fact]
@@ -238,6 +262,24 @@ public class LocalRentalServiceTests
     }
 
     [Fact]
+    public async Task UpdateRentalStatusAsync_SpacedStatusFormat_NormalisesAndTransitions()
+    {
+        // "Out for Rent" is how the remote API spells this status — local service must accept it
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"));
+        var result = await CreateSut()
+            .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Out for Rent"));
+
+        Assert.Equal("OutForRent", result.Status);
+    }
+
+    [Fact]
     public async Task UpdateRentalStatusAsync_OwnerMarksReturned_ThrowsUnauthorized()
     {
         _tokenState.CurrentToken = BorrowerId.ToString();
@@ -326,5 +368,67 @@ public class LocalRentalServiceTests
             .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Returned"));
 
         Assert.Equal("Returned", result.Status);
+    }
+
+    [Fact]
+    public async Task GetRentalAsync_RequestedPastStartDate_ReturnsRejected()
+    {
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        // Backdate the start date to simulate a request that was never actioned
+        await _fixture.Context.Database.ExecuteSqlAsync(
+            $"""UPDATE rentals SET "StartDate" = {Today().AddDays(-1)} WHERE "Id" = {created.Id}"""
+        );
+        _fixture.Context.ChangeTracker.Clear();
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        var result = await CreateSut().GetRentalAsync(created.Id);
+
+        Assert.Equal("Rejected", result.Status);
+    }
+
+    [Fact]
+    public async Task GetIncomingRentalsAsync_RequestedPastStartDate_ReturnsRejected()
+    {
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        // Backdate the start date to simulate a request that was never actioned
+        await _fixture.Context.Database.ExecuteSqlAsync(
+            $"""UPDATE rentals SET "StartDate" = {Today().AddDays(-1)} WHERE "Id" = {created.Id}"""
+        );
+        _fixture.Context.ChangeTracker.Clear();
+
+        _tokenState.CurrentToken = OwnerId.ToString();
+        var result = await CreateSut().GetIncomingRentalsAsync(new GetRentalsRequest());
+
+        Assert.Equal("Rejected", result.Rentals.Single(r => r.Id == created.Id).Status);
+    }
+
+    [Fact]
+    public async Task UpdateRentalStatusAsync_RequestedPastStartDate_AutoRejectsBeforeTransition()
+    {
+        _tokenState.CurrentToken = BorrowerId.ToString();
+        var start = Today().AddDays(1);
+        var created = await CreateSut()
+            .CreateRentalAsync(new CreateRentalRequest(ItemId, start, start.AddDays(2)));
+
+        // Backdate the start date to simulate a request that was never actioned
+        await _fixture.Context.Database.ExecuteSqlAsync(
+            $"""UPDATE rentals SET "StartDate" = {Today().AddDays(-1)} WHERE "Id" = {created.Id}"""
+        );
+        _fixture.Context.ChangeTracker.Clear();
+
+        // Rejected is terminal — any transition attempt should throw
+        _tokenState.CurrentToken = OwnerId.ToString();
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateSut()
+                .UpdateRentalStatusAsync(created.Id, new UpdateRentalStatusRequest("Approved"))
+        );
     }
 }

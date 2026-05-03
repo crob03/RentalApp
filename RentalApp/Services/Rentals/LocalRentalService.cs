@@ -42,7 +42,7 @@ internal class LocalRentalService : IRentalService
     {
         var currentUserId = GetCurrentUserId();
         var rentals = (await fetchRentals(currentUserId)).ToList();
-        await PromoteOverdueRentalsAsync(rentals);
+        await ApplyAutomaticTransitionsAsync(rentals);
         var filtered =
             request.Status == null
                 ? rentals
@@ -62,12 +62,12 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
-        await PromoteOverdueRentalsAsync([rental]);
+        await ApplyAutomaticTransitionsAsync([rental]);
         return ToRentalDetail(rental);
     }
 
     /// <inheritdoc/>
-    public async Task<RentalSummaryResponse> CreateRentalAsync(CreateRentalRequest request)
+    public async Task<CreateRentalResponse> CreateRentalAsync(CreateRentalRequest request)
     {
         var currentUserId = GetCurrentUserId();
 
@@ -103,7 +103,7 @@ internal class LocalRentalService : IRentalService
             request.EndDate
         );
 
-        return ToRentalSummary(rental);
+        return ToCreateRentalResponse(rental);
     }
 
     /// <inheritdoc/>
@@ -120,7 +120,7 @@ internal class LocalRentalService : IRentalService
         if (rental.OwnerId != currentUserId && rental.BorrowerId != currentUserId)
             throw new UnauthorizedAccessException("You do not have access to this rental.");
 
-        await PromoteOverdueRentalsAsync([rental]);
+        await ApplyAutomaticTransitionsAsync([rental]);
 
         var targetStatus = ParseStatus(request.Status);
 
@@ -157,17 +157,22 @@ internal class LocalRentalService : IRentalService
         );
     }
 
-    private async Task PromoteOverdueRentalsAsync(IList<DbRental> rentals)
+    private async Task ApplyAutomaticTransitionsAsync(IList<DbRental> rentals)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-        foreach (
-            var rental in rentals.Where(r =>
-                r.Status == RentalStatus.OutForRent && r.EndDate < today
-            )
-        )
+        foreach (var rental in rentals)
         {
-            await _rentalRepository.UpdateRentalStatusAsync(rental.Id, RentalStatus.Overdue);
-            rental.Status = RentalStatus.Overdue;
+            RentalStatus? target = rental.Status switch
+            {
+                RentalStatus.OutForRent when rental.EndDate < today => RentalStatus.Overdue,
+                RentalStatus.Requested when rental.StartDate < today => RentalStatus.Rejected,
+                _ => null,
+            };
+            if (target is { } newStatus)
+            {
+                await _rentalRepository.UpdateRentalStatusAsync(rental.Id, newStatus);
+                rental.Status = newStatus;
+            }
         }
     }
 
@@ -179,7 +184,8 @@ internal class LocalRentalService : IRentalService
 
     private static RentalStatus ParseStatus(string status)
     {
-        if (!Enum.TryParse<RentalStatus>(status, ignoreCase: true, out var result))
+        var normalized = status.Replace(" ", "");
+        if (!Enum.TryParse<RentalStatus>(normalized, ignoreCase: true, out var result))
             throw new InvalidOperationException($"Unknown rental status: '{status}'.");
         return result;
     }
@@ -189,15 +195,33 @@ internal class LocalRentalService : IRentalService
             r.Id,
             r.ItemId,
             r.Item.Title,
+            BorrowerId: r.BorrowerId,
+            BorrowerName: $"{r.Borrower.FirstName} {r.Borrower.LastName}",
+            BorrowerRating: null,
+            OwnerId: r.OwnerId,
+            OwnerName: $"{r.Owner.FirstName} {r.Owner.LastName}",
+            OwnerRating: null,
+            StartDate: r.StartDate.ToDateTime(TimeOnly.MinValue),
+            EndDate: r.EndDate.ToDateTime(TimeOnly.MinValue),
+            r.Status.ToString(),
+            TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
+            RequestedAt: r.CreatedAt ?? DateTime.UtcNow
+        );
+
+    private static CreateRentalResponse ToCreateRentalResponse(DbRental r) =>
+        new(
+            r.Id,
+            r.ItemId,
+            r.Item.Title,
             r.BorrowerId,
             $"{r.Borrower.FirstName} {r.Borrower.LastName}",
             r.OwnerId,
             $"{r.Owner.FirstName} {r.Owner.LastName}",
-            r.StartDate,
-            r.EndDate,
+            StartDate: r.StartDate.ToDateTime(TimeOnly.MinValue),
+            EndDate: r.EndDate.ToDateTime(TimeOnly.MinValue),
             r.Status.ToString(),
             TotalPrice: r.Item.DailyRate * (r.EndDate.DayNumber - r.StartDate.DayNumber),
-            r.CreatedAt ?? DateTime.UtcNow
+            CreatedAt: r.CreatedAt ?? DateTime.UtcNow
         );
 
     private static RentalDetailResponse ToRentalDetail(DbRental r) =>
