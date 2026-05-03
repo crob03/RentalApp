@@ -8,4 +8,5 @@
 >
   <ShellContent Route="loading" ContentTemplate="{DataTemplate views:LoadingPage}" />
   <ShellContent Route="login" ContentTemplate="{DataTemplate views:LoginPage}" />
+  <ShellContent Route="main" ContentTemplate="{DataTemplate views:MainPage}" />
 </Shell>

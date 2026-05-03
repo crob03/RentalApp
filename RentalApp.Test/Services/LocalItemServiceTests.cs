@@ -128,8 +128,7 @@ public class LocalItemServiceTests
     public async Task CreateItemAsync_NoSession_ThrowsInvalidOperationException()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            CreateSut()
-                .CreateItemAsync(new CreateItemRequest("Title", "Desc", 10.0, 1, 55.0, -3.0))
+            CreateSut().CreateItemAsync(new CreateItemRequest("Title", "Desc", 10.0, 1, 55.0, -3.0))
         );
     }
 

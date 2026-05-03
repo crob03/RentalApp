@@ -67,9 +67,11 @@ MVVM pattern using `CommunityToolkit.Mvvm`. Views are XAML pages in `Views/`, bo
 
 **TempPage**: Legacy post-login placeholder — still registered but superseded by `MainPage` as the authenticated landing screen. `LoadingPage` handles initial app startup before routing.
 
-**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, `TempViewModel`, and `AppShellViewModel` are registered as Singleton (state persists across navigations). `IAuthService`, `ILocationService`, and `INavigationService` are also Singleton. All other ViewModels and Pages are Transient.
+**Authenticated ViewModel hierarchy**: `AuthenticatedViewModel` (abstract, extends `BaseViewModel`) is the required base for all post-auth ViewModels. It provides `LogoutCommand`, `NavigateToProfileCommand`, and protected `NavigateToAsync`/`NavigateBackAsync` helpers — subclasses no longer need to hold their own `INavigationService` field. `ItemsSearchBaseViewModel` extends `AuthenticatedViewModel`. `AppShellViewModel` has been removed.
 
-**Shell navigation**: Root route is `//login` (`Routes.Login`). AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`: `Login`, `Main`, `Temp`, `ItemsList`, `ItemDetails`, `CreateItem`, `NearbyItems`.
+**DI lifetime gotcha**: `LoginViewModel`, `RegisterViewModel`, and `TempViewModel` are registered as Singleton (state persists across navigations). `IAuthService`, `ILocationService`, and `INavigationService` are also Singleton. All other ViewModels and Pages are Transient.
+
+**Shell navigation**: Root routes are `//login` (`Routes.Login`) and `//main` (`Routes.Main`) — both are declared as `ShellContent` items in `AppShell.xaml` and replace the navigation stack when navigated to. AppShell flyout is disabled — routing is entirely programmatic via `INavigationService`. Never call `Shell.Current` directly from ViewModels. Route name constants live in `Constants/Routes.cs`: `Login`, `Main`, `Temp`, `ItemsList`, `ItemDetails`, `CreateItem`, `NearbyItems`.
 
 **Dual Item model gotcha**: Two `Item` classes exist — do not confuse them. `RentalApp.Contracts.Responses.ItemDetailResponse`/`ItemSummary` are the DTO records used by ViewModels. `RentalApp.Database.Models.Item` is an EF entity with a PostGIS `Point Location` column. The UI project never references the Database models directly.
 

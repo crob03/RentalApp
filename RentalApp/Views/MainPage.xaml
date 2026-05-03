@@ -20,7 +20,7 @@
       Command="{Binding NavigateToProfileCommand}"
       IconImageSource="user.png"
     />
-    <ToolbarItem x:Name="LogoutToolbarItem" Text="Logout" IconImageSource="logout.png" />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
   </ContentPage.ToolbarItems>
 
   <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshDataCommand}">

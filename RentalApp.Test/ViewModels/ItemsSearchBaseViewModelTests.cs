@@ -3,6 +3,7 @@ using RentalApp.Constants;
 using RentalApp.Contracts;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -12,9 +13,15 @@ public class ItemsSearchBaseViewModelTests
 {
     private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
+    private readonly AuthTokenState _tokenState = new();
+    private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
 
-    private sealed class TestableViewModel(IItemService itemService, INavigationService nav)
-        : ItemsSearchBaseViewModel<ItemSummaryResponse>(itemService, nav)
+    private sealed class TestableViewModel(
+        IItemService itemService,
+        INavigationService nav,
+        AuthTokenState tokenState,
+        ICredentialStore credentialStore
+    ) : ItemsSearchBaseViewModel<ItemSummaryResponse>(itemService, nav, tokenState, credentialStore)
     {
         public int ReloadCallCount { get; private set; }
 
@@ -31,7 +38,7 @@ public class ItemsSearchBaseViewModelTests
         public void DoRestoreCategory(List<CategoryResponse> all) => RestoreCategory(all);
     }
 
-    private TestableViewModel CreateSut() => new(_itemService, _nav);
+    private TestableViewModel CreateSut() => new(_itemService, _nav, _tokenState, _credentialStore);
 
     private static CategoryResponse MakeCategory(
         int id = 1,

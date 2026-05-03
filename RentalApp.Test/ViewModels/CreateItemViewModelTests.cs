@@ -2,6 +2,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
+using RentalApp.Http;
 using RentalApp.Services;
 using RentalApp.ViewModels;
 
@@ -12,8 +13,11 @@ public class CreateItemViewModelTests
     private readonly IItemService _itemService = Substitute.For<IItemService>();
     private readonly ILocationService _locationService = Substitute.For<ILocationService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
+    private readonly AuthTokenState _tokenState = new();
+    private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
 
-    private CreateItemViewModel CreateSut() => new(_itemService, _locationService, _nav);
+    private CreateItemViewModel CreateSut() =>
+        new(_itemService, _locationService, _nav, _tokenState, _credentialStore);
 
     private static CategoryResponse MakeCategory(
         int id = 1,

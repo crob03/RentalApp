@@ -216,8 +216,7 @@ public class RemoteItemServiceTests
             );
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            CreateSut()
-                .CreateItemAsync(new CreateItemRequest("T", null, 1.0, 1, 55.0, -3.0))
+            CreateSut().CreateItemAsync(new CreateItemRequest("T", null, 1.0, 1, 55.0, -3.0))
         );
     }
 

@@ -6,20 +6,20 @@ using RentalApp.ViewModels;
 
 namespace RentalApp.Test.ViewModels;
 
-public class AppShellViewModelTests
+public class AuthenticatedViewModelTests
 {
     private readonly AuthTokenState _tokenState = new();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
 
-    private TestableAppShellViewModel CreateSut(bool confirmLogout = false) =>
+    private TestableAuthenticatedViewModel CreateSut(bool confirmLogout = false) =>
         new(_tokenState, _credentialStore, _navigationService) { ConfirmResult = confirmLogout };
 
-    private sealed class TestableAppShellViewModel : AppShellViewModel
+    private sealed class TestableAuthenticatedViewModel : AuthenticatedViewModel
     {
         public bool ConfirmResult { get; set; }
 
-        public TestableAppShellViewModel(
+        public TestableAuthenticatedViewModel(
             AuthTokenState tokenState,
             ICredentialStore credentialStore,
             INavigationService navigationService
@@ -27,25 +27,6 @@ public class AppShellViewModelTests
             : base(tokenState, credentialStore, navigationService) { }
 
         protected override Task<bool> ConfirmLogoutAsync() => Task.FromResult(ConfirmResult);
-    }
-
-    // ── LogoutCommand — CanExecute ─────────────────────────────────────
-
-    [Fact]
-    public void LogoutCommand_WhenSessionActive_CanExecute()
-    {
-        _tokenState.CurrentToken = "eyJ...";
-        var sut = CreateSut();
-
-        Assert.True(sut.LogoutCommand.CanExecute(null));
-    }
-
-    [Fact]
-    public void LogoutCommand_WhenNoSession_CannotExecute()
-    {
-        var sut = CreateSut();
-
-        Assert.False(sut.LogoutCommand.CanExecute(null));
     }
 
     // ── LogoutAsync — confirmed ────────────────────────────────────────
@@ -115,16 +96,6 @@ public class AppShellViewModelTests
         var sut = CreateSut();
 
         await sut.NavigateToProfileCommand.ExecuteAsync(null);
-
-        await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
-    }
-
-    [Fact]
-    public async Task NavigateToSettingsCommand_NavigatesToTemp()
-    {
-        var sut = CreateSut();
-
-        await sut.NavigateToSettingsCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
     }

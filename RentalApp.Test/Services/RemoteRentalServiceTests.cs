@@ -191,7 +191,12 @@ public class RemoteRentalServiceTests
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = JsonContent.Create(
-                        new { id = 7, status = "approved", updatedAt = DateTime.UtcNow }
+                        new
+                        {
+                            id = 7,
+                            status = "approved",
+                            updatedAt = DateTime.UtcNow,
+                        }
                     ),
                 }
             );

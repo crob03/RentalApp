@@ -5,6 +5,11 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// <summary>
+/// View model for the transient loading/splash page shown at app start. Checks for persisted
+/// credentials and silently attempts an auto-login, navigating to <see cref="Routes.Main"/> on
+/// success or <see cref="Routes.Login"/> on failure.
+/// </summary>
 public class LoadingViewModel : BaseViewModel
 {
     private readonly ICredentialStore _credentialStore;
@@ -12,6 +17,13 @@ public class LoadingViewModel : BaseViewModel
     private readonly AuthTokenState _tokenState;
     private readonly INavigationService _navigationService;
 
+    /// <summary>
+    /// Initialises the view model with the startup dependencies.
+    /// </summary>
+    /// <param name="credentialStore">Read to check for persisted credentials.</param>
+    /// <param name="authService">Used for the silent auto-login attempt.</param>
+    /// <param name="tokenState">Receives the bearer token if auto-login succeeds.</param>
+    /// <param name="navigationService">Used to navigate to the appropriate root route.</param>
     public LoadingViewModel(
         ICredentialStore credentialStore,
         IAuthService authService,
@@ -25,6 +37,11 @@ public class LoadingViewModel : BaseViewModel
         _navigationService = navigationService;
     }
 
+    /// <summary>
+    /// Checks for persisted credentials and attempts a silent login. Navigates to
+    /// <see cref="Routes.Main"/> on success or <see cref="Routes.Login"/> if no credentials
+    /// are stored or the auto-login fails.
+    /// </summary>
     public async Task InitializeAsync()
     {
         var credentials = await _credentialStore.GetAsync();
@@ -43,7 +60,7 @@ public class LoadingViewModel : BaseViewModel
             _tokenState.CurrentToken = response.Token;
             await _navigationService.NavigateToAsync(Routes.Main);
         }
-        catch (Exception)
+        catch
         {
             await _navigationService.NavigateToAsync(Routes.Login);
         }

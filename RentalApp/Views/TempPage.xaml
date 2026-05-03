@@ -14,6 +14,15 @@
     <vm:TempViewModel />
   </d:ContentPage.BindingContext>
 
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
   <VerticalStackLayout>
     <Label
       Text="{Binding Message}"

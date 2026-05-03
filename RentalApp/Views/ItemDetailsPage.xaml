@@ -13,6 +13,16 @@
   <d:ContentPage.BindingContext>
     <vm:ItemDetailsViewModel />
   </d:ContentPage.BindingContext>
+
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
   <ScrollView>
     <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
       <!-- Error banner -->
