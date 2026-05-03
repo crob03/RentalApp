@@ -86,7 +86,7 @@
     <!-- Rentals list with pull-to-refresh -->
     <RefreshView
       Grid.Row="3"
-      IsRefreshing="{Binding IsLoading}"
+      IsRefreshing="{Binding IsBusy}"
       Command="{Binding LoadRentalsCommand}"
     >
       <CollectionView ItemsSource="{Binding Rentals}" SelectionMode="None">
@@ -129,10 +129,16 @@
                   Grid.Row="1"
                   Grid.Column="0"
                   Grid.ColumnSpan="2"
-                  Text="{Binding StartDate, StringFormat='{0:d} → '}"
                   FontSize="12"
                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
-                />
+                >
+                  <Label.Text>
+                    <MultiBinding StringFormat="{}{0:d} → {1:d}">
+                      <Binding Path="StartDate" />
+                      <Binding Path="EndDate" />
+                    </MultiBinding>
+                  </Label.Text>
+                </Label>
                 <!-- Direction-aware party label -->
                 <Label
                   Grid.Row="2"
@@ -169,8 +175,8 @@
     <!-- Initial load indicator -->
     <ActivityIndicator
       Grid.Row="3"
-      IsRunning="{Binding IsLoading}"
-      IsVisible="{Binding IsLoading}"
+      IsRunning="{Binding IsBusy}"
+      IsVisible="{Binding IsBusy}"
       HorizontalOptions="Center"
       VerticalOptions="Center"
     />

@@ -52,10 +52,6 @@ public partial class RentalsViewModel : AuthenticatedViewModel
     [ObservableProperty]
     private string? selectedStatus;
 
-    /// <summary>Indicates whether a fetch is in progress.</summary>
-    [ObservableProperty]
-    private bool isLoading;
-
     /// <summary>
     /// Initialises the view model with rental, navigation, and authentication dependencies.
     /// </summary>
@@ -110,12 +106,9 @@ public partial class RentalsViewModel : AuthenticatedViewModel
     /// Called from <c>RentalsPage.OnAppearing</c> and whenever direction or status changes.
     /// </summary>
     [RelayCommand]
-    private async Task LoadRentalsAsync(CancellationToken ct)
-    {
-        try
+    private Task LoadRentalsAsync(CancellationToken ct) =>
+        RunAsync(async () =>
         {
-            IsLoading = true;
-            ClearError();
             var request = new GetRentalsRequest(SelectedStatus);
             var response = IsIncoming
                 ? await _rentalService.GetIncomingRentalsAsync(request)
@@ -124,20 +117,7 @@ public partial class RentalsViewModel : AuthenticatedViewModel
             Rentals = new ObservableCollection<RentalSummaryResponse>(response.Rentals);
             RebuildFilterStatuses(response.Rentals);
             _hasLoaded = true;
-        }
-        catch (OperationCanceledException)
-        {
-            // cancellation is expected; nothing to report
-        }
-        catch (Exception ex)
-        {
-            SetError(ex.Message);
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
+        });
 
     /// <summary>
     /// Rebuilds <see cref="FilterStatuses"/> from the distinct status values in
