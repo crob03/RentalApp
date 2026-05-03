@@ -34,6 +34,12 @@ dotnet tool restore
 dotnet ef database update --project RentalApp.Migrations
 ```
 
+### Seed / clear local database
+```bash
+make seed-db    # Insert development data (categories, users, items, rentals)
+make clear-db   # Truncate all seeded tables and reset sequences
+```
+
 ### Add a new EF Core migration
 ```bash
 dotnet ef migrations add <MigrationName> --project RentalApp.Migrations
