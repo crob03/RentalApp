@@ -1,4 +1,5 @@
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using RentalApp.Constants;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
@@ -46,6 +47,18 @@ public class MainViewModelTests
         await sut.InitializeAsync();
 
         Assert.Equal(user, sut.CurrentUser);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WhenServiceThrows_SetsHasError()
+    {
+        _authService.GetCurrentUserAsync().ThrowsAsync(new Exception("network error"));
+        var sut = CreateSut();
+
+        await sut.InitializeAsync();
+
+        Assert.True(sut.HasError);
+        Assert.Equal("network error", sut.ErrorMessage);
     }
 
     // ── RefreshDataAsync ───────────────────────────────────────────────
