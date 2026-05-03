@@ -3,6 +3,7 @@ using RentalApp.Contracts.Responses;
 using RentalApp.Database.Repositories;
 using RentalApp.Database.States;
 using RentalApp.Services.Auth;
+using DbRental = RentalApp.Database.Models.Rental;
 
 namespace RentalApp.Services.Rentals;
 
@@ -158,7 +159,7 @@ internal class LocalRentalService : IRentalService
         );
     }
 
-    private async Task PromoteOverdueRentalsAsync(IList<Database.Models.Rental> rentals)
+    private async Task PromoteOverdueRentalsAsync(IList<DbRental> rentals)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
         foreach (
@@ -185,7 +186,7 @@ internal class LocalRentalService : IRentalService
         return result;
     }
 
-    private static RentalSummaryResponse ToRentalSummary(Database.Models.Rental r) =>
+    private static RentalSummaryResponse ToRentalSummary(DbRental r) =>
         new(
             r.Id,
             r.ItemId,
@@ -201,7 +202,7 @@ internal class LocalRentalService : IRentalService
             r.CreatedAt ?? DateTime.UtcNow
         );
 
-    private static RentalDetailResponse ToRentalDetail(Database.Models.Rental r) =>
+    private static RentalDetailResponse ToRentalDetail(DbRental r) =>
         new(
             r.Id,
             r.ItemId,
