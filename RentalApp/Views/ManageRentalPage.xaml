@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.ManageRentalPage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  mc:Ignorable="d"
+  x:DataType="vm:ManageRentalViewModel"
+  Title="{Binding Title}"
+>
+  <d:ContentPage.BindingContext>
+    <vm:ManageRentalViewModel />
+  </d:ContentPage.BindingContext>
+
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
+  <ScrollView>
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto">
+      <!-- Error banner -->
+      <Border
+        Grid.Row="0"
+        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+        StrokeThickness="1"
+        Padding="12"
+        IsVisible="{Binding HasError}"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Label
+          Text="{Binding ErrorMessage}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+      </Border>
+
+      <!-- Loading indicator -->
+      <ActivityIndicator
+        Grid.Row="1"
+        IsRunning="{Binding IsBusy}"
+        IsVisible="{Binding IsBusy}"
+        HorizontalOptions="Center"
+      />
+
+      <!-- Rental detail + actions -->
+      <StackLayout
+        Grid.Row="2"
+        Spacing="8"
+        IsVisible="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+      >
+        <Label Text="{Binding CurrentRental.ItemTitle}" FontSize="22" FontAttributes="Bold" />
+
+        <Label
+          FontSize="13"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        >
+          <Label.Text>
+            <MultiBinding StringFormat="{}{0:d} → {1:d}">
+              <Binding Path="CurrentRental.StartDate" />
+              <Binding Path="CurrentRental.EndDate" />
+            </MultiBinding>
+          </Label.Text>
+        </Label>
+
+        <Label
+          Text="{Binding CurrentRental.OwnerName, StringFormat='Owner: {0}'}"
+          FontSize="13"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+
+        <Label
+          Text="{Binding CurrentRental.BorrowerName, StringFormat='Borrowed by: {0}'}"
+          FontSize="13"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+
+        <Label
+          Text="{Binding CurrentRental.TotalPrice, StringFormat='Total: £{0:F2}'}"
+          FontSize="16"
+          FontAttributes="Bold"
+        />
+
+        <Label
+          Text="{Binding CurrentRental.Status, Converter={StaticResource RentalStatusConverter}}"
+          FontSize="14"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+
+        <!-- Action buttons — only visible when a transition is available -->
+        <StackLayout Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button
+            Text="Approve"
+            IsVisible="{Binding CanApprove}"
+            Command="{Binding UpdateStatusCommand}"
+            CommandParameter="Approved"
+          />
+          <Button
+            Text="Reject"
+            IsVisible="{Binding CanReject}"
+            Command="{Binding UpdateStatusCommand}"
+            CommandParameter="Rejected"
+            BackgroundColor="Transparent"
+            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+          />
+          <Button
+            Text="Mark as Out for Rent"
+            IsVisible="{Binding CanMarkOutForRent}"
+            Command="{Binding UpdateStatusCommand}"
+            CommandParameter="OutForRent"
+          />
+          <Button
+            Text="Mark as Returned"
+            IsVisible="{Binding CanMarkReturned}"
+            Command="{Binding UpdateStatusCommand}"
+            CommandParameter="Returned"
+          />
+          <Button
+            Text="Complete"
+            IsVisible="{Binding CanComplete}"
+            Command="{Binding UpdateStatusCommand}"
+            CommandParameter="Completed"
+          />
+        </StackLayout>
+      </StackLayout>
+    </Grid>
+  </ScrollView>
+</ContentPage>
