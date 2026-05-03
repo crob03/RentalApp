@@ -110,4 +110,12 @@ public class MainViewModelTests
 
         await _navigationService.Received(1).NavigateToAsync(Routes.CreateItem);
     }
+
+    [Fact]
+    public async Task NavigateToRentalsCommand_NavigatesToRentals()
+    {
+        await CreateSut().NavigateToRentalsCommand.ExecuteAsync(null);
+
+        await _navigationService.Received(1).NavigateToAsync(Routes.Rentals);
+    }
 }

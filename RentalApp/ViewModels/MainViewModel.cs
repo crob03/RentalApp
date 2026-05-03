@@ -67,6 +67,10 @@ public partial class MainViewModel : AuthenticatedViewModel
     [RelayCommand]
     private Task NavigateToCreateItemAsync() => NavigateToAsync(Routes.CreateItem);
 
+    /// <summary>Navigates to the rentals page.</summary>
+    [RelayCommand]
+    private Task NavigateToRentalsAsync() => NavigateToAsync(Routes.Rentals);
+
     /// <summary>Re-fetches user profile data, surfacing errors via <see cref="BaseViewModel.SetError"/>.</summary>
     [RelayCommand]
     private Task RefreshDataAsync() => RunAsync(LoadUserAsync);
