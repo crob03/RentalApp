@@ -25,7 +25,6 @@
   </ContentPage.ToolbarItems>
 
   <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="16" RowSpacing="8">
-
     <!-- Error banner -->
     <Border
       Grid.Row="0"
@@ -180,6 +179,5 @@
       HorizontalOptions="Center"
       VerticalOptions="Center"
     />
-
   </Grid>
 </ContentPage>

@@ -156,9 +156,10 @@ public class RentalsViewModelTests
         _rentalService
             .GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>())
             .Returns(
-                MakeRentalsResponse(
-                    [MakeRental(status: "Requested"), MakeRental(2, status: "Approved")]
-                )
+                MakeRentalsResponse([
+                    MakeRental(status: "Requested"),
+                    MakeRental(2, status: "Approved"),
+                ])
             );
         var sut = CreateSut();
 
@@ -187,9 +188,10 @@ public class RentalsViewModelTests
         _rentalService
             .GetIncomingRentalsAsync(Arg.Any<GetRentalsRequest>())
             .Returns(
-                MakeRentalsResponse(
-                    [MakeRental(1, status: "Requested"), MakeRental(2, status: "Requested")]
-                )
+                MakeRentalsResponse([
+                    MakeRental(1, status: "Requested"),
+                    MakeRental(2, status: "Requested"),
+                ])
             );
         var sut = CreateSut();
 

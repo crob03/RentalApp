@@ -240,7 +240,6 @@
               />
             </Grid>
           </Border>
-
         </StackLayout>
       </Grid>
     </ScrollView>
