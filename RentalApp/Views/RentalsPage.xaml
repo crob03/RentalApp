@@ -79,6 +79,7 @@
       Grid.Row="2"
       ItemsSource="{Binding FilterStatuses}"
       SelectedItem="{Binding SelectedStatusItem}"
+      ItemDisplayBinding="{Binding ., Converter={StaticResource RentalStatusConverter}}"
       Margin="0,4"
     />
 
@@ -119,7 +120,7 @@
                 <Label
                   Grid.Row="0"
                   Grid.Column="1"
-                  Text="{Binding Status}"
+                  Text="{Binding Status, Converter={StaticResource RentalStatusConverter}}"
                   FontSize="12"
                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
                 />
