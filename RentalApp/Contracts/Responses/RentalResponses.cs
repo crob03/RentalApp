@@ -56,8 +56,8 @@ public record RentalDetailResponse(
     string BorrowerName,
     int OwnerId,
     string OwnerName,
-    DateOnly StartDate,
-    DateOnly EndDate,
+    DateTime StartDate,
+    DateTime EndDate,
     string Status,
     double TotalPrice,
     DateTime RequestedAt

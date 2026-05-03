@@ -31,8 +31,8 @@ public class ManageRentalViewModelTests
             BorrowerName: "Bob Smith",
             OwnerId: ownerId,
             OwnerName: "Alice Jones",
-            StartDate: new DateOnly(2026, 6, 1),
-            EndDate: new DateOnly(2026, 6, 5),
+            StartDate: new DateTime(2026, 6, 1),
+            EndDate: new DateTime(2026, 6, 5),
             Status: status,
             TotalPrice: 40.0,
             RequestedAt: DateTime.UtcNow
