@@ -62,9 +62,7 @@ public class DatabaseFixture<TClass> : IAsyncLifetime
 
     public async Task ResetRentalsAsync()
     {
-        await Context.Database.ExecuteSqlRawAsync(
-            "TRUNCATE TABLE rentals RESTART IDENTITY"
-        );
+        await Context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE rentals RESTART IDENTITY");
         Context.ChangeTracker.Clear();
     }
 
