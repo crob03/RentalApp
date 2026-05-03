@@ -12,6 +12,7 @@ namespace RentalApp.Test.ViewModels;
 public class ManageRentalViewModelTests
 {
     private readonly IRentalService _rentalService = Substitute.For<IRentalService>();
+    private readonly IAuthService _authService = Substitute.For<IAuthService>();
     private readonly INavigationService _nav = Substitute.For<INavigationService>();
     private readonly AuthTokenState _tokenState = new();
     private readonly ICredentialStore _credentialStore = Substitute.For<ICredentialStore>();
@@ -37,10 +38,28 @@ public class ManageRentalViewModelTests
             RequestedAt: DateTime.UtcNow
         );
 
+    private static CurrentUserResponse MakeUser(int id) =>
+        new(
+            Id: id,
+            Email: "",
+            FirstName: "",
+            LastName: "",
+            AverageRating: null,
+            ItemsListed: 0,
+            RentalsCompleted: 0,
+            CreatedAt: DateTime.UtcNow
+        );
+
     private ManageRentalViewModel CreateSut(int currentUserId = 1)
     {
-        _tokenState.CurrentToken = currentUserId.ToString();
-        var sut = new ManageRentalViewModel(_rentalService, _tokenState, _credentialStore, _nav);
+        _authService.GetCurrentUserAsync().Returns(MakeUser(currentUserId));
+        var sut = new ManageRentalViewModel(
+            _rentalService,
+            _authService,
+            _tokenState,
+            _credentialStore,
+            _nav
+        );
         sut.ApplyQueryAttributes(new Dictionary<string, object> { { "rentalId", 10 } });
         return sut;
     }

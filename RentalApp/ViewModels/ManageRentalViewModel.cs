@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.States;
+using RentalApp.Http;
 using RentalApp.Services.Auth;
 using RentalApp.Services.Navigation;
 using RentalApp.Services.Rentals;
@@ -17,7 +18,9 @@ namespace RentalApp.ViewModels;
 public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttributable
 {
     private readonly IRentalService _rentalService;
+    private readonly IAuthService _authService;
     private int _rentalId;
+    private CurrentUserResponse? _currentUser;
 
     /// <summary>The currently loaded rental; <see langword="null"/> while loading.</summary>
     [ObservableProperty]
@@ -48,6 +51,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
     /// </summary>
     public ManageRentalViewModel(
         IRentalService rentalService,
+        IAuthService authService,
         AuthTokenState tokenState,
         ICredentialStore credentialStore,
         INavigationService navigationService
@@ -55,6 +59,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         : base(tokenState, credentialStore, navigationService)
     {
         _rentalService = rentalService;
+        _authService = authService;
         Title = "Manage Rental";
     }
 
@@ -71,6 +76,17 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         RunAsync(async () =>
         {
             CurrentRental = await _rentalService.GetRentalAsync(_rentalId);
+            if (_currentUser is null)
+            {
+                try
+                {
+                    _currentUser = await _authService.GetCurrentUserAsync();
+                }
+                catch
+                {
+                    // Current user unavailable — no action buttons will be shown.
+                }
+            }
             RefreshAvailableActions();
         });
 
@@ -94,7 +110,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
     {
         if (
             CurrentRental is null
-            || !int.TryParse(TokenState.CurrentToken, out var userId)
+            || _currentUser is null
             || !Enum.TryParse<RentalStatus>(CurrentRental.Status, ignoreCase: true, out var status)
         )
         {
@@ -102,7 +118,7 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
             return;
         }
 
-        var isOwner = userId == CurrentRental.OwnerId;
+        var isOwner = _currentUser.Id == CurrentRental.OwnerId;
         var state = RentalStateFactory.From(status);
         var transitions = isOwner ? state.OwnerTransitions : state.BorrowerTransitions;
 
