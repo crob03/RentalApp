@@ -1,9 +1,8 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.Repositories;
-using RentalApp.Http;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Auth;
 
 /// <summary>
 /// Repository-backed implementation of <see cref="IAuthService"/> for local/offline development.

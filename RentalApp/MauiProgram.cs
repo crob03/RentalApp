@@ -1,9 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RentalApp.Database.Data;
 using RentalApp.Database.Repositories;
 using RentalApp.Http;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Items;
+using RentalApp.Services.Location;
+using RentalApp.Services.Navigation;
+using RentalApp.Services.Rentals;
+using RentalApp.Services.Reviews;
 using RentalApp.ViewModels;
 using RentalApp.Views;
 

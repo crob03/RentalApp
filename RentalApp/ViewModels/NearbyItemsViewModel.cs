@@ -4,7 +4,10 @@ using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Items;
+using RentalApp.Services.Location;
+using RentalApp.Services.Navigation;
 
 namespace RentalApp.ViewModels;
 

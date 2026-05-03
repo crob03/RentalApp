@@ -1,4 +1,4 @@
-namespace RentalApp.Services;
+namespace RentalApp.Services.Auth;
 
 /// <summary>
 /// Implements <see cref="ICredentialStore"/> using MAUI's <see cref="SecureStorage"/> to

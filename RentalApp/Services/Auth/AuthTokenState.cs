@@ -1,12 +1,12 @@
-namespace RentalApp.Http;
+namespace RentalApp.Services.Auth;
 
 /// <summary>
 /// Holds the current bearer token for the authenticated session.
-/// Shared as a singleton so that <see cref="ApiClient"/> and ViewModels always read and write the same token.
+/// Shared as a singleton so that <see cref="Http.ApiClient"/> and ViewModels always read and write the same token.
 /// </summary>
 /// <remarks>
 /// Singleton lifetime — ViewModels write on login/logout;
-/// <see cref="ApiClient"/> reads to attach the <c>Authorization: Bearer</c> header. Not thread-safe.
+/// <see cref="Http.ApiClient"/> reads to attach the <c>Authorization: Bearer</c> header. Not thread-safe.
 /// </remarks>
 public class AuthTokenState
 {

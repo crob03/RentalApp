@@ -3,7 +3,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Requests;
 using RentalApp.Helpers;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Navigation;
 
 namespace RentalApp.ViewModels;
 

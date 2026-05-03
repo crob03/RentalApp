@@ -1,5 +1,5 @@
 using RentalApp.Contracts.Requests;
-using RentalApp.Services;
+using RentalApp.Services.Reviews;
 
 namespace RentalApp.Test.Services;
 

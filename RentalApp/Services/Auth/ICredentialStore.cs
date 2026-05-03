@@ -1,4 +1,4 @@
-namespace RentalApp.Services;
+namespace RentalApp.Services.Auth;
 
 /// <summary>
 /// Defines the contract for persisting and retrieving user login credentials.

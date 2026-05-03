@@ -1,7 +1,7 @@
 using Microsoft.Maui.Devices.Sensors;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using RentalApp.Services;
+using RentalApp.Services.Location;
 
 namespace RentalApp.Test.Services;
 

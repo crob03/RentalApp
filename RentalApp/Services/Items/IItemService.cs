@@ -1,7 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 
-namespace RentalApp.Services;
+namespace RentalApp.Services.Items;
 
 /// <summary>
 /// Defines the contract for item listing, discovery, and management operations.

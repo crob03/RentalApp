@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using RentalApp.Constants;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Navigation;
 
 namespace RentalApp.Http;
 

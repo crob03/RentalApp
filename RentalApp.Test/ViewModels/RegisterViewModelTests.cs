@@ -2,7 +2,8 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
-using RentalApp.Services;
+using RentalApp.Services.Auth;
+using RentalApp.Services.Navigation;
 using RentalApp.ViewModels;
 
 namespace RentalApp.Test.ViewModels;
