@@ -44,9 +44,11 @@ public partial class MainViewModel : AuthenticatedViewModel
 
     /// <summary>
     /// Fetches the current user profile and composes the welcome message.
-    /// Called from <c>MainPage.OnAppearing</c>.
+    /// Called from <c>MainPage.OnAppearing</c>. Errors are surfaced via <see cref="BaseViewModel.SetError"/>.
     /// </summary>
-    public async Task InitializeAsync()
+    public Task InitializeAsync() => RunAsync(LoadUserAsync);
+
+    private async Task LoadUserAsync()
     {
         CurrentUser = await _authService.GetCurrentUserAsync();
         WelcomeMessage = $"Welcome, {CurrentUser.FirstName} {CurrentUser.LastName}!";
@@ -66,5 +68,5 @@ public partial class MainViewModel : AuthenticatedViewModel
 
     /// <summary>Re-fetches user profile data, surfacing errors via <see cref="BaseViewModel.SetError"/>.</summary>
     [RelayCommand]
-    private Task RefreshDataAsync() => RunAsync(InitializeAsync);
+    private Task RefreshDataAsync() => RunAsync(LoadUserAsync);
 }
