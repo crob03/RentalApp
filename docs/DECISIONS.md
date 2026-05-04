@@ -31,6 +31,9 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 20 | 2026-05-02 | Architecture / Data Access | Repositories must not cross aggregate boundaries |
 | 21 | 2026-05-02 | Architecture / MVVM | `AuthenticatedViewModel` abstract base class replaces `AppShellViewModel` composition for shared post-auth commands |
 | 22 | 2026-05-02 | Architecture / Navigation | `MainPage` declared as an absolute Shell route (`//main`) so navigating to it replaces the navigation stack |
+| 23 | 2026-05-04 | Architecture / MVVM | `ReviewsViewModel` abstract base uses an abstract `FetchReviewsAsync(int page)` method so subclasses supply their own data source (item reviews, user reviews) without the base class knowing the origin |
+| 24 | 2026-05-04 | Architecture / UX | `CanReview` is computed as `Completed && isBorrower` only — no API call to check whether a review already exists; the service layer rejects duplicates |
+| 25 | 2026-05-04 | Architecture / Data Integrity | `reviews.RentalId` carries a unique database index in addition to the application-level `HasReviewForRentalAsync` check, guarding against the TOCTOU race under concurrent submissions |
 
 ---
 
@@ -347,3 +350,48 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Keep relative route, suppress back button with `Shell.BackButtonBehavior`** — setting `IsVisible="False"` on the back button in `MainPage.xaml` hides the button visually, but `LoginPage` remains on the navigation stack beneath `MainPage`. Rejected because this is a visual workaround for a structural problem: the login page should not exist on the stack after the user has authenticated.
 
 **Rationale**: Absolute Shell navigation (`//route`) replaces the entire navigation stack, making `MainPage` the new root. This is the correct semantic for a home/dashboard page — there is nothing to navigate back to after login. The pattern matches the existing conventions in the app: `//login` and `//loading` are already declared as `ShellContent` items and navigated to absolutely for the same reason. `MainPage` was the only post-login root that was not following this convention.
+
+---
+
+### Decision 23: `ReviewsViewModel` Abstract Base with `FetchReviewsAsync` Template Method
+**Date**: 2026-05-04
+**Area**: Architecture / MVVM
+
+**Decision**: Pagination, loading state, and `ObservableCollection<ReviewResponse>` management for review lists are centralised in an abstract `ReviewsViewModel` base class. Subclasses supply their data source by implementing a single abstract method, `FetchReviewsAsync(int page)`, which returns a `ReviewsResponse`. The base class owns both the `LoadReviewsCommand` (reset to page 1) and `LoadMoreReviewsCommand` (append next page) relay commands, along with the `RunLoadReviewsAsync` / `RunLoadMoreReviewsAsync` lifecycle wrappers that manage `IsLoadingReviews`, `IsLoadingMoreReviews`, `CurrentReviewPage`, and `HasMoreReviewPages`. `ReviewsViewModel` extends `AuthenticatedViewModel` so it participates in the full post-auth hierarchy.
+
+**Alternatives considered**:
+- **Repeat pagination logic per consumer ViewModel** — each ViewModel that shows reviews (`ItemDetailsViewModel`, a future `UserProfileViewModel`) would duplicate loading state, page tracking, and error handling. Rejected because the duplication was already occurring within a single sprint: `ItemDetailsViewModel` needed item reviews and a future `UserProfileViewModel` will need user reviews. Shared state bugs (e.g. `CurrentReviewPage` not resetting on reload) would need to be fixed in every copy.
+- **A `ReviewsComponent` service or helper injected into each ViewModel** — a stateful collaborator holding `ObservableCollection<ReviewResponse>` and exposing commands, injected as a dependency. Rejected because data-binding in MAUI requires the properties to live on the ViewModel itself (or a nested `ObservableObject`). A separate stateful helper creates indirection and requires additional XAML binding paths (`{Binding Reviews.Collection}`) rather than flat bindings (`{Binding Reviews}`).
+- **A generic `PaginatedListViewModel<T>` base** — a reusable base parameterised by item type, usable for any paginated list. Rejected as premature generalisation: only review lists use this pattern today. `ReviewsViewModel` can be promoted to a generic base if a second non-review paginated list emerges.
+
+**Rationale**: The Template Method pattern is the established mechanism for this kind of shared lifecycle in MAUI MVVM: `ItemsSearchBaseViewModel<TItem>` uses the same approach for item search pagination, and `AuthenticatedViewModel` uses it for the shared logout/navigation commands. Inheriting from `ReviewsViewModel` gives `ItemDetailsViewModel` complete review pagination for free — it only declares `FetchReviewsAsync` and fires `LoadReviewsCommand` after item data loads. The base class's protected `RunLoadReviewsAsync` / `RunLoadMoreReviewsAsync` helpers provide the same `SetError` / `ClearError` contract as `RunAsync` from `BaseViewModel`, keeping error handling consistent across the ViewModel hierarchy.
+
+---
+
+### Decision 24: `CanReview` Computed Locally; Service Layer Enforces Duplicate Prevention
+**Date**: 2026-05-04
+**Area**: Architecture / UX
+
+**Decision**: `ManageRentalViewModel.CanReview` is computed entirely from locally available state — `RentalStatus == Completed && !isOwner` — without making an API call to check whether a review already exists for the rental. The "Leave a Review" button is therefore visible even when a review has already been submitted. Duplicate prevention is enforced exclusively at the service layer: `LocalReviewService.CreateReviewAsync` calls `HasReviewForRentalAsync` before inserting, and the database carries a unique index on `reviews.RentalId` (Decision 25) as a second line of defence. When a duplicate is attempted, `SetError` surfaces the rejection message to the user.
+
+**Alternatives considered**:
+- **Load review existence on `ManageRentalViewModel` initialisation** — call `IReviewService.HasReviewForRentalAsync(rentalId)` (or equivalent) during `LoadRentalAsync`, store the result in a `_hasReview` field, and factor it into `CanReview`. Rejected because `IReviewService` has no `HasReviewForRentalAsync` method on its public interface (that check lives inside the repository, consumed only by `LocalReviewService`). Exposing it would require a new interface method implemented by both `LocalReviewService` and the future `RemoteReviewService`, purely to drive a UI affordance.
+- **Return review existence from `IRentalService.GetRentalAsync`** — include an `HasReview` boolean on `RentalDetailResponse`. Rejected because `IRentalService` has no awareness of the review aggregate (Decision 20: repositories must not cross aggregate boundaries). Adding review state to a rental response would violate that boundary at the service contract level.
+- **Hide the button after submission in `CreateReviewViewModel`** — navigate back and set a flag via a shared state object or `MessagingCenter`. Rejected as fragile: the flag would need to survive navigation and be observable from `ManageRentalViewModel`, introducing coupling between two unrelated ViewModels.
+
+**Rationale**: The duplicate-submission path is an error path, not a normal flow. The vast majority of users will submit at most one review per rental; optimising the happy path (zero extra service calls) is the correct trade-off. The service layer already owns duplicate enforcement, and surfacing the rejection message via `SetError` is consistent with how all other constraint violations are communicated in the app. Keeping `CanReview` derivable from already-loaded rental state avoids adding a new interface method, a new query, and a new network round-trip solely to improve an affordance in an uncommon scenario.
+
+---
+
+### Decision 25: Unique Database Index on `reviews.RentalId` as TOCTOU Guard
+**Date**: 2026-05-04
+**Area**: Architecture / Data Integrity
+
+**Decision**: The `reviews` table carries a unique index on `RentalId` (applied via `modelBuilder.Entity<Review>().HasIndex(e => e.RentalId).IsUnique()` in `AppDbContext.OnModelCreating` and backed by a dedicated `AddReviewRentalIdUniqueIndex` migration). This index exists in addition to — not instead of — the application-level `HasReviewForRentalAsync` check in `LocalReviewService.CreateReviewAsync`. The application check provides a fast, user-friendly rejection path for the common case; the database constraint is the authoritative guard against concurrent duplicate inserts.
+
+**Alternatives considered**:
+- **Application-level check only (no database index)** — rely solely on `HasReviewForRentalAsync` returning `true` before `CreateReviewAsync` executes. Rejected because the check and the insert are two separate database round-trips with no transaction serialisation between them: under concurrent submission (two requests arriving within milliseconds), both checks could return `false` before either insert commits, allowing two reviews for the same rental to be written.
+- **Serialisable transaction wrapping check + insert** — open a `SERIALIZABLE` transaction that includes both `HasReviewForRentalAsync` and `CreateReviewAsync`, causing one of two concurrent writes to abort with a serialisation failure. Rejected because serialisable transactions carry a measurable performance cost on write-heavy paths and require careful retry logic in the caller. A unique index achieves the same exclusion guarantee with no transaction overhead and is enforced unconditionally by the database engine regardless of how the write reaches it.
+- **Unique index only (no application check)** — remove `HasReviewForRentalAsync` and let duplicate attempts fail with a database exception, caught and converted to a user-facing message. Rejected because catching a `PostgresException` with `SqlState = "23505"` (unique violation) and mapping it to a user-friendly message is brittle: it couples the error-handling logic to a database-specific error code. The application check intercepts duplicates before they reach the database and produces a deterministic, readable exception (`InvalidOperationException: "A review has already been submitted for this rental."`) that the existing `SetError` / `catch (Exception ex)` pattern can handle without special-casing.
+
+**Rationale**: The defence-in-depth approach — application check for user experience, database index for correctness — is the standard pattern for uniqueness constraints in CRUD applications. The unique index is a low-cost, permanent guarantee that no application bug, race condition, or future code path can bypass. The `AddReviewRentalIdUniqueIndex` migration is a separate migration from `AddReviewEntity` so the index can be tracked independently in the migration history; combining it would make it impossible to drop the index without reverting the entire entity addition.
