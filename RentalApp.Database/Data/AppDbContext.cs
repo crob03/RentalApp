@@ -136,7 +136,10 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.ToTable("reviews");
+            entity.ToTable(
+                "reviews",
+                t => t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5")
+            );
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Comment).HasMaxLength(500);
             entity.HasOne(e => e.Rental).WithMany().HasForeignKey(e => e.RentalId);
