@@ -1,5 +1,6 @@
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using RentalApp.Constants;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Services.Auth;
@@ -253,5 +254,66 @@ public class ManageRentalViewModelTests
 
         Assert.True(sut.HasError);
         Assert.Equal("Transition not allowed", sut.ErrorMessage);
+    }
+
+    // ── CanReview property ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadRentalCommand_WhenBorrowerAndCompleted_SetsCanReviewTrue()
+    {
+        _rentalService
+            .GetRentalAsync(10)
+            .Returns(MakeRental(ownerId: 1, borrowerId: 2, status: "Completed"));
+        var sut = CreateSut(currentUserId: 2);
+
+        await sut.LoadRentalCommand.ExecuteAsync(null);
+
+        Assert.True(sut.CanReview);
+    }
+
+    [Fact]
+    public async Task LoadRentalCommand_WhenOwnerAndCompleted_SetsCanReviewFalse()
+    {
+        _rentalService
+            .GetRentalAsync(10)
+            .Returns(MakeRental(ownerId: 1, borrowerId: 2, status: "Completed"));
+        var sut = CreateSut(currentUserId: 1);
+
+        await sut.LoadRentalCommand.ExecuteAsync(null);
+
+        Assert.False(sut.CanReview);
+    }
+
+    [Fact]
+    public async Task LoadRentalCommand_WhenBorrowerAndNotCompleted_SetsCanReviewFalse()
+    {
+        _rentalService
+            .GetRentalAsync(10)
+            .Returns(MakeRental(ownerId: 1, borrowerId: 2, status: "Returned"));
+        var sut = CreateSut(currentUserId: 2);
+
+        await sut.LoadRentalCommand.ExecuteAsync(null);
+
+        Assert.False(sut.CanReview);
+    }
+
+    [Fact]
+    public async Task NavigateToCreateReviewCommand_NavigatesToCreateReviewWithRentalId()
+    {
+        _rentalService
+            .GetRentalAsync(10)
+            .Returns(MakeRental(ownerId: 1, borrowerId: 2, status: "Completed"));
+        var sut = CreateSut(currentUserId: 2);
+        await sut.LoadRentalCommand.ExecuteAsync(null);
+
+        await sut.NavigateToCreateReviewCommand.ExecuteAsync(null);
+
+        await _nav.Received(1)
+            .NavigateToAsync(
+                Routes.CreateReview,
+                Arg.Is<Dictionary<string, object>>(d =>
+                    d.ContainsKey("rentalId") && (int)d["rentalId"] == 10
+                )
+            );
     }
 }

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.States;
@@ -45,6 +46,10 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
     /// <summary>True when the owner can mark this rental as completed.</summary>
     [ObservableProperty]
     private bool canComplete;
+
+    /// <summary>True when the borrower can leave a review (rental is Completed and user is borrower).</summary>
+    [ObservableProperty]
+    private bool canReview;
 
     /// <summary>
     /// Initialises the view model with rental, authentication, and navigation dependencies.
@@ -103,6 +108,14 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
             RefreshAvailableActions();
         });
 
+    /// <summary>Navigates to the create-review page, passing <c>rentalId</c> as a query parameter.</summary>
+    [RelayCommand]
+    private Task NavigateToCreateReviewAsync() =>
+        NavigateToAsync(
+            Routes.CreateReview,
+            new Dictionary<string, object> { ["rentalId"] = _rentalId }
+        );
+
     private void RefreshAvailableActions()
     {
         if (
@@ -115,7 +128,13 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
             )
         )
         {
-            CanApprove = CanReject = CanMarkOutForRent = CanMarkReturned = CanComplete = false;
+            CanApprove =
+                CanReject =
+                CanMarkOutForRent =
+                CanMarkReturned =
+                CanComplete =
+                CanReview =
+                    false;
             return;
         }
 
@@ -128,5 +147,6 @@ public partial class ManageRentalViewModel : AuthenticatedViewModel, IQueryAttri
         CanMarkOutForRent = transitions.Contains(RentalStatus.OutForRent);
         CanMarkReturned = transitions.Contains(RentalStatus.Returned);
         CanComplete = transitions.Contains(RentalStatus.Completed);
+        CanReview = status == RentalStatus.Completed && !isOwner;
     }
 }
