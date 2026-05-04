@@ -105,6 +105,8 @@ public static class MauiProgram
         builder.Services.AddTransient<RentalsPage>();
         builder.Services.AddTransient<ManageRentalViewModel>();
         builder.Services.AddTransient<ManageRentalPage>();
+        builder.Services.AddTransient<CreateReviewViewModel>();
+        builder.Services.AddTransient<CreateReviewPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();
