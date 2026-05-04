@@ -37,4 +37,7 @@ public static class Routes
 
     /// <summary>The registered route name for the create review page.</summary>
     public const string CreateReview = "CreateReviewPage";
+
+    /// <summary>The registered route name for the user profile page.</summary>
+    public const string UserProfile = "UserProfilePage";
 }
