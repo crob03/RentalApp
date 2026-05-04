@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Contracts.Responses;
-using RentalApp.Http;
 using RentalApp.Services.Auth;
 using RentalApp.Services.Navigation;
 
