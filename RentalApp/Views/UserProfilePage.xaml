@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+  x:Class="RentalApp.Views.UserProfilePage"
+  xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:vm="clr-namespace:RentalApp.ViewModels"
+  xmlns:responses="clr-namespace:RentalApp.Contracts.Responses"
+  mc:Ignorable="d"
+  x:DataType="vm:UserProfileViewModel"
+  Title="{Binding Title}"
+>
+  <d:ContentPage.BindingContext>
+    <vm:UserProfileViewModel />
+  </d:ContentPage.BindingContext>
+
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
+  <ScrollView>
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+      <!-- Error banner -->
+      <Border
+        Grid.Row="0"
+        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+        StrokeThickness="1"
+        Padding="12"
+        IsVisible="{Binding HasError}"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Label
+          Text="{Binding ErrorMessage}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+      </Border>
+
+      <!-- Loading indicator -->
+      <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+      <!-- Profile header -->
+      <StackLayout Grid.Row="2" Spacing="4">
+        <Label Text="{Binding DisplayName}" FontSize="24" FontAttributes="Bold" />
+        <Label
+          Text="{Binding Email}"
+          FontSize="14"
+          IsVisible="{Binding ShowEmail}"
+          TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+        />
+      </StackLayout>
+
+      <!-- Stats row -->
+      <Grid Grid.Row="3" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+        <StackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="2">
+          <Label
+            Text="{Binding AverageRating, StringFormat='★ {0:F1}'}"
+            HorizontalOptions="Center"
+            FontSize="18"
+            FontAttributes="Bold"
+            IsVisible="{Binding HasAverageRating}"
+          />
+          <Label
+            Text="—"
+            HorizontalOptions="Center"
+            FontSize="18"
+            FontAttributes="Bold"
+            IsVisible="{Binding HasAverageRating, Converter={StaticResource InvertedBoolConverter}}"
+          />
+          <Label
+            Text="Rating"
+            HorizontalOptions="Center"
+            FontSize="12"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </StackLayout>
+
+        <StackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="2">
+          <Label
+            Text="{Binding ItemsListed}"
+            HorizontalOptions="Center"
+            FontSize="18"
+            FontAttributes="Bold"
+          />
+          <Label
+            Text="Items listed"
+            HorizontalOptions="Center"
+            FontSize="12"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </StackLayout>
+
+        <StackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="2">
+          <Label
+            Text="{Binding RentalsCompleted}"
+            HorizontalOptions="Center"
+            FontSize="18"
+            FontAttributes="Bold"
+          />
+          <Label
+            Text="Rentals"
+            HorizontalOptions="Center"
+            FontSize="12"
+            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+          />
+        </StackLayout>
+      </Grid>
+
+      <!-- Reviews section -->
+      <StackLayout Grid.Row="4" Spacing="8" Margin="0,8,0,0">
+        <Label
+          Text="{Binding TotalReviews, StringFormat='Reviews ({0})'}"
+          FontSize="18"
+          FontAttributes="Bold"
+        />
+
+        <Label
+          Text="{Binding AverageRating, StringFormat='★ {0:F1} average'}"
+          IsVisible="{Binding HasAverageRating}"
+          FontSize="14"
+        />
+
+        <ActivityIndicator
+          IsRunning="{Binding IsLoadingReviews}"
+          IsVisible="{Binding IsLoadingReviews}"
+          HorizontalOptions="Center"
+        />
+
+        <CollectionView ItemsSource="{Binding Reviews}">
+          <CollectionView.EmptyView>
+            <Label
+              Text="No reviews yet."
+              TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+            />
+          </CollectionView.EmptyView>
+          <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="responses:ReviewResponse">
+              <StackLayout Spacing="4" Padding="0,8">
+                <Label Text="{Binding ReviewerName}" FontAttributes="Bold" FontSize="14" />
+                <Label Text="{Binding Rating, StringFormat='★ {0}/5'}" FontSize="13" />
+                <Label Text="{Binding Comment}" />
+                <Label
+                  Text="{Binding CreatedAt, StringFormat='{0:d}'}"
+                  FontSize="12"
+                  TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                />
+              </StackLayout>
+            </DataTemplate>
+          </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <ActivityIndicator
+          IsRunning="{Binding IsLoadingMoreReviews}"
+          IsVisible="{Binding IsLoadingMoreReviews}"
+          HorizontalOptions="Center"
+        />
+
+        <Button
+          Text="Load More Reviews"
+          Command="{Binding LoadMoreReviewsCommand}"
+          IsVisible="{Binding HasMoreReviewPages}"
+          BackgroundColor="Transparent"
+          TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+        />
+      </StackLayout>
+    </Grid>
+  </ScrollView>
+</ContentPage>

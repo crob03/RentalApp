@@ -14,9 +14,6 @@ public static class Routes
     /// <summary>The absolute root route for the main dashboard page. Clears the navigation stack.</summary>
     public const string Main = "//main";
 
-    /// <summary>The registered route name for the temporary placeholder page.</summary>
-    public const string Temp = "TempPage";
-
     /// <summary>The registered route name for the items list page.</summary>
     public const string ItemsList = "ItemsListPage";
 
@@ -37,4 +34,7 @@ public static class Routes
 
     /// <summary>The registered route name for the create review page.</summary>
     public const string CreateReview = "CreateReviewPage";
+
+    /// <summary>The registered route name for the user profile page.</summary>
+    public const string UserProfile = "UserProfilePage";
 }

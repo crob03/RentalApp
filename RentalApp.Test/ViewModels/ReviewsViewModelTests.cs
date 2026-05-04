@@ -32,15 +32,7 @@ public class ReviewsViewModelTests
         int total = 2,
         double? avg = 4.0,
         List<ReviewResponse>? reviews = null
-    ) =>
-        new(
-            reviews ?? [MakeReview(1), MakeReview(2)],
-            avg,
-            total,
-            page,
-            10,
-            totalPages
-        );
+    ) => new(reviews ?? [MakeReview(1), MakeReview(2)], avg, total, page, 10, totalPages);
 
     private static ReviewResponse MakeReview(int id) =>
         new(id, 4, "Great!", "Alice Smith", DateTime.UtcNow);
@@ -101,7 +93,9 @@ public class ReviewsViewModelTests
     [Fact]
     public async Task LoadReviewsCommand_ServiceThrows_SetsError()
     {
-        var sut = CreateSut(_ => Task.FromException<ReviewsResponse>(new Exception("fetch failed")));
+        var sut = CreateSut(_ =>
+            Task.FromException<ReviewsResponse>(new Exception("fetch failed"))
+        );
 
         await sut.LoadReviewsCommand.ExecuteAsync(null);
 
@@ -142,11 +136,7 @@ public class ReviewsViewModelTests
     {
         var sut = CreateSut(page =>
             Task.FromResult(
-                MakeResponse(
-                    page: page,
-                    totalPages: 2,
-                    reviews: [MakeReview(page * 10)]
-                )
+                MakeResponse(page: page, totalPages: 2, reviews: [MakeReview(page * 10)])
             )
         );
         await sut.LoadReviewsCommand.ExecuteAsync(null); // page 1 → 1 review

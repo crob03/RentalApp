@@ -10,7 +10,6 @@ public partial class AppShell : Shell
         InitializeComponent();
 
         Routing.RegisterRoute(Routes.Register, typeof(RegisterPage));
-        Routing.RegisterRoute(Routes.Temp, typeof(TempPage));
         Routing.RegisterRoute(Routes.ItemsList, typeof(ItemsListPage));
         Routing.RegisterRoute(Routes.ItemDetails, typeof(ItemDetailsPage));
         Routing.RegisterRoute(Routes.CreateItem, typeof(CreateItemPage));
@@ -18,5 +17,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(Routes.Rentals, typeof(RentalsPage));
         Routing.RegisterRoute(Routes.ManageRental, typeof(ManageRentalPage));
         Routing.RegisterRoute(Routes.CreateReview, typeof(CreateReviewPage));
+        Routing.RegisterRoute(Routes.UserProfile, typeof(UserProfilePage));
     }
 }
