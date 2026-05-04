@@ -138,7 +138,7 @@ public class AppDbContext : DbContext
         {
             entity.ToTable(
                 "reviews",
-                t => t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5")
+                t => t.HasCheckConstraint("ck_reviews_rating", "\"Rating\" BETWEEN 1 AND 5")
             );
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.RentalId).IsUnique();

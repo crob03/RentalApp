@@ -39,7 +39,7 @@ namespace RentalApp.Migrations.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_reviews", x => x.Id);
-                    table.CheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
+                    table.CheckConstraint("ck_reviews_rating", "\"Rating\" BETWEEN 1 AND 5");
                     table.ForeignKey(
                         name: "FK_reviews_items_ItemId",
                         column: x => x.ItemId,

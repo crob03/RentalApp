@@ -187,7 +187,7 @@ namespace RentalApp.Migrations.Migrations
 
                     b.ToTable("reviews", null, t =>
                         {
-                            t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
+                            t.HasCheckConstraint("ck_reviews_rating", "\"Rating\" BETWEEN 1 AND 5");
                         });
                 });
 
