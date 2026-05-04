@@ -1,5 +1,7 @@
 - name: README
   href: README.md
+- name: Architecture                                                                                                                                                                                                      
+  href: docs/ARCHITECTURE.md  
 - name: Decisions
   href: docs/DECISIONS.md
 - name: Database Seeding

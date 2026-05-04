@@ -1,0 +1,72 @@
+@startuml Database Schema
+!pragma layout smetana
+
+entity "users" {
+    * Id : int <<PK>>
+    --
+    * FirstName : varchar(100)
+    * LastName : varchar(100)
+    * Email : varchar(255) <<UK>>
+    * PasswordHash : varchar(255)
+    * PasswordSalt : varchar(255)
+    * CreatedAt : timestamp
+    * UpdatedAt : timestamp
+}
+
+entity "categories" {
+    * Id : int <<PK>>
+    --
+    * Name : varchar(100)
+    * Slug : varchar(100) <<UK>>
+    * CreatedAt : timestamp
+    * UpdatedAt : timestamp
+}
+
+entity "items" {
+    * Id : int <<PK>>
+    --
+    * Title : varchar(100)
+    Description : varchar(1000)
+    * DailyRate : double
+    * CategoryId : int <<FK>>
+    * OwnerId : int <<FK>>
+    Location : geography(Point, 4326)
+    * IsAvailable : bool
+    * CreatedAt : timestamp
+    * UpdatedAt : timestamp
+}
+
+entity "rentals" {
+    * Id : int <<PK>>
+    --
+    * ItemId : int <<FK>>
+    * OwnerId : int <<FK>>
+    * BorrowerId : int <<FK>>
+    * StartDate : date
+    * EndDate : date
+    * Status : varchar(50)
+    * CreatedAt : timestamp
+    * UpdatedAt : timestamp
+}
+
+entity "reviews" {
+    * Id : int <<PK>>
+    --
+    * RentalId : int <<FK>> <<UK>>
+    * ItemId : int <<FK>>
+    * ReviewerId : int <<FK>>
+    * Rating : int
+    Comment : varchar(500)
+    * CreatedAt : timestamp
+}
+
+users ||--o{ items : "owns"
+categories ||--o{ items : "categorises"
+items ||--o{ rentals : "rented via"
+users ||--o{ rentals : "as owner"
+users ||--o{ rentals : "as borrower"
+rentals ||--o| reviews : "has review"
+items ||--o{ reviews : "reviewed for"
+users ||--o{ reviews : "writes"
+
+@enduml

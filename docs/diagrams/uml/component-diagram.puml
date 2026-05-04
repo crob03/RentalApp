@@ -1,0 +1,77 @@
+@startuml RentalApp Components
+skinparam ranksep 90
+skinparam nodesep 50
+
+package "RentalApp (MAUI UI)" {
+    [ViewModels] as VM
+    [ApiClient / AuthTokenState] as HTTP
+}
+
+package "Service Layer" {
+    interface IAuthService
+    interface IItemService
+    interface IRentalService
+    interface IReviewService
+
+    package "Remote Implementations" {
+        [RemoteAuthService] as RA
+        [RemoteItemService] as RI
+        [RemoteRentalService] as RR
+        [RemoteReviewService] as RV
+    }
+
+    package "Local Implementations" {
+        [LocalAuthService] as LA
+        [LocalItemService] as LI
+        [LocalRentalService] as LR
+        [LocalReviewService] as LV
+    }
+}
+
+package "RentalApp.Database" {
+    package "Repositories" {
+        [UserRepository] as URepo
+        [ItemRepository] as IRepo
+        [CategoryRepository] as CRepo
+        [RentalRepository] as RRepo
+        [ReviewRepository] as VRepo
+    }
+    [AppDbContext] as DBCtx
+}
+
+database "PostgreSQL 16" as PG
+cloud "External REST API" as API
+
+VM --> IAuthService
+VM --> IItemService
+VM --> IRentalService
+VM --> IReviewService
+
+IAuthService <|.. RA
+IAuthService <|.. LA
+IItemService <|.. RI
+IItemService <|.. LI
+IRentalService <|.. RR
+IRentalService <|.. LR
+IReviewService <|.. RV
+IReviewService <|.. LV
+
+RA --> HTTP
+RI --> HTTP
+RR --> HTTP
+RV --> HTTP
+HTTP --> API
+
+LA --> URepo
+LI --> IRepo
+LI --> CRepo
+LR --> RRepo
+LV --> VRepo
+
+URepo --> DBCtx
+IRepo --> DBCtx
+CRepo --> DBCtx
+RRepo --> DBCtx
+VRepo --> DBCtx
+DBCtx --> PG
+@enduml

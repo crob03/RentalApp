@@ -1,0 +1,58 @@
+@startuml Rental Workflow
+!pragma layout smetana
+
+actor Borrower as B
+actor Owner as O
+participant "IRentalService" as SVC
+participant "IRentalRepository" as REPO
+database "PostgreSQL" as DB
+
+== Request ==
+B -> SVC : CreateRentalAsync(itemId, startDate, endDate)
+SVC -> REPO : HasOverlappingRentalAsync(itemId, dates)
+REPO -> DB : SELECT
+DB --> REPO : no conflict
+SVC -> REPO : CreateRentalAsync(itemId, ownerId, borrowerId, dates)
+REPO -> DB : INSERT rental (Status: Requested)
+DB --> REPO : rental
+SVC --> B : CreateRentalResponse
+
+== Owner Reviews Request ==
+O -> SVC : GetIncomingRentalsAsync()
+SVC -> REPO : GetIncomingRentalsAsync(ownerId)
+REPO -> DB : SELECT
+DB --> REPO : rentals
+note right of SVC : ApplyAutomaticTransitionsAsync()\napplied on every read —\nExpired Requested → Rejected\nOutForRent past end date → Overdue
+SVC --> O : RentalsListResponse
+
+alt approve
+    O -> SVC : UpdateRentalStatusAsync(id, "Approved")
+else reject
+    O -> SVC : UpdateRentalStatusAsync(id, "Rejected")
+end
+SVC -> REPO : UpdateRentalStatusAsync(id, newStatus)
+REPO -> DB : UPDATE rental
+SVC --> O : UpdateRentalStatusResponse
+
+== Handover ==
+O -> SVC : UpdateRentalStatusAsync(id, "OutForRent")
+SVC -> REPO : UpdateRentalStatusAsync(id, OutForRent)
+REPO -> DB : UPDATE rental
+SVC --> O : UpdateRentalStatusResponse
+
+== Return ==
+B -> SVC : UpdateRentalStatusAsync(id, "Returned")
+SVC -> REPO : UpdateRentalStatusAsync(id, Returned)
+REPO -> DB : UPDATE rental
+SVC --> B : UpdateRentalStatusResponse
+
+== Completion ==
+O -> SVC : UpdateRentalStatusAsync(id, "Completed")
+SVC -> REPO : UpdateRentalStatusAsync(id, Completed)
+REPO -> DB : UPDATE rental
+SVC --> O : UpdateRentalStatusResponse
+
+== Review ==
+B -> "IReviewService" : CreateReviewAsync(rentalId, rating, comment)
+
+@enduml

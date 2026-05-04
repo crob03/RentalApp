@@ -34,6 +34,8 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 | 23 | 2026-05-04 | Architecture / MVVM | `ReviewsViewModel` abstract base uses an abstract `FetchReviewsAsync(int page)` method so subclasses supply their own data source (item reviews, user reviews) without the base class knowing the origin |
 | 24 | 2026-05-04 | Architecture / UX | `CanReview` is computed as `Completed && isBorrower` only — no API call to check whether a review already exists; the service layer rejects duplicates |
 | 25 | 2026-05-04 | Architecture / Data Integrity | `reviews.RentalId` carries a unique database index in addition to the application-level `HasReviewForRentalAsync` check, guarding against the TOCTOU race under concurrent submissions |
+| 26 | 2026-05-04 | Architecture / Navigation | Sentinel `_userId = 0` for self mode in `UserProfileViewModel` |
+| 27 | 2026-05-04 | Documentation | Architecture diagrams use Mermaid for inline Markdown rendering and PlantUML for standalone UML artefacts; raw `.puml` sources in `docs/diagrams/uml/`, generated images in `docs/diagrams/images/` |
 
 ---
 
@@ -408,3 +410,18 @@ Each entry is an immutable record — superseding decisions add a new entry rath
 - **Nullable `int?` field on `AuthenticatedViewModel`** — pass the current user's ID down from the base class so `UserProfileViewModel` never needs to fetch it. Rejected because modifying `AuthenticatedViewModel`'s constructor would cascade a breaking change to all ~12 subclasses, and caching the user ID at the base class level conflates authentication state with profile navigation concerns.
 
 **Rationale**: The sentinel approach is the simplest solution that requires no constructor changes to existing classes. The `_resolvedUserId` separation is the key correctness invariant: `_userId = 0` is never passed to the service layer; the real ID is always resolved from the profile response and stored before `FetchReviewsAsync` can be called. This is enforced by the load sequence — `LoadReviewsCommand` is fired from inside `LoadProfileAsync` after `_resolvedUserId` is set, making it impossible for reviews to be fetched with an unresolved ID.
+
+---
+
+### Decision 27: Architecture Diagrams Use Mermaid and PlantUML
+**Date**: 2026-05-04
+**Area**: Documentation
+
+**Decision**: Architecture diagrams use two formats depending on context. Mermaid (` ```mermaid `) is used for diagrams embedded inline in Markdown files — rendered natively by DocFX's modern template and GitHub's Markdown renderer with no extra tooling. PlantUML is used for standalone UML artefacts (component diagrams, ER diagrams) where richer UML notation is needed. PlantUML source files (`.puml`) are stored in `docs/diagrams/uml/`; generated images are stored in `docs/diagrams/images/` for reference in Markdown files. All diagram source files are version-controlled alongside the code they describe.
+
+**Alternatives considered**:
+- **Mermaid only** — simpler toolchain; no Java dependency. Rejected because Mermaid's component diagram support is limited and lacks proper UML notation (e.g. interface realization arrows). PlantUML produces more semantically correct UML for component and ER diagrams.
+- **PlantUML only** — consistent format across all diagrams. Rejected because PlantUML is not natively supported by DocFX and requires either installing Graphviz or using the Smetana fallback engine, adding friction for inline documentation.
+- **Exported image files (PNG/SVG)** — diagrams drawn in a GUI tool and exported as static images. Rejected because images are opaque to version control and can silently fall out of sync with the code.
+
+**Rationale**: The two formats serve different purposes. Mermaid covers inline documentation needs (embedded in `.md` files, renders everywhere) while PlantUML covers formal UML artefacts where notation precision matters. Separating source from generated output (`uml/` vs `images/`) keeps the repository clean and makes it clear which files are hand-authored and which are build artefacts.
