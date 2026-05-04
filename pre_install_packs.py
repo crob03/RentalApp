@@ -81,7 +81,7 @@ def pre_install(pack, ver):
 
     open(os.path.join(record_dir, feature_band), 'w').close()
     os.remove(nupkg)
-    print(f'  done')
+    print('done')
 
 
 try:

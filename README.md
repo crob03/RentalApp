@@ -120,13 +120,23 @@ Override it with the `CONNECTION_STRING` environment variable if needed.
 
 ---
 
-## API
+## Remote API
 
 The hosted API is available at:
 
 **`https://set09102-api.b-davison.workers.dev/`**
 
-The app targets this endpoint by default. Use `make use-local-api` to switch to the repository-backed local services during offline development.
+The app targets this endpoint by default. Use `make use-remote-api` to target specifically.
+
+---
+
+## Local API
+
+The DocFX documentation for the local API is available at:
+
+**`https://crob03.github.io/RentalApp/index.html`**
+
+Use `make use-local-api` to switch to the repository-backed local services during offline development.
 
 ---
 
