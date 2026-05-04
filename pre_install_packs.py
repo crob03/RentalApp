@@ -9,6 +9,7 @@ this by keeping each individual transfer small.
 import os
 import subprocess
 import sys
+import tempfile
 import traceback
 import urllib.request
 import zipfile
@@ -70,7 +71,8 @@ def pre_install(pack, ver):
     os.makedirs(pack_dir, exist_ok=True)
     os.makedirs(record_dir, exist_ok=True)
 
-    nupkg = f'/tmp/{pack_lower}.{ver}.nupkg'
+    fd, nupkg = tempfile.mkstemp(suffix='.nupkg')
+    os.close(fd)
     print(f'Pre-installing {pack} {ver}')
     download_chunked(url, nupkg)
 
