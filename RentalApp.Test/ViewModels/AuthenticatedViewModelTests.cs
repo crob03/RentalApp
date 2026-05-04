@@ -92,12 +92,12 @@ public class AuthenticatedViewModelTests
     // ── Navigation commands ────────────────────────────────────────────
 
     [Fact]
-    public async Task NavigateToProfileCommand_NavigatesToTemp()
+    public async Task NavigateToProfileCommand_NavigatesToUserProfile()
     {
         var sut = CreateSut();
 
         await sut.NavigateToProfileCommand.ExecuteAsync(null);
 
-        await _navigationService.Received(1).NavigateToAsync(Routes.Temp);
+        await _navigationService.Received(1).NavigateToAsync(Routes.UserProfile);
     }
 }

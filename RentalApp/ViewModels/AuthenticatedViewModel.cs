@@ -68,8 +68,8 @@ public abstract partial class AuthenticatedViewModel : BaseViewModel
         await _navigationService.NavigateToAsync(Routes.Login);
     }
 
-    /// <summary>Navigates to the user-profile page (currently the <c>Temp</c> stub).</summary>
+    /// <summary>Navigates to the user-profile page.</summary>
     [RelayCommand]
     private async Task NavigateToProfileAsync() =>
-        await _navigationService.NavigateToAsync(Routes.Temp);
+        await _navigationService.NavigateToAsync(Routes.UserProfile);
 }
