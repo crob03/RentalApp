@@ -129,6 +129,11 @@
             Command="{Binding UpdateStatusCommand}"
             CommandParameter="Completed"
           />
+          <Button
+            Text="Leave a Review"
+            IsVisible="{Binding CanReview}"
+            Command="{Binding NavigateToCreateReviewCommand}"
+          />
         </StackLayout>
       </StackLayout>
     </Grid>

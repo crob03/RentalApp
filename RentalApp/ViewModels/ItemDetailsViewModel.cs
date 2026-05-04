@@ -8,6 +8,7 @@ using RentalApp.Services.Auth;
 using RentalApp.Services.Items;
 using RentalApp.Services.Navigation;
 using RentalApp.Services.Rentals;
+using RentalApp.Services.Reviews;
 
 namespace RentalApp.ViewModels;
 
@@ -15,11 +16,12 @@ namespace RentalApp.ViewModels;
 /// Transient view model for the item-details page. Loads a single item by ID, determines ownership
 /// by comparing against the current user, and manages an in-place edit flow.
 /// </summary>
-public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttributable
+public partial class ItemDetailsViewModel : ReviewsViewModel, IQueryAttributable
 {
     private readonly IItemService _itemService;
     private readonly IAuthService _authService;
     private readonly IRentalService _rentalService;
+    private readonly IReviewService _reviewService;
     private int _itemId;
 
     /// <summary>The currently displayed item; <see langword="null"/> while loading.</summary>
@@ -86,6 +88,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
         IItemService itemService,
         IAuthService authService,
         IRentalService rentalService,
+        IReviewService reviewService,
         INavigationService navigationService,
         AuthTokenState tokenState,
         ICredentialStore credentialStore
@@ -95,6 +98,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
         _itemService = itemService;
         _authService = authService;
         _rentalService = rentalService;
+        _reviewService = reviewService;
         Title = "Item Details";
     }
 
@@ -104,6 +108,10 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
         if (query.TryGetValue("itemId", out var id))
             _itemId = Convert.ToInt32(id);
     }
+
+    /// <inheritdoc/>
+    protected override Task<ReviewsResponse> FetchReviewsAsync(int page) =>
+        _reviewService.GetItemReviewsAsync(_itemId, new GetReviewsRequest(page, ReviewPageSize));
 
     /// <summary>Fetches the item and determines whether the current user is the owner.</summary>
     [RelayCommand]
@@ -125,6 +133,7 @@ public partial class ItemDetailsViewModel : AuthenticatedViewModel, IQueryAttrib
                 ShowRentalForm = !IsOwner && CurrentItem.IsAvailable;
                 TotalPrice =
                     Math.Max(0, (RentalEndDate - RentalStartDate).Days) * CurrentItem.DailyRate;
+                _ = LoadReviewsCommand.ExecuteAsync(null);
             }
         });
 

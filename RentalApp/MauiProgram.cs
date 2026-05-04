@@ -67,7 +67,12 @@ public static class MauiProgram
                 sp.GetRequiredService<IItemRepository>(),
                 sp.GetRequiredService<AuthTokenState>()
             ));
-            builder.Services.AddSingleton<IReviewService, LocalReviewService>();
+            builder.Services.AddSingleton<IReviewRepository, ReviewRepository>();
+            builder.Services.AddSingleton<IReviewService>(sp => new LocalReviewService(
+                sp.GetRequiredService<IReviewRepository>(),
+                sp.GetRequiredService<IRentalRepository>(),
+                sp.GetRequiredService<AuthTokenState>()
+            ));
         }
 
         builder.Services.AddSingleton<IGeolocation>(Geolocation.Default);
@@ -100,6 +105,8 @@ public static class MauiProgram
         builder.Services.AddTransient<RentalsPage>();
         builder.Services.AddTransient<ManageRentalViewModel>();
         builder.Services.AddTransient<ManageRentalPage>();
+        builder.Services.AddTransient<CreateReviewViewModel>();
+        builder.Services.AddTransient<CreateReviewPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

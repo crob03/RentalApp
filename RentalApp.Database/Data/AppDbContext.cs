@@ -80,6 +80,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<Rental> Rentals { get; set; }
 
+    /// <summary>
+    /// Gets or sets the <see cref="DbSet{TEntity}"/> for the <see cref="Review"/> entity.
+    /// </summary>
+    public DbSet<Review> Reviews { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +132,20 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.ItemId);
             entity.HasOne(e => e.Owner).WithMany().HasForeignKey(e => e.OwnerId);
             entity.HasOne(e => e.Borrower).WithMany().HasForeignKey(e => e.BorrowerId);
+        });
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.ToTable(
+                "reviews",
+                t => t.HasCheckConstraint("ck_reviews_rating", "\"Rating\" BETWEEN 1 AND 5")
+            );
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RentalId).IsUnique();
+            entity.Property(e => e.Comment).HasMaxLength(500);
+            entity.HasOne(e => e.Rental).WithMany().HasForeignKey(e => e.RentalId);
+            entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.ItemId);
+            entity.HasOne(e => e.Reviewer).WithMany().HasForeignKey(e => e.ReviewerId);
         });
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using RentalApp.Database.Data;
 namespace RentalApp.Migrations.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504005852_AddReviewEntity")]
+    partial class AddReviewEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -180,14 +183,13 @@ namespace RentalApp.Migrations.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.HasIndex("RentalId")
-                        .IsUnique();
+                    b.HasIndex("RentalId");
 
                     b.HasIndex("ReviewerId");
 
                     b.ToTable("reviews", null, t =>
                         {
-                            t.HasCheckConstraint("ck_reviews_rating", "\"Rating\" BETWEEN 1 AND 5");
+                            t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
                         });
                 });
 
