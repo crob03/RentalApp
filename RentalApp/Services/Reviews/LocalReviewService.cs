@@ -1,6 +1,7 @@
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Database.Repositories;
+using RentalApp.Database.States;
 using RentalApp.Services.Auth;
 using DbReview = RentalApp.Database.Models.Review;
 
@@ -63,7 +64,15 @@ internal class LocalReviewService : IReviewService
             await _rentalRepository.GetRentalAsync(request.RentalId)
             ?? throw new InvalidOperationException($"Rental {request.RentalId} not found.");
 
+        if (rental.Status != RentalStatus.Completed)
+            throw new InvalidOperationException(
+                "Reviews can only be submitted for completed rentals."
+            );
+
         var reviewerId = GetCurrentUserId();
+
+        if (reviewerId != rental.BorrowerId)
+            throw new InvalidOperationException("Only the borrower can leave a review.");
 
         var review = await _reviewRepository.CreateReviewAsync(
             request.RentalId,

@@ -141,6 +141,7 @@ public class AppDbContext : DbContext
                 t => t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5")
             );
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RentalId).IsUnique();
             entity.Property(e => e.Comment).HasMaxLength(500);
             entity.HasOne(e => e.Rental).WithMany().HasForeignKey(e => e.RentalId);
             entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.ItemId);
