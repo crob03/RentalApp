@@ -2230,3 +2230,18 @@ Additionally, `TempPage` / `TempViewModel` were removed as follow-up cleanup —
 - `RentalApp.Test/ViewModels/ItemDetailsViewModelTests.cs` — added `ViewOwnerProfileCommand_NavigatesToUserProfileWithOwnerId` test.
 
 **Testing**: 9 unit tests passing. Build: 0 errors, 0 warnings.
+
+#### Interaction 90: Hotfix — GetUserReviewsAsync Owner Filter
+**Date**: 2026-05-04
+**Prompt**: "Theres a bug in 'GetUserReviewsAsync' in LocalReviewService. This should fetch reviews for a user as the owner. not reviews a user has left"
+
+**AI Suggestion**: Root cause identified in `ReviewRepository.GetUserReviewsPagedAsync` — the query filtered by `r.ReviewerId == userId`, returning reviews *written by* that user (borrower context). The correct behaviour is to return reviews received on the user's items, which requires filtering via `r.Item.OwnerId == userId`. The `Include(r => r.Item)` navigation was already present, so only the predicate needed changing. Two tests were also found to be asserting against `BorrowerId` instead of `OwnerId`, and one test was misnamed `ReturnsBorrowerReviews`.
+
+**My Evaluation**: Accepted.
+
+**Final Implementation**:
+- `RentalApp.Database/Repositories/ReviewRepository.cs` — filter changed from `r.ReviewerId == userId` to `r.Item.OwnerId == userId`.
+- `RentalApp.Test/Repositories/ReviewRepositoryTests.cs` — `GetUserReviewsPagedAsync_ReturnsCorrectPageAndTotal` updated to assert with `OwnerId`.
+- `RentalApp.Test/Services/LocalReviewServiceTests.cs` — test renamed `ReturnsBorrowerReviews` → `ReturnsOwnerReviews`; assertion updated to use `OwnerId`.
+
+**Testing**: No tests run in this session — DB not available locally.
