@@ -246,24 +246,22 @@ public class RemoteAuthServiceTests
             );
         _apiClient
             .GetAsync("users/me")
-            .Returns(_ =>
-                new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(
-                        new
-                        {
-                            id = 1,
-                            email = "jane@example.com",
-                            firstName = "Jane",
-                            lastName = "Doe",
-                            averageRating = (double?)null,
-                            itemsListed = 0,
-                            rentalsCompleted = 0,
-                            createdAt = DateTime.UtcNow,
-                        }
-                    ),
-                }
-            );
+            .Returns(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(
+                    new
+                    {
+                        id = 1,
+                        email = "jane@example.com",
+                        firstName = "Jane",
+                        lastName = "Doe",
+                        averageRating = (double?)null,
+                        itemsListed = 0,
+                        rentalsCompleted = 0,
+                        createdAt = DateTime.UtcNow,
+                    }
+                ),
+            });
         var sut = CreateSut();
 
         await sut.GetCurrentUserAsync();
