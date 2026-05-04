@@ -18,12 +18,12 @@
         "files": ["api/**.yml"]
       },
       {
-        "files": ["toc.yml", "*.md"]
+        "files": ["toc.yml", "*.md", "docs/**.md"]
       }
     ],
     "resource": [
       {
-        "files": ["images/**"]
+        "files": ["images/**", "docs/diagrams/images/**"]
       }
     ],
     "dest": "_site",
