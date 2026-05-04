@@ -157,7 +157,7 @@ public class ReviewRepositoryTests
         var rental = await CreateCompletedRentalAsync();
         await CreateSut().CreateReviewAsync(rental.Id, ItemId, BorrowerId, 4, "Nice");
 
-        var (reviews, total) = await CreateSut().GetUserReviewsPagedAsync(BorrowerId, 1, 10);
+        var (reviews, total) = await CreateSut().GetUserReviewsPagedAsync(OwnerId, 1, 10);
 
         Assert.Equal(1, total);
         Assert.Single(reviews);

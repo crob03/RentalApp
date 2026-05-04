@@ -41,7 +41,7 @@ public class ReviewRepository : IReviewRepository
         var query = context
             .Reviews.Include(r => r.Reviewer)
             .Include(r => r.Item)
-            .Where(r => r.ReviewerId == userId)
+            .Where(r => r.Item.OwnerId == userId)
             .OrderByDescending(r => r.CreatedAt);
         var total = await query.CountAsync();
         var reviews = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
