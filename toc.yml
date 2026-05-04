@@ -4,5 +4,7 @@
   href: docs/DECISIONS.md
 - name: Database Seeding
   href: docs/SEED_DATA.md
+- name: AI Interactions
+  href: INTERACTIONS.md
 - name: API Reference
   href: api/
