@@ -19,6 +19,7 @@ public class Review
     public User Reviewer { get; set; } = null!;
 
     [Required]
+    [Range(1, 5)]
     public int Rating { get; set; }
 
     [MaxLength(500)]
