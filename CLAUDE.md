@@ -109,7 +109,3 @@ Class library housing EF Core migration files under `Migrations/`. Implements `I
 - **Database**: PostgreSQL 16 — credentials: `app_user`/`app_password`, database `appdb`, port 5432
 - **Dev Container**: `.devcontainer/devcontainer.json` provisions .NET 10 SDK, Android SDK (build-tools 36.0.0), and Java JDK 21
 - **Docker**: Multi-stage `Dockerfile` builds with MAUI Android workload; `docker-compose.yml` orchestrates `db`, `migrate`, and `app` services
-
-# Additional Context
-
-- @PROJECTPLAN.md for context around the projects current status, ways of working, and coding standards.

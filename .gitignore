@@ -29,10 +29,6 @@ postgres_data/
 *.userosscache
 *.sln.docstates
 
-# Setup files
-pre_install_packs.py
-setup
-
 # Coverage reports
 coverage/
 
