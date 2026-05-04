@@ -40,6 +40,7 @@ public class ReviewRepository : IReviewRepository
         await using var context = _contextFactory.CreateDbContext();
         var query = context
             .Reviews.Include(r => r.Reviewer)
+            .Include(r => r.Item)
             .Where(r => r.ReviewerId == userId)
             .OrderByDescending(r => r.CreatedAt);
         var total = await query.CountAsync();
@@ -69,10 +70,11 @@ public class ReviewRepository : IReviewRepository
         context.Reviews.Add(review);
         await context.SaveChangesAsync();
         return await context
-            .Reviews.Include(r => r.Reviewer)
-            .Include(r => r.Item)
-            .Include(r => r.Rental)
-            .FirstAsync(r => r.Id == review.Id);
+                .Reviews.Include(r => r.Reviewer)
+                .Include(r => r.Item)
+                .Include(r => r.Rental)
+                .FirstOrDefaultAsync(r => r.Id == review.Id)
+            ?? throw new InvalidOperationException("Failed to retrieve created review.");
     }
 
     /// <inheritdoc/>
