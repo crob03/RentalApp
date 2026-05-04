@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
 using RentalApp.Services.Auth;
@@ -13,6 +14,7 @@ public partial class UserProfileViewModel : ReviewsViewModel, IQueryAttributable
     private readonly IAuthService _authService;
     private readonly IReviewService _reviewService;
     private int _userId;
+    private int _resolvedUserId;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowEmail))]
@@ -50,8 +52,35 @@ public partial class UserProfileViewModel : ReviewsViewModel, IQueryAttributable
     }
 
     [RelayCommand]
-    private Task LoadProfileAsync() => Task.CompletedTask;
+    private Task LoadProfileAsync() =>
+        RunAsync(async () =>
+        {
+            if (_userId <= 0)
+            {
+                var own = await _authService.GetCurrentUserAsync();
+                _resolvedUserId = own.Id;
+                DisplayName = $"{own.FirstName} {own.LastName}";
+                Email = own.Email;
+                ItemsListed = own.ItemsListed;
+                RentalsCompleted = own.RentalsCompleted;
+                AverageRating = own.AverageRating;
+            }
+            else
+            {
+                _resolvedUserId = _userId;
+                var profile = await _authService.GetUserProfileAsync(_userId);
+                DisplayName = $"{profile.FirstName} {profile.LastName}";
+                Email = null;
+                ItemsListed = profile.ItemsListed;
+                RentalsCompleted = profile.RentalsCompleted;
+                AverageRating = profile.AverageRating;
+            }
+            _ = LoadReviewsCommand.ExecuteAsync(null);
+        });
 
     protected override Task<ReviewsResponse> FetchReviewsAsync(int page) =>
-        Task.FromResult(new ReviewsResponse([], null, 0, page, ReviewPageSize, 0));
+        _reviewService.GetUserReviewsAsync(
+            _resolvedUserId,
+            new GetReviewsRequest(page, ReviewPageSize)
+        );
 }
