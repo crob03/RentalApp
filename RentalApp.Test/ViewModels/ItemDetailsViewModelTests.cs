@@ -1,5 +1,6 @@
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using RentalApp.Constants;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Http;
@@ -464,5 +465,25 @@ public class ItemDetailsViewModelTests
 
         Assert.True(sut.HasError);
         Assert.Equal("Server error", sut.ErrorMessage);
+    }
+
+    // ── ViewOwnerProfileCommand ────────────────────────────────────────
+
+    [Fact]
+    public async Task ViewOwnerProfileCommand_NavigatesToUserProfileWithOwnerId()
+    {
+        _itemService.GetItemAsync(1).Returns(MakeItem(1, ownerId: 7));
+        _authService.GetCurrentUserAsync().Returns(MakeUser(99));
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { ["itemId"] = 1 });
+        await sut.LoadItemCommand.ExecuteAsync(null);
+
+        await sut.ViewOwnerProfileCommand.ExecuteAsync(null);
+
+        await _nav.Received(1)
+            .NavigateToAsync(
+                Routes.UserProfile,
+                Arg.Is<Dictionary<string, object>>(d => (int)d["userId"] == 7)
+            );
     }
 }

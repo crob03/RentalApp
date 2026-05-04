@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RentalApp.Constants;
 using RentalApp.Contracts.Requests;
 using RentalApp.Contracts.Responses;
 using RentalApp.Helpers;
@@ -186,6 +187,16 @@ public partial class ItemDetailsViewModel : ReviewsViewModel, IQueryAttributable
     {
         IsEditing = false;
         ClearError();
+    }
+
+    [RelayCommand]
+    private async Task ViewOwnerProfileAsync()
+    {
+        if (CurrentItem?.OwnerId is int ownerId)
+            await NavigateToAsync(
+                Routes.UserProfile,
+                new Dictionary<string, object> { ["userId"] = ownerId }
+            );
     }
 
     partial void OnRentalStartDateChanged(DateTime value)
