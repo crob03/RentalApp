@@ -3,13 +3,75 @@
   x:Class="RentalApp.Views.CreateReviewPage"
   xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:vm="clr-namespace:RentalApp.ViewModels"
-  Title="{Binding Title}"
+  mc:Ignorable="d"
   x:DataType="vm:CreateReviewViewModel"
+  Title="{Binding Title}"
 >
-  <ContentPage.Content>
-    <VerticalStackLayout Padding="16" Spacing="16">
-      <Label Text="Leave a Review" FontSize="20" FontAttributes="Bold" />
-    </VerticalStackLayout>
-  </ContentPage.Content>
+  <ContentPage.ToolbarItems>
+    <ToolbarItem
+      Text="Profile"
+      Command="{Binding NavigateToProfileCommand}"
+      IconImageSource="user.png"
+    />
+    <ToolbarItem Text="Logout" Command="{Binding LogoutCommand}" IconImageSource="logout.png" />
+  </ContentPage.ToolbarItems>
+
+  <ScrollView>
+    <Grid Padding="16" RowSpacing="12" RowDefinitions="Auto,Auto,Auto">
+      <!-- Error banner -->
+      <Border
+        Grid.Row="0"
+        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+        StrokeThickness="1"
+        Padding="12"
+        IsVisible="{Binding HasError}"
+      >
+        <Border.StrokeShape>
+          <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Label
+          Text="{Binding ErrorMessage}"
+          TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+        />
+      </Border>
+
+      <!-- Loading indicator -->
+      <ActivityIndicator
+        Grid.Row="1"
+        IsRunning="{Binding IsBusy}"
+        IsVisible="{Binding IsBusy}"
+        HorizontalOptions="Center"
+      />
+
+      <!-- Form -->
+      <StackLayout
+        Grid.Row="2"
+        Spacing="12"
+        IsVisible="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+      >
+        <Label Text="Rating (1–5)" FontAttributes="Bold" />
+        <StackLayout Orientation="Horizontal" Spacing="12">
+          <Stepper Minimum="1" Maximum="5" Increment="1" Value="{Binding Rating}" />
+          <Label Text="{Binding Rating, StringFormat='{0} / 5'}" VerticalOptions="Center" />
+        </StackLayout>
+
+        <Label Text="Comment (optional)" FontAttributes="Bold" />
+        <Border
+          Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+          StrokeThickness="1"
+        >
+          <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+          </Border.StrokeShape>
+          <Editor Text="{Binding Comment}" Margin="12,8" AutoSize="TextChanges" MaxLength="500" />
+        </Border>
+
+        <Button Text="Submit Review" Command="{Binding SubmitReviewCommand}" />
+      </StackLayout>
+    </Grid>
+  </ScrollView>
 </ContentPage>
