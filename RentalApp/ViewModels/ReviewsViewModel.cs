@@ -17,8 +17,6 @@ public abstract partial class ReviewsViewModel : AuthenticatedViewModel
     /// <summary>Default page size for all review-listing requests.</summary>
     protected const int ReviewPageSize = 10;
 
-    private bool _hasLoadedReviews;
-
     /// <summary>The currently loaded page of reviews.</summary>
     [ObservableProperty]
     private ObservableCollection<ReviewResponse> reviews = [];
@@ -104,7 +102,6 @@ public abstract partial class ReviewsViewModel : AuthenticatedViewModel
             IsLoadingReviews = true;
             ClearError();
             await operation();
-            _hasLoadedReviews = true;
         }
         catch (Exception ex)
         {
