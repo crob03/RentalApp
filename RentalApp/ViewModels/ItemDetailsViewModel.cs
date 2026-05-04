@@ -189,6 +189,7 @@ public partial class ItemDetailsViewModel : ReviewsViewModel, IQueryAttributable
         ClearError();
     }
 
+    /// <summary>Navigates to the owner's public profile page, passing their user ID as a query parameter.</summary>
     [RelayCommand]
     private async Task ViewOwnerProfileAsync()
     {

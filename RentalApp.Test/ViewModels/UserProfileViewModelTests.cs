@@ -124,6 +124,20 @@ public class UserProfileViewModelTests
         await _reviewService.DidNotReceive().GetUserReviewsAsync(0, Arg.Any<GetReviewsRequest>());
     }
 
+    [Fact]
+    public async Task LoadReviewsCommand_AfterOtherUserModeLoad_UsesSuppliedUserId()
+    {
+        _authService.GetUserProfileAsync(2).Returns(MakeUserProfile(2));
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { ["userId"] = 2 });
+        await sut.LoadProfileCommand.ExecuteAsync(null);
+
+        await sut.LoadReviewsCommand.ExecuteAsync(null);
+
+        await _reviewService.Received().GetUserReviewsAsync(2, Arg.Any<GetReviewsRequest>());
+        await _reviewService.DidNotReceive().GetUserReviewsAsync(0, Arg.Any<GetReviewsRequest>());
+    }
+
     // ── Error handling ────────────────────────────────────────────────
 
     [Fact]
