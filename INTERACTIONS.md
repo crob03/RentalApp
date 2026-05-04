@@ -2230,3 +2230,30 @@ Additionally, `TempPage` / `TempViewModel` were removed as follow-up cleanup —
 - `RentalApp.Test/ViewModels/ItemDetailsViewModelTests.cs` — added `ViewOwnerProfileCommand_NavigatesToUserProfileWithOwnerId` test.
 
 **Testing**: 9 unit tests passing. Build: 0 errors, 0 warnings.
+
+#### Interaction 90: Architecture Documentation and Diagrams
+**Date**: 2026-05-04
+**Prompt**: Generate component diagrams in Mermaid and PlantUML; add Mermaid diagram to `ARCHITECTURE.md`; write PlantUML sources to files; generate rental state machine and rental workflow sequence diagrams; rewrite `docs/ARCHITECTURE.md` using generated images.
+
+**AI Suggestion**: Worked through a sequence of documentation tasks:
+
+- **Mermaid vs PlantUML for DocFX**: Confirmed PlantUML is not natively supported by DocFX — it requires Java and a third-party plugin. The `modern` template renders Mermaid natively, making it the practical choice for inline documentation.
+- **Component diagram** generated in both Mermaid and PlantUML, based on actual `Services/` and `Repositories/` file structure. Mermaid version embedded in `docs/ARCHITECTURE.md`; PlantUML source written to `docs/diagrams/uml/component-diagram.puml`.
+- **PlantUML layout engine troubleshooting**: Two errors encountered — `!pragma layout elk` fails without the Eclipse Layout Kernel JARs; default Graphviz layout fails without the `dot` binary installed. Resolved by switching to `!pragma layout smetana` (pure-Java layout engine bundled in the PlantUML JAR). `skinparam ranksep`/`nodesep` have no effect under Smetana — these are Graphviz-specific hints. Workaround options noted: install Graphviz, or use hidden arrows to force layout.
+- **Database schema diagram** generated in PlantUML using the existing Mermaid ER diagram in `ARCHITECTURE.md` as the source of truth. Written to `docs/diagrams/uml/database-schema.puml`.
+- **Decision 27 updated** to reflect the dual-format approach: Mermaid for inline Markdown rendering, PlantUML for standalone UML artefacts. Folder convention established: raw sources in `docs/diagrams/uml/`, generated images in `docs/diagrams/images/`.
+- **Rental state machine** (`rental-state-machine.puml`) — all 7 states with owner/borrower-labelled transitions and both automatic transitions (`OutForRent → Overdue` on end date passed; `Requested → Rejected` on start date passed).
+- **Rental workflow sequence diagram** (`rental-workflow.puml`) — full lifecycle from `CreateRentalAsync` through to review submission, with `ApplyAutomaticTransitionsAsync` side-effect annotated on every read call.
+- **`docs/ARCHITECTURE.md` rewritten** — full coverage across: solution structure table, component architecture (with image), dual-implementation pattern, MVVM ViewModel hierarchy tree, service/DI tables, Contracts, Navigation, rental state machine (with image), rental workflow (with image), database schema (with ERD image), Migrations, Test, and Infrastructure sections.
+
+**My Evaluation**: Accepted. The PlantUML troubleshooting path (ELK → Graphviz → Smetana) is worth having documented — it's a common friction point for anyone setting up PlantUML without a full Java toolchain. The rewritten `ARCHITECTURE.md` consolidates information that was previously scattered across `CLAUDE.md` and `PROJECTPLAN.md` into a single navigable reference, with diagrams grounding each section.
+
+**Final Implementation**:
+- `docs/ARCHITECTURE.md` — rewritten with full architecture documentation and four diagram images.
+- `docs/diagrams/uml/component-diagram.puml` — PlantUML component diagram.
+- `docs/diagrams/uml/database-schema.puml` — PlantUML ER diagram.
+- `docs/diagrams/uml/rental-state-machine.puml` — PlantUML state diagram for rental lifecycle.
+- `docs/diagrams/uml/rental-workflow.puml` — PlantUML sequence diagram for the full rental workflow.
+- `docs/DECISIONS.md` — Decision 27 updated to reflect dual Mermaid/PlantUML approach and `docs/diagrams/` folder convention.
+
+**Testing**: N/A (documentation changes only).
