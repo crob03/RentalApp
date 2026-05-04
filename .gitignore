@@ -29,33 +29,13 @@ postgres_data/
 *.userosscache
 *.sln.docstates
 
-# Setup files
-pre_install_packs.py
-setup
-
 # Coverage reports
 coverage/
 
 # Environment files
 .env.local
 
-QUESTIONS.md
-
 # Claude files
 .claude
-INTERACTIONS.md
 PROJECTPLAN.md
 docs/superpowers/
-
-# Other
-NOTES.md
-OBSERVATIONS.md
-AUTH_IMPROVEMENTS.md
-.misc/
-openapi.json
-
-SUGGESTIONS.md
-VIOLATIONS.md
-
-*FEATURE*.md
-*REFACTOR.md

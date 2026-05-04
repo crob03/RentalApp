@@ -93,8 +93,7 @@ public class LocalReviewServiceTests
         _tokenState.CurrentToken = BorrowerId.ToString();
         await CreateSut().CreateReviewAsync(new CreateReviewRequest(rentalId, 5, null));
 
-        var result = await CreateSut()
-            .GetUserReviewsAsync(OwnerId, new GetReviewsRequest(1, 10));
+        var result = await CreateSut().GetUserReviewsAsync(OwnerId, new GetReviewsRequest(1, 10));
 
         Assert.Equal(1, result.TotalReviews);
         Assert.Single(result.Reviews);

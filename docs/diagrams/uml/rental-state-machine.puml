@@ -1,0 +1,25 @@
+@startuml Rental State Machine
+skinparam nodesep 60
+
+[*] --> Requested
+
+Requested --> Approved : owner: approve
+Requested --> Rejected : owner: reject
+Requested --> Rejected : [auto] start date passed
+
+Approved --> OutForRent : owner: confirm handover
+
+OutForRent --> Returned : borrower: mark returned
+OutForRent --> Overdue : [auto] end date passed
+
+Overdue --> Returned : borrower: mark returned
+
+Returned --> Completed : owner: confirm receipt
+
+Rejected --> [*]
+Completed --> [*]
+
+state Overdue : Set automatically on read\nwhen EndDate < today
+state Rejected : Terminal state
+state Completed : Terminal state\nReview may be submitted
+@enduml
