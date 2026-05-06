@@ -164,6 +164,7 @@ internal class LocalRentalService : IRentalService
         {
             RentalStatus? target = rental.Status switch
             {
+                RentalStatus.Approved when rental.StartDate <= today => RentalStatus.OutForRent,
                 RentalStatus.OutForRent when rental.EndDate < today => RentalStatus.Overdue,
                 RentalStatus.Requested when rental.StartDate < today => RentalStatus.Rejected,
                 _ => null,
